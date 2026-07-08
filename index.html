@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>아이온2 뷰어</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    /* 고급 다크 테마 — 뉴트럴 차콜 서피스 · 샴페인 골드(hero) · 뮤트 애더블루(보조) */
+    --bg:#0c0e12; --bg2:#101318; --panel:#15181e; --panel2:#1b1f26; --line:#2a2f38; --line2:#1f232b;
+    --txt:#e6e8ec; --dim:#8b93a1; --gold:#d8bd85; --teal:#62b0b8; --aether:#78acd6; --accent:#78acd6; --danger:#e07a72;
+    --g1:#a8b0be; --g2:#6ec98a; --g3:#5aa6e0; --g4:#e6c579; --g5:#e2915a; --g6:#b98ae0; --g7:#6cc2d4;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 2px 10px rgba(0,0,0,.32);
+    --shadow-lg:0 12px 34px -10px rgba(0,0,0,.7);
+    --ring:0 0 0 3px rgba(120,172,214,.22);
+    --hl:inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:radial-gradient(125% 95% at 100% -8%,#15181f,var(--bg) 58%);color:var(--txt);
+       font:14px/1.6 Pretendard,"Pretendard Variable",-apple-system,"Segoe UI","Malgun Gothic",sans-serif;
+       display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  a{color:var(--accent);text-decoration:none;cursor:pointer}
+  a:hover{text-decoration:underline}
+  ::selection{background:var(--gold);color:#14100a}
+
+  /* 헤더 + 탭 */
+  header{padding:0 22px;background:linear-gradient(180deg,#161a21,#111318);border-bottom:1px solid var(--line);
+         box-shadow:0 1px 0 rgba(0,0,0,.4);
+         display:flex;flex-wrap:wrap;gap:18px;align-items:center;min-height:56px;position:relative;z-index:5}
+  header h1{font-size:16px;margin:0;color:var(--txt);letter-spacing:-.3px;white-space:nowrap;font-weight:800;
+            display:flex;align-items:center;gap:9px}
+  header h1 .logo{width:27px;height:27px;border-radius:8px;background:linear-gradient(135deg,#ecd6a2,#b18f52);
+            color:#231a09;display:grid;place-items:center;font-size:15px;
+            box-shadow:0 2px 8px -1px rgba(216,189,133,.4),inset 0 1px 0 rgba(255,255,255,.35)}
+  header h1 small{color:var(--dim);font-weight:500;font-size:11px;margin-left:2px}
+  #tabs{display:flex;gap:2px;align-items:stretch;align-self:stretch}
+  .tab{background:none;border:none;color:var(--dim);font:700 13.5px/1 inherit;font-family:inherit;
+       padding:0 17px;cursor:pointer;border-bottom:2.5px solid transparent;display:flex;align-items:center}
+  .tab:hover{color:var(--txt)}
+  .tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+  /* 뷰(탭 본문) */
+  .view{flex:1;display:none;flex-direction:column;min-height:0}
+  .view.active{display:flex}
+  .toolbar{padding:13px 22px;background:linear-gradient(180deg,#14171d,#101318);border-bottom:1px solid var(--line);
+           display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .split{flex:1;display:flex;min-height:0}
+  #list,#clist{width:390px;min-width:310px;max-width:42%;overflow:auto;border-right:1px solid var(--line);background:#0e1116}
+  #detail,#cdetail{flex:1;overflow:auto;padding:24px 28px;background:var(--bg)}
+
+  /* 검색/필터 */
+  .search{flex:1;min-width:220px;position:relative}
+  .search input{width:100%;padding:10px 12px 10px 36px;background:var(--panel2);border:1px solid var(--line);
+                border-radius:9px;color:var(--txt);font-size:14px;outline:none;font-family:inherit}
+  .search input::placeholder{color:#5f6674}
+  .search input:focus{border-color:var(--accent);box-shadow:var(--ring)}
+  .search::before{content:"🔍";position:absolute;left:12px;top:9px;opacity:.5;font-size:13px}
+  select{padding:9px 11px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--txt);
+         font-family:inherit;cursor:pointer}
+  select:focus{border-color:var(--accent);outline:none;box-shadow:var(--ring)}
+  label.chk{display:flex;align-items:center;gap:6px;color:var(--dim);font-size:12px;cursor:pointer;user-select:none}
+  .btn{padding:10px 20px;background:linear-gradient(180deg,#e3c88f,#c8a563);color:#231a09;border:none;border-radius:9px;
+       font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.3)}
+  .btn:hover{filter:brightness(1.06)}
+
+  /* 목록 카드 */
+  .meta{padding:9px 16px;color:var(--dim);font-size:12px;border-bottom:1px solid var(--line);position:sticky;top:0;
+        background:#0e1116;z-index:2;font-weight:600}
+  .card{display:flex;gap:11px;padding:11px 15px;border-bottom:1px solid var(--line2);cursor:pointer;align-items:center;
+        transition:background .1s}
+  .card:hover{background:#ffffff07}
+  .card.active{background:#161d29;box-shadow:inset 3px 0 0 var(--gold)}
+  .card .nm{font-weight:700}
+  .card .sub{color:var(--dim);font-size:11.5px;margin-top:1px}
+  .ico{width:42px;height:42px;border-radius:8px;background:#0c0f14;border:1px solid var(--line);flex-shrink:0;object-fit:contain}
+  .ico.sm{width:34px;height:34px}
+  .ico.lg{width:66px;height:66px;border-radius:10px}
+  .tag{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:5px;background:#242a34;color:var(--dim);margin-left:6px;font-weight:600}
+  .race{color:var(--accent);font-weight:600}
+  .price-badge{margin-left:auto;text-align:right;font-size:11.5px;color:var(--gold);white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}
+  .price-badge .u{color:var(--dim);font-size:10px;font-weight:500}
+  .section-h{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;
+             padding:14px 15px 6px;position:sticky;top:0;background:#0e1116}
+
+  /* 공통 섹션 헤더 */
+  .sec{margin-top:26px;animation:fade .22s ease both}
+  .sec h3{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+          font-size:12px;color:var(--txt);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 14px;
+          border-bottom:1px solid var(--line);padding-bottom:9px;font-weight:800}
+  .sec h3 span{display:inline-block;border-bottom:2px solid var(--gold);padding-bottom:9px;margin-bottom:-10px}
+  .sec h3 em{font-style:normal;color:var(--dim);font-size:11px;letter-spacing:0;text-transform:none;font-weight:500;border:none}
+
+  /* ── 제작 탭 상세 ── */
+  .prod{display:flex;gap:16px;align-items:center;margin-bottom:6px}
+  .prod h2{margin:0;font-size:21px;font-weight:800}
+  .prod .path{color:var(--dim);font-size:12.5px;margin-top:3px}
+  .badges{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}
+  .costbar{display:flex;gap:26px;flex-wrap:wrap;margin:18px 0;padding:16px 22px;background:var(--panel);
+           border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow),var(--hl)}
+  .costbar .b{display:flex;flex-direction:column}
+  .costbar .k{color:var(--dim);font-size:11px;font-weight:600}
+  .costbar .v{font-size:22px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;margin-top:3px}
+  .costbar .v.teal{color:var(--aether)} .costbar .v.warn{color:var(--danger)}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:6px;background:var(--panel);
+        border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line2);vertical-align:middle}
+  th{color:var(--dim);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center;
+     background:#161a21}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:#ffffff05}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.done td{opacity:.5}
+  tr.done .need{color:var(--g2);font-weight:700}
+  input.own{width:74px;padding:5px 7px;background:#0e1218;border:1px solid var(--line);border-radius:7px;
+            color:var(--txt);text-align:right;font-variant-numeric:tabular-nums;font-family:inherit}
+  input.own:focus{border-color:var(--accent);outline:none;box-shadow:var(--ring)}
+  input.price-in{width:110px;padding:5px 7px;background:#0e1218;border:1px solid var(--gold);border-radius:7px;
+                 color:var(--gold);text-align:right;font-variant-numeric:tabular-nums;font-family:inherit;font-weight:700}
+  td.price-cell{cursor:pointer;position:relative}
+  td.price-cell:hover{background:#161d29;box-shadow:inset 0 0 0 1px var(--line)}
+  td.price-cell::after{content:"✎";position:absolute;right:6px;opacity:0;color:var(--dim);font-size:11px}
+  td.price-cell:hover::after{opacity:.6}
+  td.price-cell.ovr{color:var(--aether);font-weight:700}
+  .matname{display:flex;align-items:center;gap:10px}
+  .matname a{font-weight:600}
+  .cnt{color:var(--gold);font-weight:700}
+  .nomkt{color:#5f6674}
+  .combo{margin-top:20px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+         display:flex;align-items:center;gap:12px;box-shadow:var(--shadow),var(--hl)}
+  .empty{color:var(--dim);text-align:center;margin-top:80px;line-height:1.8}
+  .pill{font-size:10px;padding:1px 8px;border-radius:20px;background:#1a2432;color:var(--accent);font-weight:600}
+  .price-table td{font-size:12.5px;padding:6px 12px}
+  .muted{color:var(--dim)}
+  .g1{color:var(--g1)}.g2{color:var(--g2)}.g3{color:var(--g3)}.g4{color:var(--g4)}
+  .g5{color:var(--g5)}.g6{color:var(--g6)}.g7{color:var(--g7)}
+  .bar-g1{background:var(--g1)}.bar-g2{background:var(--g2)}.bar-g3{background:var(--g3)}
+  .bar-g4{background:var(--g4)}.bar-g5{background:var(--g5)}.bar-g6{background:var(--g6)}.bar-g7{background:var(--g7)}
+  .gline{width:4px;height:54px;border-radius:3px;flex-shrink:0}
+  .warnnote{color:var(--danger);font-size:12px;margin-left:8px;font-weight:600}
+
+  /* ── 캐릭터 탭: 도시에(Dossier) ── */
+  .dossier{display:flex;gap:24px;align-items:center;flex-wrap:wrap;padding:24px 26px;
+           background:radial-gradient(135% 150% at 0% 0%,#1c2130,var(--panel) 62%);
+           border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow),var(--hl);animation:fade .25s ease both}
+  .portrait{width:106px;height:106px;border-radius:16px;object-fit:cover;background:#0c0f14;border:2px solid var(--gold);
+            box-shadow:0 0 0 3px rgba(216,189,133,.18),0 12px 28px -8px rgba(0,0,0,.75)}
+  .who{min-width:210px}
+  .who .nm{font-size:28px;font-weight:800;letter-spacing:-.7px;line-height:1.1}
+  .who .meta{color:var(--dim);font-size:13px;margin-top:8px;line-height:1.65;font-weight:500;
+             background:transparent;position:static;padding:0;border:none}
+  .badge{display:inline-block;font-size:11px;font-weight:800;padding:2px 10px;border-radius:6px;margin-right:7px;vertical-align:1px}
+  .badge.elyos{background:#2c2513;color:var(--gold);border:1px solid #574929}
+  .badge.asmo{background:#2f1a1e;color:#e59a9a;border:1px solid #573037}
+  .title-line{color:var(--gold);font-size:13px;margin-top:7px;font-weight:600}
+  .cp{margin-left:auto;text-align:right;padding-left:20px}
+  .cp .lab{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;font-weight:700}
+  .cp .num{font-size:44px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1;
+           text-shadow:0 0 32px rgba(216,189,133,.28)}
+  .cp .rk{margin-top:8px;font-size:12px;color:var(--accent);font-weight:600}
+
+  /* 능력치 */
+  .stat-grid{display:grid;gap:9px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .statc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 14px;box-shadow:var(--shadow),var(--hl)}
+  .statc .k2{color:var(--dim);font-size:11px;font-weight:600}
+  .statc .v2{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+  .statc .v2.teal{color:var(--aether)}
+  .statc .s2{color:var(--dim);font-size:10.5px;margin-top:4px;line-height:1.45}
+
+  /* 장비 코덱스 */
+  .gear-cat{font-size:11px;color:var(--gold);letter-spacing:1.5px;font-weight:800;margin:22px 0 10px;text-transform:uppercase;
+            display:flex;align-items:center;gap:8px}
+  .gear-cat::before{content:"";width:3px;height:13px;background:var(--gold);border-radius:2px}
+  .gear-cat:first-child{margin-top:0}
+  .gear-grid{display:grid;gap:11px;grid-template-columns:repeat(auto-fill,minmax(335px,1fr))}
+  .gear{background:linear-gradient(180deg,var(--panel),#12151b);border:1px solid var(--line);
+        border-left:3px solid var(--c,var(--line));border-radius:12px;padding:13px 15px;position:relative;overflow:hidden;
+        box-shadow:var(--shadow);transition:box-shadow .13s,transform .13s}
+  .gear:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+  .gear-h{display:flex;gap:11px;align-items:center}
+  .gear-h img{width:46px;height:46px;border-radius:9px;background:#0c0f14;border:1px solid var(--line);object-fit:contain;flex-shrink:0}
+  .gear-t{min-width:0}
+  .gear-nm{font-weight:800;font-size:14px;color:var(--c,var(--txt));line-height:1.2}
+  .gear-mt{color:var(--dim);font-size:11px;margin-top:2px}
+  .gear-en{margin-left:auto;text-align:right;font-weight:900;color:var(--gold);font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .gear-en .ex{display:block;color:var(--aether);font-size:11px;font-weight:800}
+  .gear-main{display:grid;grid-template-columns:1fr 1fr;gap:1px 18px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line2)}
+  .ms{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:2px 0}
+  .mk{color:var(--dim)}
+  .mv{font-weight:800;font-variant-numeric:tabular-nums}
+  .mv i{color:var(--aether);font-style:normal;font-weight:700;margin-left:3px;font-size:11px}
+  .gear-sub{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:11px}
+  .lab{font-size:10px;color:var(--dim);letter-spacing:1px;font-weight:800;margin-right:2px;text-transform:uppercase}
+  .chip{font-size:11px;background:#0f131a;border:1px solid var(--line2);border-radius:20px;padding:2px 10px;color:var(--txt)}
+  .chip b{color:var(--aether);font-weight:800;margin-left:2px}
+  .chip.stone{border-color:color-mix(in srgb,var(--c) 50%,transparent)}
+  .chip.stone::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:6px;vertical-align:middle}
+  .chip.stone b{color:var(--c)}
+  .chip.empty{color:#5f6674;border-style:dashed;background:transparent}
+  .gear-god{display:flex;flex-direction:column;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line2)}
+  .godstone{display:flex;gap:9px;align-items:flex-start}
+  .godstone img{width:28px;height:28px;object-fit:contain;flex-shrink:0}
+  .gn{font-weight:800;color:var(--c,var(--txt));font-size:12.5px}
+  .gd{color:var(--dim);font-size:11px;line-height:1.5;white-space:pre-line;margin-top:2px}
+  .gear-none{color:var(--dim);font-size:11.5px;margin-top:9px}
+
+  /* 스킬 */
+  .skill-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(58px,1fr))}
+  .sk{text-align:center;position:relative}
+  .sk img{width:48px;height:48px;border-radius:11px;background:#0c0f14;border:1px solid var(--line);object-fit:contain}
+  .sk .lv{position:absolute;right:5px;top:32px;background:rgba(0,0,0,.8);color:#fff;font-size:10px;border-radius:5px;padding:0 4px;font-weight:800}
+  .sk .nm{font-size:10px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* 데바니온 */
+  .dv{display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid var(--line2)}
+  .dv img{width:32px;height:32px;object-fit:contain;flex-shrink:0}
+  .dv .dn{width:100px;font-weight:600;font-size:13px}
+  .dvbar{flex:1;height:9px;background:#0c0f14;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .dvbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--aether),var(--gold))}
+  .dv .dc{color:var(--dim);font-size:11.5px;width:132px;text-align:right;font-variant-numeric:tabular-nums}
+
+  /* 스탯 진단 */
+  .diag{background:linear-gradient(180deg,#171b23,#12151b);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow),var(--hl)}
+  .diag .lead{color:var(--dim);font-size:12px;line-height:1.6;margin-bottom:14px}
+  .diag .lead b{color:var(--txt)}
+  .diag h4{font-size:12px;font-weight:800;margin:18px 0 10px;color:var(--gold)}
+  .diag h4:first-of-type{margin-top:0}
+  .rec-grid{display:grid;gap:9px;grid-template-columns:repeat(auto-fill,minmax(176px,1fr))}
+  .rec{background:#241a1c;border:1px solid #543037;border-left:3px solid var(--danger);border-radius:10px;padding:10px 13px}
+  .rec-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .rec-h b{font-size:14px;color:#e6a0a0} .rec-h span{font-variant-numeric:tabular-nums;font-weight:800}
+  .rec-g{color:var(--dim);font-size:11px;margin-top:2px}
+  .recbar{height:6px;background:#0c0f14;border-radius:4px;margin-top:8px;overflow:hidden}
+  .recbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--danger),#eaa0a0)}
+  .memo{margin:0;padding-left:18px;color:var(--dim);font-size:11.5px;line-height:1.75}
+  .memo b{color:var(--txt)}
+  .diagmode{display:flex;gap:6px;margin-bottom:14px}
+  .dm{background:#12151b;border:1px solid var(--line);color:var(--dim);font:700 12px/1 inherit;font-family:inherit;
+      padding:9px 15px;border-radius:9px;cursor:pointer}
+  .dm:hover{color:var(--txt);border-color:#3a414d}
+  .dm.on{background:var(--gold);color:#231a09;border-color:var(--gold)}
+  .atk-est{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin-bottom:4px}
+  .ae{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+  .ae-k{color:var(--dim);font-size:11px;font-weight:600}
+  .ae-v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+  .ae-v.teal{color:var(--aether)} .ae-v.gold{color:var(--gold)}
+  .tgt{width:100%;border-collapse:collapse;background:transparent;border:none;box-shadow:none;border-radius:0}
+  .tgt td{padding:7px 9px;border-bottom:1px solid var(--line2);font-size:12.5px}
+  .tgt td.num{color:var(--gold);font-weight:800;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+  .statc.flag{border-color:var(--danger);box-shadow:inset 0 0 0 1px var(--danger)}
+  .statc.flag .k2::after{content:"보강";float:right;font-size:9px;font-weight:800;color:#e6a0a0;
+                          background:#3a1e22;border-radius:4px;padding:0 5px}
+  .statc.prio .k2::before{content:"★ ";color:var(--gold)}
+
+  /* 스킬 호버 툴팁 */
+  .sk[data-si]{cursor:help}
+  .skilltip{position:fixed;z-index:1000;max-width:340px;max-height:80vh;overflow:hidden;
+    background:linear-gradient(180deg,#171b23,#12151b);border:1px solid #333a46;border-radius:12px;padding:13px 15px;
+    box-shadow:0 18px 44px -12px rgba(0,0,0,.85),var(--hl);pointer-events:none;font-size:12.5px;line-height:1.55;
+    color:var(--txt);animation:fade .1s ease both}
+  .skilltip .tip-h{display:flex;gap:10px;align-items:center;margin-bottom:9px}
+  .skilltip .tip-h img{width:38px;height:38px;border-radius:8px;background:#0c0f14;border:1px solid var(--line);object-fit:contain;flex-shrink:0}
+  .tip-nm{font-weight:800;font-size:14px;color:var(--gold);line-height:1.2}
+  .tip-mt{color:var(--dim);font-size:11px;margin-top:2px}
+  .tip-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
+  .tip-tag{font-size:10.5px;background:#1a2432;color:var(--accent);border-radius:5px;padding:1px 7px;font-weight:600}
+  .tip-prop{font-size:10.5px;color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:1px 7px}
+  .tip-desc{color:#c7ccd6;margin-bottom:9px}
+  .tip-desc.muted{color:var(--dim)}
+  .tip-attrs{display:flex;flex-direction:column;gap:3px;margin-bottom:9px;padding:8px 11px;background:#0f131a;border-radius:8px}
+  .tip-attrs>div{display:flex;justify-content:space-between;gap:12px;font-size:11.5px}
+  .tip-attrs span{color:var(--dim)} .tip-attrs b{font-weight:700}
+  .tip-sec{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--gold);text-transform:uppercase;margin:2px 0 7px;
+    border-top:1px solid var(--line2);padding-top:9px}
+  .tip-spec{display:flex;gap:9px;padding:3px 0;color:#c7ccd6}
+  .tip-spec.off{opacity:.4}
+  .tip-splv{color:var(--accent);font-weight:800;flex-shrink:0;font-variant-numeric:tabular-nums;min-width:36px}
+  .tip-spec.off .tip-splv{color:var(--dim)}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="logo">⚔</span> 아이온2 뷰어 <small id="hcount"></small></h1>
+  <nav id="tabs"></nav>
+</header>
+
+<!-- 제작 탭 -->
+<section class="view" id="view-craft">
+  <div class="toolbar">
+    <div class="search"><input id="q" placeholder="아이템 이름 검색 (예: 창룡왕, 오드, 제련석)" autocomplete="off"></div>
+    <select id="class1"><option value="">전체 분야</option></select>
+    <select id="race"><option value="">전체 종족</option><option>천족</option><option>마족</option></select>
+    <label class="chk"><input type="checkbox" id="any"> 재료도 검색</label>
+  </div>
+  <div class="split">
+    <div id="list"></div>
+    <div id="detail"><div class="empty">← 왼쪽에서 아이템을 선택하세요.<br>검색창에 이름을 입력해 필터링할 수 있습니다.</div></div>
+  </div>
+</section>
+
+<!-- 캐릭터 탭 (공식 aion2.plaync.com 데이터 조회) · 메인 -->
+<section class="view active" id="view-char">
+  <div class="toolbar">
+    <div class="search"><input id="cq" placeholder="캐릭터 닉네임 검색 (예: 보리뚜)" autocomplete="off"></div>
+    <button id="cbtn" class="btn">검색</button>
+  </div>
+  <div class="split">
+    <div id="clist"></div>
+    <div id="cdetail"><div class="empty">캐릭터 닉네임을 검색해 선택하세요.<br>장비 상세 능력치·능력치·스킬·데바니온·랭킹을 한 화면에 펼쳐 보여줍니다.</div></div>
+  </div>
+</section>
+
+<!-- ── 향후 탭 추가 방법 ───────────────────────────────────────────
+  1) 아래처럼 뷰 섹션을 하나 더 붙이고 (id 는 "view-<탭id>"):
+       <section class="view" id="view-price"> …시세 조회 UI… </section>
+  2) 스크립트의 TABS 배열에 { id:"price", label:"💰 시세" } 한 줄만 추가.
+     → 탭 버튼 생성·활성 전환은 자동으로 연결된다.
+─────────────────────────────────────────────────────────────── -->
+
+<script>
+const GRADE={1:"일반",2:"희귀",3:"전승",4:"유일",5:"영웅",6:"신화",7:"스페셜"};
+const fmt=n=>n==null?"–":n.toLocaleString("ko-KR");
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const img=f=>f?("/"+f):"";
+let META={}, curCode=null, debounce=null;
+// 보유량: 아이템 코드별 사용자가 가진 수량(브라우저에 저장, 아이템 단위 전역)
+let OWN=JSON.parse(localStorage.getItem("aion2_own")||"{}");
+
+async function j(u){const r=await fetch(u);return r.json();}
+
+// ── 탭(기능 구분) ─────────────────────────────────────────────
+// 새 기능은 여기 한 줄 추가 + 위 HTML 에 <section class="view" id="view-<id>"> 만 붙이면 된다.
+const TABS=[
+  {id:"char",  label:"🧝 캐릭터"},
+  {id:"craft", label:"⚒️ 제작"},
+];
+function showView(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+id));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view===id));
+}
+function renderTabs(){
+  const nav=document.getElementById("tabs");
+  nav.innerHTML="";
+  TABS.forEach((t,i)=>{
+    const b=el("button","tab"+(i===0?" active":"")); b.dataset.view=t.id; b.textContent=t.label;
+    b.onclick=()=>showView(t.id);
+    nav.appendChild(b);
+  });
+}
+
+function setOwn(code,val){
+  const v=val.trim();
+  if(v==="" || +v<=0) delete OWN[code]; else OWN[code]=+v;
+  localStorage.setItem("aion2_own",JSON.stringify(OWN));
+  recalc();
+}
+
+// 보유량 반영해 재료비/부족분/합계를 실시간 재계산
+function recalc(){
+  let mat=0, priced=0, total=0;
+  document.querySelectorAll("#mattable tbody tr.mat").forEach(tr=>{
+    const count=+tr.dataset.count;
+    const price=tr.dataset.price===""?null:+tr.dataset.price;
+    const own=OWN[tr.dataset.code]||0;
+    const need=Math.max(0,count-own);
+    total++;
+    tr.querySelector(".need").textContent=fmt(need);
+    tr.classList.toggle("done", own>=count);
+    const lc=tr.querySelector(".line");
+    if(price==null){ lc.innerHTML='<span class="nomkt">–</span>'; }
+    else { priced++; const line=need*price; mat+=line; lc.textContent=fmt(line); }
+  });
+  const under=priced<total;
+  const mEl=document.getElementById("cost-mat");
+  if(mEl){ mEl.textContent=fmt(mat); mEl.className="v"+(under?" warn":""); }
+  const cEl=document.getElementById("cost-cov");
+  if(cEl) cEl.innerHTML=priced+"/"+total+(under?'<span class="warnnote">과소추정</span>':"");
+}
+
+// 시장가 인라인 편집 → 저장 시 백엔드 price_overrides 로 전역 반영
+function editPrice(code){
+  const tr=document.querySelector(`#mattable tbody tr.mat[data-code="${code}"]`);
+  if(!tr) return;
+  const cell=tr.querySelector(".price-cell");
+  if(cell.querySelector("input")) return;
+  const cur=tr.dataset.price===""?"":tr.dataset.price;
+  cell.innerHTML=`<input class="price-in" type="number" min="0" value="${cur}" placeholder="비우면 원복">`;
+  const inp=cell.querySelector("input"); inp.focus(); inp.select();
+  let done=false;
+  const finish=async(save)=>{
+    if(done) return; done=true;
+    if(save){
+      const v=inp.value.trim();
+      try{
+        await fetch("/api/set_price",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({item_code:+code, price: v===""?null:+v})});
+      }catch(e){ alert("저장 실패: "+e); }
+    }
+    if(curCode) openRecipe(curCode);   // 전역 반영된 시세로 새로고침
+  };
+  inp.addEventListener("keydown",e=>{
+    if(e.key==="Enter"){ e.preventDefault(); finish(true); }
+    else if(e.key==="Escape"){ finish(false); }
+  });
+  inp.addEventListener("blur",()=>finish(true));
+}
+
+async function boot(){
+  META=await j("/api/meta");
+  document.getElementById("hcount").textContent=
+     `레시피 ${fmt(META.recipe_count)}건`+(META.has_prices?` · 시세 최신 ${(''+META.price_latest).slice(0,10)}`:"");
+  const sel=document.getElementById("class1");
+  META.class1.forEach(c=>{const o=el("option");o.value=c.class1_text;o.textContent=c.class1_text;sel.appendChild(o);});
+  search();
+}
+function on(id,ev,fn){document.getElementById(id).addEventListener(ev,fn);}
+on("q","input",()=>{clearTimeout(debounce);debounce=setTimeout(search,200);});
+on("class1","change",search); on("race","change",search); on("any","change",search);
+
+async function search(){
+  const q=document.getElementById("q").value.trim();
+  const c1=document.getElementById("class1").value;
+  const race=document.getElementById("race").value;
+  const any=document.getElementById("any").checked?"any":"recipe";
+  const data=await j(`/api/search?q=${encodeURIComponent(q)}&class1=${encodeURIComponent(c1)}&race=${encodeURIComponent(race)}&only=${any}`);
+  renderList(data);
+}
+
+function gradeClass(g){return "g"+(g||1);}
+function renderList(data){
+  const list=document.getElementById("list");
+  list.innerHTML="";
+  const meta=el("div","meta",`제작 가능 ${data.recipes.length}건`+(data.materials.length?` · 재료 ${data.materials.length}건`:"")+(data.recipes.length>=300?" (상위 300)":""));
+  list.appendChild(meta);
+  if(!data.recipes.length && !data.materials.length){
+    list.appendChild(el("div","empty","결과 없음")); return;
+  }
+  data.recipes.forEach(r=>{
+    const card=el("div","card");
+    card.dataset.code=r.code;
+    if(r.code==curCode)card.classList.add("active");
+    const price=r.product_price!=null?`<div class="price-badge">${fmt(r.product_price)}<span class="u"> 키나</span></div>`:"";
+    card.innerHTML=`<img class="ico" src="${img(r.image_file)}" onerror="this.style.visibility='hidden'">
+      <div><div class="nm ${gradeClass(r.grade)}">${r.name}</div>
+      <div class="sub">${r.full_text||''} <span class="race">${r.race_text||''}</span>
+      ${r.grade_text?`<span class="tag">${r.grade_text}</span>`:''}</div></div>${price}`;
+    card.onclick=()=>openRecipe(r.code,card);
+    list.appendChild(card);
+  });
+  if(data.materials.length){
+    list.appendChild(el("div","section-h","재료로 쓰이는 아이템"));
+    data.materials.forEach(m=>{
+      const card=el("div","card");
+      card.innerHTML=`<img class="ico sm" src="${img(m.image_file)}" onerror="this.style.visibility='hidden'">
+        <div><div class="nm ${gradeClass(m.grade)}">${m.name}</div>
+        <div class="sub">${m.used_in}개 레시피의 재료</div></div>`;
+      card.onclick=()=>openItem(m.code);
+      list.appendChild(card);
+    });
+  }
+}
+
+async function openRecipe(code,card){
+  curCode=code;
+  document.querySelectorAll(".card.active").forEach(c=>c.classList.remove("active"));
+  if(card)card.classList.add("active");
+  const d=await j("/api/recipe?code="+code);
+  const r=d.recipe, cost=d.cost;
+  const D=document.getElementById("detail"); D.innerHTML="";
+  // 헤더
+  const head=el("div","prod");
+  head.innerHTML=`<div class="gline bar-${gradeClass(r.grade).slice(1)}"></div>
+    <img class="ico lg" src="${img(d.product?d.product.image_file:'')}" onerror="this.style.visibility='hidden'">
+    <div><h2 class="${gradeClass(r.grade)}">${r.name}</h2>
+    <div class="path">${r.full_text||''} · <span class="race">${r.race_text||''}</span></div>
+    <div class="badges">
+      ${r.type_text?`<span class="tag">${r.type_text}</span>`:''}
+      ${r.grade_text?`<span class="tag">제작등급 ${r.grade_text}</span>`:''}
+      ${r.mastery_level?`<span class="tag">숙련 LV ${r.mastery_level}</span>`:''}
+      <span class="tag">code ${r.code}</span>
+    </div></div>`;
+  D.appendChild(head);
+  const hasP=META.has_prices;
+  // 비용 바 (값은 recalc 가 보유량 반영해 채움)
+  if(cost){
+    const bar=el("div","costbar");
+    bar.innerHTML=`
+      <div class="b"><span class="k">재료비 추정 (부족분 기준)</span><span class="v" id="cost-mat">–</span></div>
+      <div class="b"><span class="k">키나(제작비)</span><span class="v teal">${fmt(cost.kina_cost)}</span></div>
+      <div class="b"><span class="k">가격 확보 재료</span><span class="v" id="cost-cov" style="font-size:16px">–</span></div>`;
+    D.appendChild(bar);
+  }
+  // 재료 테이블
+  const tbl=el("table"); tbl.id="mattable";
+  tbl.innerHTML=`<thead><tr><th>재료</th><th>필요</th><th>보유량</th><th>부족분</th>
+    ${hasP?'<th>단가</th><th>합계</th><th>시장</th>':''}</tr></thead>`;
+  const tb=el("tbody");
+  d.materials.forEach(m=>{
+    const kina=m.name==="키나(통합)";
+    const tr=el("tr");
+    const nameCell=`<td><div class="matname">
+        <img class="ico sm" src="${img(m.image_file)}" onerror="this.style.visibility='hidden'">
+        <a onclick="openItem(${m.code})" class="${gradeClass(m.grade)}">${m.name}</a></div></td>`;
+    if(kina){
+      tr.innerHTML=nameCell+`<td class="num cnt">${fmt(m.count)}</td>
+        <td class="num nomkt">–</td><td class="num nomkt">–</td>
+        ${hasP?'<td class="num nomkt">–</td><td class="num nomkt">–</td><td class="nomkt">제작비</td>':''}`;
+    }else{
+      tr.className="mat";
+      tr.dataset.code=m.code; tr.dataset.count=m.count;
+      tr.dataset.price=(m.best_price==null?"":m.best_price);
+      const ownVal=OWN[m.code]||"";
+      tr.innerHTML=nameCell+`<td class="num cnt">${fmt(m.count)}</td>
+        <td class="num"><input class="own" type="number" min="0" value="${ownVal}"
+             oninput="setOwn('${m.code}',this.value)"></td>
+        <td class="num need"></td>
+        ${hasP?`<td class="num price-cell ${m.is_override?'ovr':''}"
+             title="클릭해 시장가 수정 → 전체 적용" onclick="editPrice(${m.code})">${m.best_price==null?'<span class="nomkt">설정</span>':fmt(m.best_price)}</td>
+          <td class="num line"></td>
+          <td>${m.best_market?`<span class="pill">${m.best_market}</span>`:'<span class="nomkt">–</span>'}</td>`:''}`;
+    }
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb); D.appendChild(tbl);
+  recalc();
+  // 콤보 산출물
+  if(d.combo_product){
+    const c=el("div","combo");
+    c.innerHTML=`<img class="ico" src="${img(d.combo_product.image_file)}" onerror="this.style.visibility='hidden'">
+      <div><div class="muted" style="font-size:11px">콤보(대성공) 산출물 · 확률 ${r.combo_probability!=null?r.combo_probability+'%':'?'}</div>
+      <div style="font-weight:600">${d.combo_product.name}</div></div>`;
+    D.appendChild(c);
+  }
+  D.scrollTop=0;
+}
+
+async function openItem(code){
+  const d=await j("/api/item?code="+code);
+  if(d.error)return;
+  const it=d.item;
+  const D=document.getElementById("detail"); D.innerHTML="";
+  const head=el("div","prod");
+  head.innerHTML=`<img class="ico lg" src="${img(it.image_file)}" onerror="this.style.visibility='hidden'">
+    <div><h2 class="${gradeClass(it.grade)}">${it.name}</h2>
+    <div class="path">아이템 code ${it.code} · 등급 ${GRADE[it.grade]||'?'}</div></div>`;
+  D.appendChild(head);
+
+  if(d.made_by.length){
+    D.appendChild(el("div","section-h","이 아이템을 만드는 레시피"));
+    d.made_by.forEach(r=>{
+      const a=el("div","card");a.innerHTML=`<div><div class="nm">${r.name}</div><div class="sub">${r.full_text} <span class="race">${r.race_text}</span></div></div>`;
+      a.onclick=()=>openRecipe(r.code);D.appendChild(a);
+    });
+  }
+  // 시세 이력
+  if(META.has_prices){
+    D.appendChild(el("div","section-h","거래소 시세 (최근순)"));
+    if(d.prices.length){
+      const t=el("table","price-table");
+      t.innerHTML="<thead><tr><th>시장</th><th>서버</th><th>종족</th><th class='num'>가격</th><th>수집일</th></tr></thead>";
+      const tb=el("tbody");
+      d.prices.forEach(p=>{tb.innerHTML+=`<tr><td>${p.market_type}</td><td class="muted">${p.server_id||'월드'}</td>
+        <td class="muted">${p.race||'–'}</td><td class="num">${fmt(p.price)}</td><td class="muted">${(p.updated_at||'').slice(0,10)}</td></tr>`;});
+      t.appendChild(tb);D.appendChild(t);
+    }else D.appendChild(el("div","muted","시세 데이터 없음"));
+  }
+  // 사용처
+  if(d.used_in.length){
+    D.appendChild(el("div","section-h",`재료로 쓰이는 레시피 (${d.used_in.length})`));
+    d.used_in.forEach(r=>{
+      const a=el("div","card");
+      a.innerHTML=`<div><div class="nm">${r.name}</div><div class="sub">${r.full_text} <span class="race">${r.race_text}</span></div></div><div class="price-badge cnt">×${fmt(r.count)}</div>`;
+      a.onclick=()=>openRecipe(r.code);D.appendChild(a);
+    });
+  }
+  D.scrollTop=0;
+}
+
+// ══ 캐릭터 탭 ═══════════════════════════════════════════════════
+// 등급 색상(공식 영문 등급명 → 색)
+const GRADEC={Common:"#a8b0be",Normal:"#a8b0be",Rare:"#6ec98a",Superior:"#5aa6e0",
+  Epic:"#b98ae0",Heroic:"#b98ae0",Unique:"#e6c579",Legend:"#e2915a",Legendary:"#e2915a",
+  Mythic:"#e07a72",Special:"#6cc2d4"};
+const gc=g=>GRADEC[g]||"var(--dim)";
+// 이름이 안 내려오는 스탯 id 한글 폴백
+const STATKO={WeaponFixingDamage:"공격력",ArmorDefense:"방어력",WeaponAccuracy:"명중",Critical:"치명타",
+  Block:"막기",HPMax:"생명력",MPMax:"정신력",STR:"위력",DEX:"민첩",INT:"지식",CON:"체력",WIL:"의지"};
+const statName=s=>s.name||STATKO[s.id]||s.id;
+// 슬롯 → 한글
+const SLOTKO={MainHand:"주무기",SubHand:"보조무기",Helmet:"머리",Torso:"몸통",Shoulder:"어깨",Gloves:"장갑",
+  Pants:"다리",Boots:"신발",Belt:"허리",Cape:"망토",Necklace:"목걸이",Earring1:"귀걸이",Earring2:"귀걸이",
+  Ring1:"반지",Ring2:"반지",Bracelet1:"팔찌",Bracelet2:"팔찌",Brooch1:"브로치",Brooch2:"브로치",
+  Amulet:"아뮬렛",Pendant:"펜던트",Rune1:"룬",Rune2:"룬",
+  Arcana1:"아르카나",Arcana2:"아르카나",Arcana3:"아르카나",Arcana4:"아르카나",
+  Arcana5:"아르카나",Arcana6:"아르카나",Arcana7:"아르카나",Arcana8:"아르카나"};
+// 부위 그룹(정보 = 구조)
+const SLOTCAT=[
+  {name:"무기",   slots:["MainHand","SubHand"]},
+  {name:"방어구", slots:["Helmet","Torso","Shoulder","Gloves","Pants","Boots","Belt","Cape"]},
+  {name:"장신구", slots:["Necklace","Earring1","Earring2","Ring1","Ring2","Bracelet1","Bracelet2","Brooch1","Brooch2","Amulet","Pendant"]},
+  {name:"룬",     slots:["Rune1","Rune2"]},
+  {name:"아르카나",slots:["Arcana1","Arcana2","Arcana3","Arcana4","Arcana5","Arcana6","Arcana7","Arcana8"]},
+];
+const sec=(title,html,note)=>{const s=el("div","sec");
+  s.innerHTML=`<h3><span>${title}</span>${note?`<em>${note}</em>`:''}</h3>`+html;return s;};
+const oe=`onerror="this.style.visibility='hidden'"`;
+const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+// ══ 스탯 진단(휴리스틱) ══════════════════════════════════════════
+// 근거: 게임 내 스탯 설명(공/방 짝 체계) + 커뮤니티 실험 자료(savetip/fmkorea/inven).
+// 캐릭터 API 는 총 치명타·명중 등 파생 절대수치를 주지 않으므로, 절대 소프트캡 비교 대신
+// "역할별 우선 스탯 중 이 캐릭터에서 상대적으로 뒤처진 것"을 짚어준다.
+const ROLE_BY_CLASS={"수호성":"탱커","검성":"근딜","살성":"근딜","궁성":"원딜",
+  "정령성":"마딜","마도성":"마딜","치유성":"힐러","호법성":"서폿"};
+const STAT_INFO={
+  STR:{k:"위력",gives:"공격력↑"}, AGI:{k:"정확",gives:"명중·치명타↑"}, INT:{k:"지식",gives:"상태이상 적중↑"},
+  DEX:{k:"민첩",gives:"회피·막기·치명저항↑"}, CON:{k:"체력",gives:"생명력↑"}, WIS:{k:"의지",gives:"상태이상 저항↑"},
+  Destruction:{k:"파괴",gives:"공격력·완벽저항↑"}, Death:{k:"죽음",gives:"치명타·재생관통↑"},
+  Wisdom:{k:"지혜",gives:"강타·정신소모↓"}, Time:{k:"시간",gives:"전투속도·강타저항↑"},
+  Illusion:{k:"환상",gives:"재시전↓·철벽관통↑"}, Freedom:{k:"자유",gives:"명중·회피↑"},
+  Justice:{k:"정의",gives:"방어력·완벽↑"}, Destiny:{k:"운명",gives:"정신력·철벽↑"},
+  Space:{k:"공간",gives:"이동속도·막기↑"}, Life:{k:"생명",gives:"생명력·재생↑"}};
+// 역할별 우선 스탯 가중치(3 핵심 / 2 보조) — 딜러 1순위(파괴·죽음·시간·강타)는 커뮤니티 근거, 탱/힐은 스탯 의미 기반 추정
+const DEALER_PRIO={Destruction:3,Wisdom:3,Death:3,Time:3,Illusion:2,Freedom:2,AGI:2,STR:2};
+const PRIO_BY_ROLE={근딜:DEALER_PRIO,원딜:DEALER_PRIO,마딜:DEALER_PRIO,서폿:DEALER_PRIO,딜러:DEALER_PRIO,
+  탱커:{Justice:3,Destiny:3,Space:3,Life:3,Time:2,CON:2,DEX:2},
+  힐러:{Life:3,Destiny:3,Wisdom:2,Illusion:2,WIS:2,CON:1}};
+// 장비에서 챙겨야 할 핵심 부가옵션(키워드)
+const KEY_OPTS={딜러:["무기 피해 증폭","전투 속도","공격력","치명타","위력","강타"],
+  탱커:["생명력","방어력","철벽","막기","피해 내성"], 힐러:["생명력","정신력","재시전","치유"]};
+
+// 진단 모드 상태
+let diagMode="opt";   // 'opt' 전반 최적화 | 'atk' 공격
+let lastChar=null;
+function setDiagMode(m){ if(m===diagMode||!lastChar) return; diagMode=m; renderChar(lastChar); }
+
+// 우선순위표(prio) 대비 이 캐릭터에서 뒤처진 스탯 산출
+function diagByPrio(sl, prio){
+  const byType={}; sl.forEach(s=>{byType[s.type]=s.value;});
+  const pts=Object.keys(prio).filter(t=>byType[t]!=null);
+  const maxV=Math.max(1,...pts.map(t=>byType[t]));
+  const scored=pts.map(t=>({t,w:prio[t],v:byType[t],need:prio[t]*(1-byType[t]/maxV)})).sort((a,b)=>b.need-a.need);
+  const recs=scored.filter(x=>x.need>=0.8).slice(0,4);
+  return {maxV,recs,flags:new Set(recs.map(x=>x.t))};
+}
+function optCoverage(items, keyset){
+  const cnt={};
+  items.forEach(it=>(((it.detail||{}).subStats)||[]).forEach(s=>{const n=statName(s);cnt[n]=(cnt[n]||0)+1;}));
+  return keyset.map(k=>{let c=0;for(const n in cnt) if(n.indexOf(k)>=0) c+=cnt[n]; return {k,c};});
+}
+function recCards(recs,maxV){
+  const best=Math.max(1,maxV,...recs.map(x=>x.v));
+  return recs.map(x=>{const m=STAT_INFO[x.t]||{k:x.t,gives:""};
+    return `<div class="rec"><div class="rec-h"><b>${m.k}</b><span>${fmt(x.v)}</span></div>
+      <div class="rec-g">${m.gives}</div><div class="recbar"><i style="width:${Math.round(x.v/best*100)}%"></i></div></div>`;
+  }).join("") || `<div class="muted">크게 뒤처진 우선 스탯은 없습니다. 👍</div>`;
+}
+const covChips=cov=>cov.map(o=>`<span class="chip ${o.c===0?'empty':''}">${o.k} <b>${o.c}</b></span>`).join("");
+const MEMO=`<ul class="memo">
+  <li><b>강타</b>(지혜)는 발동 시 <b>피해 2배</b> — 1%↑ ≈ DPS 1%↑, 현존 최강 딜 옵션.</li>
+  <li><b>치명타</b>(죽음·정확)는 수치 <b>~1,179(≈75%)</b>까지 효율↑, 실전은 보스 치명타저항을 넘겨야 박힘.</li>
+  <li><b>완벽</b>(정의)은 평균 딜 ~3% 수준의 함정 옵션 — 우선순위 낮음.</li>
+  <li><b>관통·철벽관통</b>은 [수치÷10] <b>고정딜</b> — 연타·다단 스킬에 유리.</li>
+  <li><b>피해증폭</b>(PvE·보스·종족)은 <b>합연산</b>(중복 효율↓), <b>후방·속성내성감소</b>는 곱연산(효율↑).</li></ul>`;
+
+// 모드1: 전반적인 최적화 (역할 균형)
+function diagOverall(sl, items, role){
+  const prio=PRIO_BY_ROLE[role]||DEALER_PRIO;
+  const {maxV,recs,flags}=diagByPrio(sl,prio);
+  const dealerish=(role!=="탱커"&&role!=="힐러");
+  const cov=covChips(optCoverage(items, KEY_OPTS[dealerish?"딜러":role]||KEY_OPTS["딜러"]));
+  const prioSet=new Set(Object.keys(prio).filter(t=>prio[t]>=3));
+  const html=`<div class="diag">
+    <div class="lead"><b>${role}</b> 기준, 이 캐릭터에서 <b>상대적으로 뒤처진 우선 스탯</b>을 추렸습니다. 커뮤니티·게임 설명 기반 추정입니다.</div>
+    <h4>🎯 우선 보강 추천</h4><div class="rec-grid">${recCards(recs,maxV)}</div>
+    <h4>🧩 장비 부가옵션 커버리지 <span class="muted" style="font-weight:400;letter-spacing:0">(전 장비 등장 횟수 · 0=없음)</span></h4>
+    <div class="gear-sub" style="margin-top:0">${cov}</div>
+    <h4>📖 메커니즘 메모</h4>${MEMO}</div>`;
+  return {html,flags,prioSet};
+}
+
+// 모드2: 공격 (공격력 기준 수치 추천)
+const ATK_PRIO={Destruction:3,Wisdom:3,Death:3,Time:3,AGI:2,STR:2,Illusion:2,Freedom:1};
+const ATK_KEY=["무기 피해 증폭","전투 속도","공격력","치명타","위력","강타","다단 히트","관통"];
+function estimateAtk(sl, items){
+  let flat=0;
+  items.forEach(it=>{const d=it.detail||{};
+    (d.mainStats||[]).forEach(s=>{ if(s.id==="WeaponFixingDamage") flat+=parseFloat(s.value)||0; });
+    (d.subStats||[]).forEach(s=>{ if((s.id==="WeaponFixingDamage"||statName(s)==="공격력") && !/%/.test(""+s.value)){ const v=parseFloat(s.value); if(!isNaN(v)) flat+=v; } });
+  });
+  const str=(sl.find(s=>s.type==="STR")||{}).value||0;   // 위력 → 공격력 +(위력/10)%
+  const strPct=str/10;
+  return {flat:Math.round(flat), strPct, est:Math.round(flat*(1+strPct/100))};
+}
+function diagAttack(sl, items){
+  const {maxV,recs,flags}=diagByPrio(sl,ATK_PRIO);
+  const prioSet=new Set(Object.keys(ATK_PRIO).filter(t=>ATK_PRIO[t]>=3));
+  const a=estimateAtk(sl,items);
+  const cov=covChips(optCoverage(items, ATK_KEY));
+  const tgt=`<table class="tgt"><tbody>
+    <tr><td>치명타 수치</td><td class="num">~1,179</td><td class="muted">확률 ≈75% · 효율 구간 상한</td></tr>
+    <tr><td>강타(지혜)</td><td class="num">최대화</td><td class="muted">1%↑ ≈ DPS 1%↑ (최강)</td></tr>
+    <tr><td>무기 피해 증폭</td><td class="num">1순위</td><td class="muted">무기·가더 최우선 옵션</td></tr>
+    <tr><td>전투 속도(시간)</td><td class="num">상위 확보</td><td class="muted">평타·쿨 회전↑</td></tr>
+    <tr><td>공격력·위력(파괴)</td><td class="num">토대</td><td class="muted">증폭 효율의 기반</td></tr></tbody></table>`;
+  const html=`<div class="diag">
+    <div class="lead"><b>공격</b> 특화 — 공격력·딜 옵션 위주. 총 파생수치를 API가 주지 않아 <b>장비 기준 추정</b>입니다.</div>
+    <div class="atk-est">
+      <div class="ae"><div class="ae-k">장비 공격력 합(추정)</div><div class="ae-v">${fmt(a.flat)}</div></div>
+      <div class="ae"><div class="ae-k">위력 보너스</div><div class="ae-v teal">+${a.strPct.toFixed(1)}%</div></div>
+      <div class="ae"><div class="ae-k">추정 공격력</div><div class="ae-v gold">${fmt(a.est)}</div></div>
+    </div>
+    <h4>🎯 공격 우선 스탯 보강</h4><div class="rec-grid">${recCards(recs,maxV)}</div>
+    <h4>📐 권장 목표 수치</h4>${tgt}
+    <h4>🧩 공격 옵션 커버리지 <span class="muted" style="font-weight:400;letter-spacing:0">(전 장비 등장 횟수 · 0=없음)</span></h4>
+    <div class="gear-sub" style="margin-top:0">${cov}</div>
+    <h4>📖 메커니즘 메모</h4>${MEMO}</div>`;
+  return {html,flags,prioSet};
+}
+// 17개 스탯의 % 효과(statSecondList)를 파생 항목별로 합산 → 세부 수치에 가장 근접한 요약
+function aggregateEffects(sl){
+  const agg={};
+  sl.forEach(s=>(s.statSecondList||[]).forEach(e=>{
+    const m=/^(.+?)\s*([+-]?[\d.]+)%?$/.exec((e||"").trim());
+    if(m){ const k=m[1].trim(); agg[k]=(agg[k]||0)+parseFloat(m[2]); }
+  }));
+  return Object.keys(agg).map(k=>({k,v:agg[k]})).sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+}
+function renderDiag(sl, items, role){
+  const r = diagMode==="atk" ? diagAttack(sl,items) : diagOverall(sl,items,role);
+  const btns=`<div class="diagmode">
+    <button class="dm ${diagMode==='opt'?'on':''}" onclick="setDiagMode('opt')">전반적인 최적화</button>
+    <button class="dm ${diagMode==='atk'?'on':''}" onclick="setDiagMode('atk')">공격</button></div>`;
+  const s=el("div","sec");
+  s.innerHTML=`<h3><span>스탯 진단 · ${role}</span><em>휴리스틱 · 절대 기준 아님</em></h3>${btns}${r.html}`;
+  return {node:s, flags:r.flags, prioSet:r.prioSet};
+}
+
+// ── 스킬 호버 툴팁 ───────────────────────────────────────────────
+// 서버가 각 스킬에 detail(설명·레벨별 추가효과·시전정보)을 붙여 준다.
+let CUR_SKILLS=[], TIP=null;
+const CATKO={Active:"액티브",Passive:"패시브",Toggle:"토글",Buff:"버프"};
+function skillTipHTML(s){
+  const d=s.detail||{}, lv=s.skillLevel||0;
+  const cat=CATKO[s.category]||s.category||'';
+  const head=`<div class="tip-h"><img src="${s.icon||''}" ${oe}>
+    <div><div class="tip-nm">${esc(s.name)}</div>
+    <div class="tip-mt">${[cat,`Lv.${lv}${d.max_level?`/${d.max_level}`:''}`,d.link_type?esc(d.link_type):''].filter(Boolean).join(" · ")}</div></div></div>`;
+  const tags=(d.tags||[]).map(t=>`<span class="tip-tag">${esc(t)}</span>`).join("");
+  const prop=d.properties?`<span class="tip-prop">${esc(d.properties)}</span>`:'';
+  const tagline=(tags||prop)?`<div class="tip-tags">${tags}${prop}</div>`:'';
+  const desc=d.desc?`<div class="tip-desc">${esc(d.desc)}</div>`:'';
+  const attrs=(d.attributes||[]).length?`<div class="tip-attrs">${d.attributes.map(a=>
+    `<div><span>${esc(a.name)}</span><b>${esc(a.value)}</b></div>`).join("")}</div>`:'';
+  const spec=(d.speciality||[]);
+  const specHTML=spec.length?`<div class="tip-sec">레벨별 추가효과</div>`+spec.map(e=>
+    `<div class="tip-spec${lv>=e.level?'':' off'}"><span class="tip-splv">Lv.${e.level}</span><span>${esc(e.desc)}</span></div>`).join(""):'';
+  const none=(!desc&&!attrs&&!spec.length)?`<div class="tip-desc muted">상세 정보 없음 (인벤 스킬 DB 미수록)</div>`:'';
+  return head+tagline+desc+attrs+specHTML+none;
+}
+function ensureTip(){ if(!TIP){TIP=el("div","skilltip");TIP.style.display="none";document.body.appendChild(TIP);} return TIP; }
+function moveTip(x,y){ if(!TIP)return; const pad=16,w=TIP.offsetWidth,h=TIP.offsetHeight;
+  let left=x+pad,top=y+pad;
+  if(left+w>innerWidth-8) left=Math.max(8,x-w-pad);
+  if(top+h>innerHeight-8) top=Math.max(8,innerHeight-h-8);
+  TIP.style.left=left+"px"; TIP.style.top=top+"px"; }
+function hideTip(){ if(TIP)TIP.style.display="none"; }
+function initSkillTip(){
+  const D=document.getElementById("cdetail");
+  D.addEventListener("mouseover",e=>{ const c=e.target.closest(".sk[data-si]"); if(!c)return;
+    const s=CUR_SKILLS[+c.dataset.si]; if(!s)return;
+    const t=ensureTip(); t.innerHTML=skillTipHTML(s); t.style.display="block"; moveTip(e.clientX,e.clientY); });
+  D.addEventListener("mousemove",e=>{ if(TIP&&TIP.style.display!=="none"&&e.target.closest(".sk[data-si]")) moveTip(e.clientX,e.clientY); });
+  D.addEventListener("mouseout",e=>{ const c=e.target.closest(".sk[data-si]"); if(c&&!c.contains(e.relatedTarget)) hideTip(); });
+  D.addEventListener("scroll",hideTip);
+}
+
+async function charSearch(){
+  const q=document.getElementById("cq").value.trim();
+  const box=document.getElementById("clist");
+  if(!q){box.innerHTML="";return;}
+  box.innerHTML='<div class="meta">검색 중…</div>';
+  let d; try{ d=await j("/api/char/search?q="+encodeURIComponent(q)); }
+  catch(e){ box.innerHTML='<div class="empty">검색 실패</div>'; return; }
+  const list=d.list||[];
+  box.innerHTML=""; box.appendChild(el("div","meta",`캐릭터 ${list.length}명`));
+  if(!list.length){ box.appendChild(el("div","empty","결과 없음")); return; }
+  list.forEach(c=>{
+    const card=el("div","card");
+    card.innerHTML=`<img class="ico" src="${c.profileImageUrl||''}" ${oe}>
+      <div><div class="nm">${c.name}</div>
+      <div class="sub">Lv.${c.level} · ${c.serverName||''} <span class="race">${c.race===1?'천족':'마족'}</span></div></div>`;
+    card.onclick=()=>{
+      document.querySelectorAll("#clist .card.active").forEach(x=>x.classList.remove("active"));
+      card.classList.add("active"); openChar(c.serverId,c.characterId);
+    };
+    box.appendChild(card);
+  });
+}
+
+// 장비 1개 = 코덱스 카드 (모든 상세 능력치 인라인 노출)
+function gearCard(it){
+  const d=it.detail||{}, col=gc(it.grade);
+  const main=(d.mainStats||[]).map(s=>{
+    const ex=(+s.extra>0)?`<i>+${s.extra}</i>`:'';
+    return `<div class="ms"><span class="mk">${statName(s)}</span><span class="mv">${s.value}${ex}</span></div>`;
+  }).join("");
+  const sub=(d.subStats||[]).map(s=>`<span class="chip">${statName(s)} <b>${s.value}</b></span>`).join("");
+  const msN=d.magicStoneSlotCount||0, ms=d.magicStoneStat||[];
+  let stones="";
+  if(msN){
+    stones=ms.map(m=>`<span class="chip stone" style="--c:${gc(m.grade)}">${m.name} <b>${m.value}</b></span>`).join("");
+    const empty=msN-ms.length;
+    if(empty>0) stones+=`<span class="chip empty">빈 슬롯 ×${empty}</span>`;
+  }
+  const gs=(d.godStoneStat||[]).map(g=>`<div class="godstone" style="--c:${gc(g.grade)}">
+      <img src="${g.icon||''}" ${oe}><div><div class="gn">${g.name}</div><div class="gd">${esc(g.desc)}</div></div></div>`).join("");
+  const slotKo=SLOTKO[it.slotPosName]||it.slotPosName||'';
+  const mt=[d.gradeName||it.grade, d.categoryName, d.equipLevel?`착용Lv.${d.equipLevel}`:''].filter(Boolean).join(" · ");
+  return `<div class="gear" style="--c:${col}">
+    <div class="gear-h">
+      <img src="${it.icon||''}" ${oe}>
+      <div class="gear-t"><div class="gear-nm">${it.name}</div><div class="gear-mt">${slotKo}${mt?` · ${mt}`:''}</div></div>
+      <div class="gear-en">+${it.enchantLevel||0}${it.exceedLevel?`<span class="ex">✦${it.exceedLevel}</span>`:''}</div>
+    </div>
+    ${main?`<div class="gear-main">${main}</div>`:''}
+    ${sub?`<div class="gear-sub"><span class="lab">부가</span>${sub}</div>`:''}
+    ${stones?`<div class="gear-sub"><span class="lab">마석</span>${stones}</div>`:''}
+    ${gs?`<div class="gear-god">${gs}</div>`:''}
+    ${(!main&&!sub&&!stones&&!gs)?`<div class="gear-none">상세 능력치 없음</div>`:''}
+  </div>`;
+}
+// 단순 카드(펫·날개 등 상세 없는 항목)
+const simpleCard=(o,label)=>`<div class="gear" style="--c:${gc(o.grade)}">
+  <div class="gear-h"><img src="${o.icon||''}" ${oe}>
+    <div class="gear-t"><div class="gear-nm">${o.name}</div><div class="gear-mt">${label}${o.grade?` · ${o.grade}`:''}</div></div>
+    ${o.enchantLevel!=null?`<div class="gear-en">+${o.enchantLevel||0}</div>`:(o.level!=null?`<div class="gear-en" style="font-size:12px">Lv.${o.level}</div>`:'')}
+  </div></div>`;
+
+async function openChar(serverId,characterId){
+  const D=document.getElementById("cdetail");
+  D.innerHTML='<div class="empty">불러오는 중… <br><span class="muted">장비 상세까지 함께 가져옵니다 (~2초)</span></div>';
+  let d; try{ d=await j(`/api/char/detail?serverId=${encodeURIComponent(serverId)}&characterId=${encodeURIComponent(characterId)}`); }
+  catch(e){ D.innerHTML='<div class="empty">불러오기 실패</div>'; return; }
+  if(d.error){ D.innerHTML=`<div class="empty">${d.error}</div>`; return; }
+  lastChar=d; renderChar(d);
+}
+function renderChar(d){
+  const info=d.info||{}, eq=d.equipment||{}, p=info.profile||{};
+  const D=document.getElementById("cdetail"); D.innerHTML=""; hideTip();
+
+  // 도시에 헤더
+  const rk=(info.ranking&&info.ranking.rankingList)||[];
+  const top=rk[0];
+  const badge=p.raceId===1?'<span class="badge elyos">천족</span>':(p.raceId===2?'<span class="badge asmo">마족</span>':'');
+  const head=el("div","dossier");
+  head.innerHTML=`<img class="portrait" src="${p.profileImage||''}" ${oe}>
+    <div class="who">
+      <div class="nm">${p.characterName||''}</div>
+      <div class="meta">${badge}Lv.${p.characterLevel||'?'} · <b style="color:var(--txt)">${p.className||''}</b> · ${p.genderName||''}<br>
+        ${p.serverName||''} 서버 · ${p.regionName||''} 지역</div>
+      ${p.titleName?`<div class="title-line">🏅 ${p.titleName}</div>`:''}
+    </div>
+    <div class="cp"><div class="lab">전투력</div><div class="num">${fmt(p.combatPower)}</div>
+      ${top?`<div class="rk">${top.rankingContentsName} ${fmt(top.rank)}위</div>`:''}</div>`;
+  D.appendChild(head);
+
+  // 장비 목록(진단·코덱스 공용) + 스탯 목록
+  const items=(eq.equipment&&eq.equipment.equipmentList)||[];
+  const sl=(info.stat&&info.stat.statList)||[];
+  const role=ROLE_BY_CLASS[p.className]||"딜러";
+
+  // 스탯 진단(모드 전환 가능) — 전반 최적화 / 공격
+  let flags=new Set(), prioSet=new Set();
+  if(sl.length){ const dd=renderDiag(sl,items,role); D.appendChild(dd.node); flags=dd.flags; prioSet=dd.prioSet; }
+
+  // 능력치 (진단 결과를 카드에 표시: ★우선 / 빨강=보강)
+  if(sl.length) D.appendChild(sec("능력치", `<div class="stat-grid">`+sl.map(s=>{
+      const isPrio=prioSet.has(s.type), isFlag=flags.has(s.type);
+      return `<div class="statc${isFlag?' flag':''}${isPrio?' prio':''}"><div class="k2">${s.name} ${s.type?`<span style="opacity:.55">${s.type}</span>`:''}</div>
+      <div class="v2">${fmt(s.value)}</div>
+      ${(s.statSecondList||[]).length?`<div class="s2">${s.statSecondList.join(" · ")}</div>`:''}</div>`;}).join("")+`</div>`,
+    `${sl.length}종 · ★우선 / 빨강=보강`));
+
+  // 파생 효과 합계 (스탯 % 효과를 항목별로 합산 — 세부 수치 근사)
+  if(sl.length){
+    const eff=aggregateEffects(sl);
+    if(eff.length) D.appendChild(sec("파생 효과 합계", `<div class="stat-grid">`+eff.map(e=>
+      `<div class="statc"><div class="k2">${e.k}</div>
+        <div class="v2${e.v<0?' teal':''}">${e.v>0?'+':''}${e.v.toFixed(1)}%</div></div>`).join("")+`</div>`,
+      "17개 스탯의 % 효과 합산 · 장비 flat·기본치 미포함"));
+  }
+
+  // 장비 코덱스 (부위별 그룹, 상세 능력치 인라인)
+  if(items.length){
+    const used=new Set();
+    let html="";
+    SLOTCAT.forEach(cat=>{
+      const gi=items.filter(it=>cat.slots.includes(it.slotPosName));
+      gi.forEach(it=>used.add(it));
+      if(gi.length) html+=`<div class="gear-cat">${cat.name} (${gi.length})</div><div class="gear-grid">${gi.map(gearCard).join("")}</div>`;
+    });
+    const rest=items.filter(it=>!used.has(it));
+    if(rest.length) html+=`<div class="gear-cat">기타 (${rest.length})</div><div class="gear-grid">${rest.map(gearCard).join("")}</div>`;
+    D.appendChild(sec("장비", html, `${items.length}부위 · 클릭 없이 상세 능력치 표시`));
+  }
+
+  // 펫 · 날개
+  const pw=eq.petwing||{}; const pwp=[];
+  if(pw.wing) pwp.push(simpleCard(pw.wing,"날개"));
+  if(pw.wingSkin && (!pw.wing || pw.wingSkin.id!==pw.wing.id)) pwp.push(simpleCard(pw.wingSkin,"날개 외형"));
+  if(pw.pet) pwp.push(simpleCard(pw.pet,"펫"));
+  if(pwp.length) D.appendChild(sec("펫 · 날개", `<div class="gear-grid">${pwp.join("")}</div>`));
+
+  // 스킬 (마우스 오버 → 설명·레벨별 추가효과 툴팁)
+  const sk=(eq.skill&&eq.skill.skillList)||[];
+  CUR_SKILLS=sk;
+  if(sk.length) D.appendChild(sec("스킬", `<div class="skill-grid">`+sk.map((s,i)=>
+    `<div class="sk" data-si="${i}"><img src="${s.icon||''}" ${oe}>
+      <span class="lv">${s.skillLevel}</span><div class="nm">${s.name}</div></div>`).join("")+`</div>`,
+    `${sk.length}개 · 마우스를 올리면 상세·레벨별 추가효과`));
+
+  // 데바니온
+  const dv=(info.daevanion&&info.daevanion.boardList)||[];
+  if(dv.length) D.appendChild(sec("데바니온", dv.map(b=>
+    `<div class="dv"><img src="${b.icon||''}" ${oe}><div class="dn">${b.name}</div>
+      <div class="dvbar"><i style="width:${b.openPercent||0}%"></i></div>
+      <div class="dc">${fmt(b.openNodeCount)}/${fmt(b.totalNodeCount)} · ${b.openPercent||0}%</div></div>`).join(""),
+    `${dv.length}보드`));
+
+  // 랭킹
+  if(rk.length){
+    const rows=rk.map(r=>`<tr><td>${r.rankingContentsName||''}</td><td class="num">${fmt(r.rank)}위</td>
+      <td class="num">${fmt(r.point)}</td><td>${r.gradeName||'–'}</td></tr>`).join("");
+    D.appendChild(sec("랭킹", `<table><thead><tr><th>콘텐츠</th><th>순위</th><th>점수</th><th>등급</th></tr></thead><tbody>${rows}</tbody></table>`, `${rk.length}종`));
+  }
+
+  // 칭호 요약
+  const ti=info.title||{};
+  if(ti.totalCount!=null) D.appendChild(sec("칭호", `<div class="muted">보유 <b style="color:var(--gold)">${fmt(ti.ownedCount)}</b> / 전체 ${fmt(ti.totalCount)}</div>`));
+  D.scrollTop=0;
+}
+
+renderTabs();
+initSkillTip();
+on("cbtn","click",charSearch);
+on("cq","keydown",e=>{ if(e.key==="Enter") charSearch(); });
+boot();
+document.getElementById("cq").focus();   // 메인 = 캐릭터 검색
+</script>
+</body>
+</html>

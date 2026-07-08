@@ -1,0 +1,19 @@
+# Python 캐시
+__pycache__/
+*.py[cod]
+
+# IDE
+.idea/
+*.iml
+
+# 런타임 · 락 · 로그
+.server.pid
+.update.lock
+logs/
+
+# SQLite 임시 파일 (WAL 모드)
+*.db-shm
+*.db-wal
+
+# 크롤 원본 스냅샷 (crawl_craft.py 로 재생성 가능 · 디버그용)
+raw/
