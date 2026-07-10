@@ -1,0 +1,22 @@
+# 아이온2 화면공유용 MediaMTX 설정.
+# 운영 위치: dodsas 서버 /home/dodsas/work/mediamtx/mediamtx.yml
+# ⚠ 실제 운영 파일의 pass 는 서버에만 두고, 저장소엔 CHANGEME 로 둔다(비밀값 커밋 금지).
+rtmp: yes
+rtmpAddress: :1935
+hls: yes
+hlsAddress: :8888
+hlsVariant: lowLatency
+hlsAlwaysRemux: yes
+# WebRTC 저지연: 원격 클라이언트가 붙도록 공개 호스트를 ICE 후보로 광고한다.
+# (없으면 컨테이너 내부 IP 10.x 만 광고돼 원격 연결 실패)
+webrtcAdditionalHosts: [dodsas.iptime.org]
+authInternalUsers:
+  - user: any
+    permissions:
+      - action: read
+  - user: publisher
+    pass: CHANGEME
+    permissions:
+      - action: publish
+paths:
+  all_others:
