@@ -455,6 +455,25 @@
     .hw-char{grid-template-columns:1fr}
     .hw-modal-grid{grid-template-columns:1fr}
   }
+
+  /* 화면공유 탭 */
+  #view-screen .toolbar .search::before{content:"📡"}
+  .screen-wrap{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+               padding:22px;gap:14px;background:radial-gradient(92% 70% at 50% -25%,rgba(143,240,208,.06),transparent 62%),var(--bg)}
+  .screen-stage{position:relative;width:100%;max-width:520px;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+  .screen-stage video{width:100%;height:100%;max-height:100%;object-fit:contain;background:#04070a;border-radius:14px;
+                      border:1px solid var(--line);box-shadow:var(--shadow-lg),inset 0 0 0 1px rgba(255,255,255,.03)}
+  .screen-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+               color:var(--dim);text-align:center;pointer-events:none;padding:24px}
+  .screen-empty .big{font-size:46px;opacity:.55}
+  .screen-empty.hide{display:none}
+  .screen-status{font-size:12.5px;color:var(--dim);min-height:18px;font-weight:700;letter-spacing:.2px}
+  .screen-status.live{color:var(--gold)}
+  .screen-status.err{color:var(--danger)}
+  .screen-status .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle;
+                     box-shadow:0 0 8px currentColor}
+  .btn.ghost{background:linear-gradient(180deg,#1a2530,#111923);color:var(--txt);border:1px solid var(--etched);box-shadow:var(--hl)}
+  .btn.ghost:hover{border-color:var(--accent);filter:none}
 </style>
 </head>
 <body>
@@ -546,6 +565,27 @@
   </div>
 </div>
 
+<!-- 화면공유 탭 (맥북 OBS→MediaMTX HLS 스트림을 브라우저에서 재생) -->
+<section class="view" id="view-screen">
+  <div class="toolbar">
+    <div class="search"><input id="scUrl" placeholder="스트림 URL (예: http://192.168.0.10:8888/iphone/index.m3u8)" autocomplete="off" spellcheck="false"></div>
+    <button id="scPlay" class="btn">재생</button>
+    <button id="scStop" class="btn ghost">정지</button>
+    <button id="scFull" class="btn ghost">전체화면</button>
+  </div>
+  <div class="screen-wrap">
+    <div class="screen-stage">
+      <video id="scVideo" playsinline muted autoplay></video>
+      <div id="scEmpty" class="screen-empty">
+        <div class="big">📱</div>
+        <div>맥북 OBS → MediaMTX 로 송출한 아이폰 화면을 여기서 봅니다.<br>
+             위에 HLS 스트림 URL을 붙여넣고 <b style="color:var(--gold)">재생</b>을 누르세요.</div>
+      </div>
+    </div>
+    <div id="scStatus" class="screen-status"></div>
+  </div>
+</section>
+
 <!-- ── 향후 탭 추가 방법 ───────────────────────────────────────────
   1) 아래처럼 뷰 섹션을 하나 더 붙이고 (id 는 "view-<탭id>"):
        <section class="view" id="view-price"> …시세 조회 UI… </section>
@@ -571,6 +611,7 @@ const TABS=[
   {id:"char",  label:"🧝 캐릭터"},
   {id:"craft", label:"⚒️ 제작"},
   {id:"homework", label:"📅 숙제"},
+  {id:"screen", label:"📱 화면공유"},
 ];
 function showView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+id));
@@ -1438,9 +1479,84 @@ function renderChar(d){
   D.querySelectorAll(".gear img").forEach(img=>img.addEventListener("load",()=>equalizeGearHeights(D),{once:true}));
 }
 
+// ── 화면공유(원격 아이폰 화면) ─────────────────────────────────
+// 맥북 OBS → (RTMP) → MediaMTX → (HLS) → 이 브라우저. URL 은 코드에 박지 않고
+// 입력창에 붙여넣으면 localStorage 에 저장 → 리눅스 이관 후에도 그대로 동작.
+const HLS_CDN="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js";
+let scHls=null, scHlsLoading=null;
+function loadHlsLib(){
+  if(window.Hls) return Promise.resolve();
+  if(scHlsLoading) return scHlsLoading;
+  scHlsLoading=new Promise((res,rej)=>{
+    const s=document.createElement("script");
+    s.src=HLS_CDN; s.onload=res;
+    s.onerror=()=>rej(new Error("hls.js 로드 실패 (인터넷 연결 확인)"));
+    document.head.appendChild(s);
+  });
+  return scHlsLoading;
+}
+function scSetStatus(msg,cls){
+  const s=document.getElementById("scStatus");
+  s.className="screen-status"+(cls?(" "+cls):"");
+  s.innerHTML=(cls==="live"?'<span class="dot"></span>':"")+(msg||"");
+}
+function scTeardown(){
+  const v=document.getElementById("scVideo");
+  if(scHls){ scHls.destroy(); scHls=null; }
+  v.removeAttribute("src"); v.load();
+}
+function scStop(){
+  scTeardown();
+  document.getElementById("scEmpty").classList.remove("hide");
+  scSetStatus("정지됨");
+}
+async function scPlay(){
+  const url=(document.getElementById("scUrl").value||"").trim();
+  if(!url){ scSetStatus("스트림 URL을 입력하세요.","err"); return; }
+  localStorage.setItem("aion2_screen_url",url);
+  const v=document.getElementById("scVideo");
+  scTeardown();
+  document.getElementById("scEmpty").classList.add("hide");
+  scSetStatus("연결 중…");
+  // Safari 등 네이티브 HLS 지원 브라우저는 hls.js 없이 바로 재생
+  if(v.canPlayType("application/vnd.apple.mpegurl")){
+    v.src=url;
+    v.onloadedmetadata=()=>scSetStatus("재생 중 (LIVE)","live");
+    v.onerror=()=>scSetStatus("재생 실패 — URL·스트림 상태 확인","err");
+    v.play().catch(()=>{});
+    return;
+  }
+  try{ await loadHlsLib(); }
+  catch(e){ document.getElementById("scEmpty").classList.remove("hide"); scSetStatus(e.message,"err"); return; }
+  scHls=new Hls({lowLatencyMode:true, liveSyncDurationCount:2});
+  scHls.on(Hls.Events.MANIFEST_PARSED,()=>{ v.play().catch(()=>{}); scSetStatus("재생 중 (LIVE)","live"); });
+  scHls.on(Hls.Events.ERROR,(_,d)=>{
+    if(d.fatal){
+      if(d.type===Hls.ErrorTypes.NETWORK_ERROR){ scSetStatus("네트워크 오류 — 재연결 시도 중…","err"); scHls.startLoad(); }
+      else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){ scSetStatus("미디어 오류 — 복구 시도 중…","err"); scHls.recoverMediaError(); }
+      else { scSetStatus("재생 실패 — URL·스트림 상태 확인","err"); scTeardown(); document.getElementById("scEmpty").classList.remove("hide"); }
+    }
+  });
+  scHls.loadSource(url);
+  scHls.attachMedia(v);
+}
+function initScreen(){
+  const saved=localStorage.getItem("aion2_screen_url");
+  if(saved) document.getElementById("scUrl").value=saved;
+  on("scPlay","click",scPlay);
+  on("scStop","click",scStop);
+  on("scUrl","keydown",e=>{ if(e.key==="Enter") scPlay(); });
+  on("scFull","click",()=>{
+    const st=document.querySelector("#view-screen .screen-stage");
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(st.requestFullscreen) st.requestFullscreen();
+  });
+}
+
 renderTabs();
 initSkillTip();
 initHomework();
+initScreen();
 on("cbtn","click",charSearch);
 on("cq","keydown",e=>{ if(e.key==="Enter") charSearch(); });
 boot();
