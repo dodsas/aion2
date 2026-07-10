@@ -19,7 +19,6 @@ if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
   kill "$(cat "$PIDFILE")" 2>/dev/null || true
 fi
 pkill -f "python3 .*server\.py" 2>/dev/null || true
-sleep 1
 
 # 2) 새로 기동 (백그라운드, 로그 append)
 echo "[$(date '+%F %T')] restart port=$PORT" >>"$LOG"
