@@ -414,11 +414,12 @@
   .hw-char{display:grid;grid-template-columns:minmax(120px,1fr) 92px minmax(170px,1.1fr) 96px auto auto;gap:8px;align-items:center;
            background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--etched);border-radius:8px;padding:9px 10px;box-shadow:var(--shadow),var(--hl)}
   .hw-char input,.hw-char select,.hw-modal input{padding:8px 9px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);min-width:0}
+  .hw-modal input{width:100%}
   .hw-modal-back{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:2000}
   .hw-modal-back.on{display:flex}
   .hw-modal{width:min(560px,calc(100vw - 28px));background:linear-gradient(180deg,#17222d,#0f151c);border:1px solid var(--etched);border-radius:9px;padding:15px;box-shadow:var(--shadow-lg)}
   .hw-modal h3{margin:0 0 12px;font-size:15px}
-  .hw-modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .hw-modal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
   .hw-modal label{display:block;color:var(--dim);font-size:11px;font-weight:800;margin-bottom:5px}
   .hw-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
   .hw-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}
@@ -495,7 +496,7 @@
       <div class="hw-head">
         <div>
           <h2>오드 에너지 숙제 계산기</h2>
-          <p>자동 충전, 이벤트 수급, 주간 구매량을 합산해 주간 소모 판수와 예상 수익을 계산합니다. 던전은 2배 보상 기준입니다.</p>
+          <p>자동 충전, 이벤트 수급, 새싹 보너스, 주간 구매량을 합산해 주간 소모 판수와 예상 수익을 계산합니다. 던전은 2배 보상 기준입니다.</p>
         </div>
         <div class="hw-preset">
           <div class="top">
@@ -516,10 +517,14 @@
             <div class="row"><div><div class="name">오드 에너지 +40</div><div class="desc">일일 개수</div></div><input id="hwEvent40" type="number" min="0" value="0"></div>
             <div class="row" style="margin-top:7px"><div><div class="name">오드 에너지 +10</div><div class="desc">일일 개수</div></div><input id="hwEvent10" type="number" min="0" value="0"></div>
           </div></div></div>
+        <div class="hw-box"><label>새싹 보너스</label>
+          <div class="hw-charge"><img src="/images/icon_item_gather_od_a_u_001.png" alt=""><div>
+            <div class="row"><div><div class="name">오드 에너지 +10</div><div class="desc">본캐 적용 · 주간 획득 개수</div></div><input id="hwSprout10" type="number" min="0" value="0"></div>
+          </div></div></div>
         <div class="hw-box"><label>캐릭터 추가</label><div class="hw-actions">
           <button class="hw-mini" id="hwAddMain">본캐 추가</button>
           <button class="hw-mini" id="hwAddSub">부캐 추가</button>
-        </div><div class="hw-role-note">본캐: 전역 이벤트 + 주간 구매 40×40<br>부캐: 주간 구매 8×40</div></div>
+        </div><div class="hw-role-note">본캐: 전역 이벤트 + 새싹 + 주간 구매 40×40<br>부캐: 주간 구매 8×40</div></div>
       </div>
       <div id="hwCharacters" class="hw-chars"></div>
       <div id="hwResult"></div>
@@ -594,7 +599,7 @@ const HW_PRESET_KEY="aion2_homework_presets";
 const HW_CHARS_KEY="aion2_homework_chars";
 let hwManualTarget=null;
 const HW_ROLE={
-  main:{label:"본캐",event:true,buy:40*40,desc:"전역 이벤트 + 주간 구매 40×40"},
+  main:{label:"본캐",event:true,buy:40*40,desc:"전역 이벤트 + 새싹 + 주간 구매 40×40"},
   sub:{label:"부캐",event:false,buy:8*40,desc:"주간 구매 8×40"},
 };
 function hwNum(id){return +(document.getElementById(id)?.value||0);}
@@ -607,12 +612,12 @@ function defaultHwChar(role="main"){
 }
 function hwState(){
   return {
-    event40:hwNum("hwEvent40"), event10:hwNum("hwEvent10"),
+    event40:hwNum("hwEvent40"), event10:hwNum("hwEvent10"), sprout10:hwNum("hwSprout10"),
     chars:hwChars(),
   };
 }
 function applyHwState(s){
-  const map={hwEvent40:s.event40,hwEvent10:s.event10};
+  const map={hwEvent40:s.event40,hwEvent10:s.event10,hwSprout10:s.sprout10};
   Object.entries(map).forEach(([id,val])=>{const e=document.getElementById(id); if(e)e.value=val??0;});
   setHwChars((s.chars&&s.chars.length)?s.chars:[defaultHwChar("main")]);
   renderHomework();
@@ -646,16 +651,16 @@ function dungeonCalc(dungeonKey, modeKey, weeklyEnergy){
   const runs=Math.floor(weeklyEnergy/cost);
   return {key:modeKey,dungeon:dungeon.name,name:d.name,cost,reward,runs,left:weeklyEnergy-runs*cost,profit:runs*reward,daily:runs/7};
 }
-function calcChar(c, weeklyAuto, weeklyEvent){
+function calcChar(c, weeklyAuto, weeklyMainBonus){
   const role=HW_ROLE[c.role]||HW_ROLE.sub;
-  const weekly=weeklyAuto+(role.event?weeklyEvent:0)+role.buy+(+c.manualDaily||0)*7+(+c.manualWeekly||0);
+  const weekly=weeklyAuto+(role.event?weeklyMainBonus:0)+role.buy+(+c.manualDaily||0)*7+(+c.manualWeekly||0);
   const base=dungeonCalc(c.dungeon||"fallen_deva",c.mode||"hard",weekly);
   const manualDailyProfit=+c.manualDailyProfit||0;
   return {...base,char:c,role,weeklyEnergy:weekly,dungeonProfit:base.profit,manualDailyProfit,profit:base.profit+manualDailyProfit*7};
 }
-function updateHwChar(id, patch){
+function updateHwChar(id, patch, redrawCharacters=true){
   const chars=hwChars().map(c=>c.id===id?{...c,...patch}:c);
-  setHwChars(chars); renderHomework();
+  setHwChars(chars); renderHomework(redrawCharacters);
 }
 function removeHwChar(id){setHwChars(hwChars().filter(c=>c.id!==id)); renderHomework();}
 function addHwChar(role){const chars=hwChars(); chars.push(defaultHwChar(role)); setHwChars(chars); renderHomework();}
@@ -696,36 +701,39 @@ function saveHwManual(){
   updateHwChar(hwManualTarget,{manualDaily:hwNum("hwManualDaily"),manualWeekly:hwNum("hwManualWeekly"),manualDailyProfit:hwNum("hwManualDailyProfit")});
   closeHwManual();
 }
-function renderHomework(){
+function renderHomework(redrawCharacters=true){
   const cycle=3, charge=15;
   const dailyAuto=24/cycle*charge, weeklyAuto=dailyAuto*7;
   const dailyEvent=hwNum("hwEvent40")*40+hwNum("hwEvent10")*10;
   const weeklyEvent=dailyEvent*7;
+  const weeklySprout=hwNum("hwSprout10")*10;
+  const weeklyMainBonus=weeklyEvent+weeklySprout;
   let chars=hwChars();
   if(!chars.length){chars=[defaultHwChar("main")]; setHwChars(chars);}
-  renderHwCharacters(chars);
-  const rows=chars.map(c=>calcChar(c,weeklyAuto,weeklyEvent));
+  if(redrawCharacters) renderHwCharacters(chars);
+  const rows=chars.map(c=>calcChar(c,weeklyAuto,weeklyMainBonus));
   const totalEnergy=rows.reduce((a,r)=>a+r.weeklyEnergy,0);
   const totalRuns=rows.reduce((a,r)=>a+r.runs,0);
   const totalProfit=rows.reduce((a,r)=>a+r.profit,0);
   document.getElementById("hwResult").innerHTML=`<div class="hw-kpi">
     <div class="hw-k"><div class="t">하루 자동 충전</div><div class="v">${fmt(Math.floor(dailyAuto))}</div><div class="s">${cycle}시간마다 ${fmt(charge)}</div></div>
     <div class="hw-k"><div class="t">전역 이벤트 수급</div><div class="v">${fmt(Math.floor(weeklyEvent))}</div><div class="s">본캐에만 합산 · 일 ${fmt(dailyEvent)}</div></div>
+    <div class="hw-k"><div class="t">새싹 보너스</div><div class="v">${fmt(Math.floor(weeklySprout))}</div><div class="s">본캐에만 합산 · 주간 제한</div></div>
     <div class="hw-k"><div class="t">주간 총 에너지</div><div class="v">${fmt(Math.floor(totalEnergy))}</div><div class="s">${rows.length}캐릭터 합산</div></div>
     <div class="hw-k"><div class="t">예상 주간 수익</div><div class="v">${fmtFull(totalProfit)}</div><div class="s">총 ${fmt(totalRuns)}판 · 하루 ${(totalRuns/7).toFixed(2)}판</div></div>
   </div>
   <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 수익(키나)</th><th>주간 판수</th><th>하루 판수</th><th>일간 부가수익(키나)</th><th>예상 수익(키나)</th><th>잔여</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td>${esc(r.char.name||'')}</td><td>${r.role.label}</td><td>${r.dungeon}</td><td>${r.name}</td><td class="num">${fmt(Math.floor(r.weeklyEnergy))}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmtFull(r.reward)}</td>
       <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
-  <div class="hw-note">현재 던전 수익 정보는 타락한 데바의 성 기준입니다. 본캐는 전역 이벤트 수급과 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 예상 수익에는 일간 부가수익×7이 함께 합산됩니다.</div>`;
+  <div class="hw-note">현재 던전 수익 정보는 타락한 데바의 성 기준입니다. 본캐는 전역 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다.</div>`;
 }
 function initHomework(){
-  ["hwEvent40","hwEvent10"].forEach(id=>document.getElementById(id)?.addEventListener("input",renderHomework));
+  ["hwEvent40","hwEvent10","hwSprout10"].forEach(id=>document.getElementById(id)?.addEventListener("input",renderHomework));
   document.getElementById("hwAddMain")?.addEventListener("click",()=>addHwChar("main"));
   document.getElementById("hwAddSub")?.addEventListener("click",()=>addHwChar("sub"));
   document.getElementById("hwCharacters")?.addEventListener("input",e=>{
     const card=e.target.closest(".hw-char"); if(!card||!e.target.dataset.hw)return;
-    updateHwChar(card.dataset.id,{[e.target.dataset.hw]:e.target.value});
+    updateHwChar(card.dataset.id,{[e.target.dataset.hw]:e.target.value},e.target.dataset.hw!=="name");
   });
   document.getElementById("hwCharacters")?.addEventListener("change",e=>{
     const card=e.target.closest(".hw-char"); if(!card)return;
