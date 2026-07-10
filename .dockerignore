@@ -1,0 +1,23 @@
+# 이미지에는 앱 실행에 필요한 것만: server.py, index.html, images/, aion2_craft.db,
+# crawl_craft.py, query.py 등. 아래는 제외한다.
+.git
+.github
+.idea
+*.iml
+__pycache__
+*.pyc
+*.db-shm
+*.db-wal
+logs
+raw
+.env
+.server.pid
+.update.lock
+# 배포 메타 (호스트에서만 쓰고 이미지엔 불필요)
+Dockerfile
+compose.yml
+Jenkinsfile
+deploy
+.dockerignore
+.gitignore
+README.md

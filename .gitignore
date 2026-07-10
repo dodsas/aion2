@@ -11,6 +11,11 @@ __pycache__/
 .update.lock
 logs/
 
+# 시크릿 (Jenkins 접속정보 등 — 절대 커밋 금지)
+.env
+.env.*
+
+
 # SQLite 임시 파일 (WAL 모드)
 *.db-shm
 *.db-wal
