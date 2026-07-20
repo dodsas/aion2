@@ -1379,19 +1379,20 @@ function renderEffectBlock(eff){
       <div class="v2${e.v<0?' teal':''}">${e.v>0?'+':''}${e.v.toFixed(1)}%</div></div>`).join("")+`</div>`;
 }
 function equalizeGearHeights(root=document){
+  const setMin=(c,v)=>{ if(c.style.minHeight!==v) c.style.minHeight=v; };  // 같은 값이면 재기입 안 함(리플로우 억제)
   root.querySelectorAll(".gear-grid").forEach(grid=>{
-    if(grid.classList.contains("arcana-grid")){
-      const skillCards=[...grid.querySelectorAll(":scope > .gear.skill-arcana")];
-      skillCards.forEach(c=>c.style.minHeight="");
-      const max=Math.max(0,...skillCards.map(c=>c.offsetHeight));
-      if(max) skillCards.forEach(c=>c.style.minHeight=max+"px");
-      return;
-    }
-    const cards=[...grid.querySelectorAll(":scope > .gear")];
-    cards.forEach(c=>c.style.minHeight="");
+    const sel=grid.classList.contains("arcana-grid") ? ":scope > .gear.skill-arcana" : ":scope > .gear";
+    const cards=[...grid.querySelectorAll(sel)];
+    cards.forEach(c=>setMin(c,""));
     const max=Math.max(0,...cards.map(c=>c.offsetHeight));
-    if(max) cards.forEach(c=>c.style.minHeight=max+"px");
+    if(max) cards.forEach(c=>setMin(c,max+"px"));
   });
+}
+// 이미지가 하나씩 로드될 때마다 높이 재계산이 반복 실행되어 카드가 들썩이던(깜빡) 문제 →
+// 로드가 잠잠해진 뒤 딱 1회만 재계산(trailing debounce). 최초 정렬은 renderChar 에서 rAF 1회.
+let _eqTimer=null;
+function scheduleEqualize(D){
+  clearTimeout(_eqTimer); _eqTimer=setTimeout(()=>equalizeGearHeights(D),150);
 }
 function renderDiag(sl, items, role){
   const r = diagMode==="atk" ? diagAttack(sl,items) : diagOverall(sl,items,role);
@@ -1815,8 +1816,8 @@ function renderChar(d){
   const ti=info.title||{};
   if(ti.totalCount!=null) D.appendChild(sec("칭호", `<div class="muted">보유 <b style="color:var(--gold)">${fmt(ti.ownedCount)}</b> / 전체 ${fmt(ti.totalCount)}</div>`));
   D.scrollTop=0;
-  requestAnimationFrame(()=>equalizeGearHeights(D));
-  D.querySelectorAll(".gear img").forEach(img=>img.addEventListener("load",()=>equalizeGearHeights(D),{once:true}));
+  requestAnimationFrame(()=>equalizeGearHeights(D));   // 최초 정렬 1회
+  D.querySelectorAll(".gear img").forEach(img=>img.addEventListener("load",()=>scheduleEqualize(D),{once:true}));
 }
 
 // ── 화면공유(원격 아이폰 화면) ─────────────────────────────────
