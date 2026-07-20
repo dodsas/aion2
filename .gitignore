@@ -20,5 +20,8 @@ logs/
 *.db-shm
 *.db-wal
 
+# 캐릭터 상세 캐시 DB (서버가 자동 생성 · 재생성 가능)
+char_cache.db
+
 # 크롤 원본 스냅샷 (crawl_craft.py 로 재생성 가능 · 디버그용)
 raw/

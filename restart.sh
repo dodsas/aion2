@@ -5,7 +5,7 @@
 # 기존 server.py 인스턴스를 종료한 뒤 백그라운드로 새로 띄운다(로그 적재).
 set -euo pipefail
 
-DIR="/home/ysnam/projects/aion2"
+DIR="$(cd "$(dirname "$0")" && pwd)"
 PORT="${1:-8770}"
 PY="$(command -v python3)"
 LOG="$DIR/logs/server.log"

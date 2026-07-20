@@ -414,6 +414,15 @@
   .hw-char{display:grid;grid-template-columns:minmax(120px,1fr) 92px minmax(170px,1.1fr) 96px auto auto;gap:8px;align-items:center;
            background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--etched);border-radius:8px;padding:9px 10px;box-shadow:var(--shadow),var(--hl)}
   .hw-char input,.hw-char select,.hw-modal input{padding:8px 9px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);min-width:0}
+  .hw-sanct{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding-top:8px;margin-top:2px;border-top:1px dashed var(--etched);font-size:12px;color:var(--dim)}
+  .hw-sanct .cap{font-weight:800;color:var(--txt)}
+  .hw-sanct label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--txt)}
+  .hw-sanct input{padding:0;min-width:0;width:15px;height:15px;accent-color:var(--gold)}
+  .hw-sanct .cut{margin-left:auto;font-weight:800;display:inline-flex;gap:8px;align-items:center}
+  .hw-sanct .cut .od.on{color:#ff9d6b}
+  .hw-sanct .cut .rd.on{color:var(--gold)}
+  .raid{font-size:.82em;font-weight:700;color:var(--gold);opacity:.92}
+  .raid-hint{font-size:.72em;font-weight:700;color:var(--gold);opacity:.75}
   .hw-modal input{width:100%}
   .hw-modal-back{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:2000}
   .hw-modal-back.on{display:flex}
@@ -430,6 +439,53 @@
   .hw-table td,.hw-table th{white-space:nowrap}
   .hw-table td.good{color:var(--gold);font-weight:900}
   .hw-note{color:var(--dim);font-size:11.5px;line-height:1.7;margin-top:12px}
+
+  /* 내 캐릭터 탭 */
+  .mc-preset{flex:1;min-width:280px;background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--line);border-radius:8px;padding:10px;box-shadow:var(--shadow),var(--hl)}
+  .mc-preset .top{display:grid;grid-template-columns:1fr auto;gap:7px}
+  .mc-preset input{padding:8px 9px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched)}
+  .mc-note{color:var(--dim);font-size:11.5px;line-height:1.6;margin-top:8px}
+  .mc-note b{color:var(--gold)}
+  .mc-body{flex:1;overflow:auto;padding:16px 18px;background:radial-gradient(92% 70% at 50% -25%,rgba(143,240,208,.06),transparent 62%),var(--bg)}
+  .mc-group{margin-bottom:20px}
+  .mc-group-h{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  .mc-group-h .gname{font-size:15px;font-weight:900;color:var(--gold);letter-spacing:-.2px}
+  .mc-group-h .gcount{color:var(--dim);font-size:12px;font-weight:700}
+  .mc-group-h .spacer{flex:1}
+  .mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+  .mc-card{--c:var(--accent);display:flex;gap:11px;padding:11px 12px;border:1px solid color-mix(in srgb,var(--c) 30%,var(--line));border-radius:9px;
+           cursor:pointer;align-items:center;position:relative;overflow:hidden;
+           background:linear-gradient(135deg,color-mix(in srgb,var(--c) 11%,transparent),transparent 40%),linear-gradient(180deg,var(--slot-hi),var(--slot));
+           box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 10px 24px -20px rgba(0,0,0,.9);transition:transform .12s ease,border-color .12s ease}
+  .mc-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
+  .mc-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 60%,var(--line))}
+  .mc-card .ico{width:44px;height:44px}
+  .mc-card .nm{font-weight:800;letter-spacing:-.15px}
+  .mc-card .mc-cp{display:inline-block;margin-left:7px;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:900;vertical-align:middle;white-space:nowrap;
+                  background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line))}
+  .mc-card .sub{color:var(--dim);font-size:11.5px;margin-top:2px}
+  .mc-card .mc-del{position:absolute;top:5px;right:6px;width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px;
+                   background:rgba(0,0,0,.35);color:var(--dim);border:1px solid var(--line);font-size:12px;font-weight:900;opacity:0;transition:opacity .12s}
+  .mc-card:hover .mc-del{opacity:1}
+  .mc-card .mc-del:hover{color:var(--danger);border-color:var(--danger)}
+  .mc-empty{color:var(--dim);padding:40px 10px;text-align:center;line-height:1.8}
+  #mcModalSearch{width:100%;padding:9px 11px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);margin-bottom:10px}
+  #mcModalSearch:focus{border-color:var(--gold);outline:none}
+  .mc-glist{max-height:280px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+  .mc-grow{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;cursor:pointer;
+           background:linear-gradient(180deg,#16222d,#0f151c);transition:border-color .12s,background .12s}
+  .mc-grow:hover{border-color:var(--gold);background:linear-gradient(180deg,#1c2b24,#12211b)}
+  .mc-grow .gn{font-weight:800;flex:1}
+  .mc-grow .gc{color:var(--dim);font-size:11.5px;font-weight:700}
+  .mc-grow.new{border-style:dashed}
+  .mc-grow.new .gn{color:var(--gold)}
+  .mc-glist .none{color:var(--dim);font-size:12px;padding:12px 4px;text-align:center}
+  .mc-reg{padding:6px 12px;background:linear-gradient(180deg,#1a2530,#111923);border:1px solid var(--etched);border-radius:7px;
+          color:var(--gold);font:800 12px/1 inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+  .mc-reg:hover{border-color:var(--gold)}
+  .mc-reg.on{background:linear-gradient(180deg,#1e2f28,#12211b);border-color:var(--gold);color:var(--gold)}
+  .card .mc-reg-card{position:absolute;top:6px;right:7px;z-index:3;padding:3px 7px;font-size:11px}
+
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
   @media (max-width:760px){
@@ -454,6 +510,9 @@
     .hw-preset{min-width:0;width:100%}
     .hw-char{grid-template-columns:1fr}
     .hw-modal-grid{grid-template-columns:1fr}
+    .mc-preset{min-width:0;width:100%}
+    .mc-grid{grid-template-columns:1fr}
+    .mc-body{padding:14px}
   }
 
   /* 화면공유 탭 */
@@ -508,6 +567,20 @@
   </div>
 </section>
 
+<!-- 내 캐릭터 탭 (등록한 캐릭터를 프리셋(그룹)별로 관리) -->
+<section class="view" id="view-mychar">
+  <div class="toolbar">
+    <div class="mc-preset">
+      <div class="top">
+        <input id="mcGroupName" placeholder="새 그룹 이름 (예: 본계정, 부캐)">
+        <button class="hw-mini" id="mcGroupAdd">그룹 추가</button>
+      </div>
+      <div class="mc-note">캐릭터 탭에서 검색 결과나 상세 화면의 <b>⭐ 등록</b> 버튼으로 캐릭터를 그룹에 담을 수 있습니다.</div>
+    </div>
+  </div>
+  <div id="mcBody" class="mc-body"></div>
+</section>
+
 <!-- 숙제 탭 -->
 <section class="view" id="view-homework">
   <div class="homework">
@@ -531,15 +604,7 @@
       </div>
       <div class="hw-grid">
         <div class="hw-box"><label>자동 충전</label><div class="hw-info"><b>3시간마다 15</b><span>하루 120 · 주간 840 고정</span></div></div>
-        <div class="hw-box"><label>전역 이벤트 수급</label>
-          <div class="hw-charge"><img src="/images/icon_item_gather_od_a_u_001.png" alt=""><div>
-            <div class="row"><div><div class="name">오드 에너지 +40</div><div class="desc">일일 개수</div></div><input id="hwEvent40" type="number" min="0" value="0"></div>
-            <div class="row" style="margin-top:7px"><div><div class="name">오드 에너지 +10</div><div class="desc">일일 개수</div></div><input id="hwEvent10" type="number" min="0" value="0"></div>
-          </div></div></div>
-        <div class="hw-box"><label>새싹 보너스</label>
-          <div class="hw-charge"><img src="/images/icon_item_gather_od_a_u_001.png" alt=""><div>
-            <div class="row"><div><div class="name">오드 에너지 +10</div><div class="desc">본캐 적용 · 주간 획득 개수</div></div><input id="hwSprout10" type="number" min="0" value="0"></div>
-          </div></div></div>
+        <div class="hw-box"><label>운영자 설정</label><div class="hw-info"><b>전역 이벤트 · 새싹 보너스</b><span>⚙️ 설정 탭에서 입력</span></div></div>
         <div class="hw-box"><label>캐릭터 추가</label><div class="hw-actions">
           <button class="hw-mini" id="hwAddMain">본캐 추가</button>
           <button class="hw-mini" id="hwAddSub">부캐 추가</button>
@@ -561,6 +626,19 @@
     <div class="hw-modal-actions">
       <button class="hw-mini" id="hwManualCancel">취소</button>
       <button class="hw-mini" id="hwManualSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 내 캐릭터 등록 모달 (그룹 검색 → 선택) -->
+<div id="mcModal" class="hw-modal-back">
+  <div class="hw-modal">
+    <h3 id="mcModalTitle">내 캐릭터로 등록</h3>
+    <label>그룹 검색 후 선택 (없으면 새 그룹으로 등록)</label>
+    <input id="mcModalSearch" placeholder="그룹 이름 검색 (예: '보' → 보리 · 보리뚜 · 보리그룹)" autocomplete="off" spellcheck="false">
+    <div id="mcModalGroups" class="mc-glist"></div>
+    <div class="hw-modal-actions">
+      <button class="hw-mini" id="mcModalCancel">취소</button>
     </div>
   </div>
 </div>
@@ -587,6 +665,32 @@
   </div>
 </section>
 
+<!-- 설정 탭 (운영자 전용 전역 설정. 프리셋과 분리되어 항상 유지. 지금은 항상 노출) -->
+<section class="view" id="view-settings">
+  <div class="homework">
+    <div class="hw-wrap">
+      <div class="hw-head">
+        <div>
+          <h2>운영자 설정</h2>
+          <p>운영자만 조정하는 전역 값입니다. 모든 프리셋·계산에 공통 반영되며, 프리셋 저장/불러오기와 분리되어 항상 유지됩니다. (지금은 나만 사용하므로 항상 노출)</p>
+        </div>
+      </div>
+      <div class="hw-grid">
+        <div class="hw-box"><label>전역 이벤트 수급</label>
+          <div class="hw-charge"><img src="/images/icon_item_gather_od_a_u_001.png" alt=""><div>
+            <div class="row"><div><div class="name">오드 에너지 +40</div><div class="desc">일일 개수</div></div><input id="hwEvent40" type="number" min="0" value="0"></div>
+            <div class="row" style="margin-top:7px"><div><div class="name">오드 에너지 +10</div><div class="desc">일일 개수</div></div><input id="hwEvent10" type="number" min="0" value="0"></div>
+          </div></div></div>
+        <div class="hw-box"><label>새싹 보너스</label>
+          <div class="hw-charge"><img src="/images/icon_item_gather_od_a_u_001.png" alt=""><div>
+            <div class="row"><div><div class="name">오드 에너지 +10</div><div class="desc">본캐 적용 · 주간 획득 개수</div></div><input id="hwSprout10" type="number" min="0" value="0"></div>
+          </div></div></div>
+      </div>
+      <div class="hw-note">본캐에만 합산됩니다. 전역 이벤트 수급은 일일 개수 기준, 새싹 보너스는 주간 획득 개수 기준으로 계산합니다.</div>
+    </div>
+  </div>
+</section>
+
 <!-- ── 향후 탭 추가 방법 ───────────────────────────────────────────
   1) 아래처럼 뷰 섹션을 하나 더 붙이고 (id 는 "view-<탭id>"):
        <section class="view" id="view-price"> …시세 조회 UI… </section>
@@ -610,9 +714,11 @@ async function j(u){const r=await fetch(u);return r.json();}
 // 새 기능은 여기 한 줄 추가 + 위 HTML 에 <section class="view" id="view-<id>"> 만 붙이면 된다.
 const TABS=[
   {id:"char",  label:"🧝 캐릭터"},
-  {id:"craft", label:"⚒️ 제작"},
+  {id:"mychar", label:"🗂️ 내 캐릭터"},
+  // {id:"craft", label:"⚒️ 제작"},   // 기능 유지, 탭만 숨김
   {id:"homework", label:"📅 숙제"},
-  {id:"screen", label:"📱 화면공유"},
+  // {id:"screen", label:"📱 화면공유"},   // 기능 유지, 탭만 숨김
+  {id:"settings", label:"⚙️ 설정"},
 ];
 function showView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+id));
@@ -644,23 +750,43 @@ const HW_ROLE={
   main:{label:"본캐",event:true,buy:40*40,desc:"전역 이벤트 + 새싹 + 주간 구매 40×40"},
   sub:{label:"부캐",event:false,buy:8*40,desc:"주간 구매 8×40"},
 };
+// 성역: 선택 시 오드를 별도로 사용하므로 던전 계산 전 주간 에너지에서 개당 SANCTUARY_COST 차감.
+// profit=성역 레이드 예상수익(키나). 던전 수익과 별도로 예상수익에 합산하고 UI에 괄호로 따로 표기.
+const HW_SANCTUARIES=[
+  {key:"rudra",  label:"루드라", profit:2_000_000},
+  {key:"erosion",label:"침식",   profit:8_000_000},
+  {key:"muspell",label:"무스펠", profit:10_000_000},
+];
+const SANCTUARY_COST=160;
+function sanctuaryCost(c){return HW_SANCTUARIES.filter(s=>c.sanctuaries?.[s.key]).length*SANCTUARY_COST;}
+function sanctuaryProfit(c){return HW_SANCTUARIES.reduce((a,s)=>a+(c.sanctuaries?.[s.key]?s.profit:0),0);}
 function hwNum(id){return +(document.getElementById(id)?.value||0);}
 function hwPresets(){try{return JSON.parse(localStorage.getItem(HW_PRESET_KEY)||"{}");}catch(e){return {};}}
 function setHwPresets(v){localStorage.setItem(HW_PRESET_KEY,JSON.stringify(v));}
 function hwChars(){try{return JSON.parse(localStorage.getItem(HW_CHARS_KEY)||"[]");}catch(e){return [];}}
 function setHwChars(v){localStorage.setItem(HW_CHARS_KEY,JSON.stringify(v));}
 function defaultHwChar(role="main"){
-  return {id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:HW_ROLE[role].label,role,dungeon:"fallen_deva",mode:"hard",manualDaily:0,manualWeekly:0,manualDailyProfit:0};
+  return {id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:HW_ROLE[role].label,role,dungeon:"fallen_deva",mode:"hard",manualDaily:0,manualWeekly:0,manualDailyProfit:0,sanctuaries:{}};
+}
+// 운영자 전용 전역 설정(전역 이벤트 수급·새싹 보너스). 프리셋과 분리, 별도 키에 저장해 항상 유지.
+const OP_CFG_KEY="aion2_operator_cfg";
+function opCfg(){try{return JSON.parse(localStorage.getItem(OP_CFG_KEY)||"{}");}catch(e){return {};}}
+function setOpCfg(v){localStorage.setItem(OP_CFG_KEY,JSON.stringify(v));}
+function loadOpCfg(){
+  const c=opCfg(), map={hwEvent40:c.event40,hwEvent10:c.event10,hwSprout10:c.sprout10};
+  Object.entries(map).forEach(([id,val])=>{const e=document.getElementById(id); if(e)e.value=val??0;});
+}
+function persistOpCfg(){
+  setOpCfg({event40:hwNum("hwEvent40"),event10:hwNum("hwEvent10"),sprout10:hwNum("hwSprout10")});
+}
+function initSettings(){
+  loadOpCfg();
+  ["hwEvent40","hwEvent10","hwSprout10"].forEach(id=>document.getElementById(id)?.addEventListener("input",()=>{persistOpCfg();renderHomework();}));
 }
 function hwState(){
-  return {
-    event40:hwNum("hwEvent40"), event10:hwNum("hwEvent10"), sprout10:hwNum("hwSprout10"),
-    chars:hwChars(),
-  };
+  return { chars:hwChars() };
 }
 function applyHwState(s){
-  const map={hwEvent40:s.event40,hwEvent10:s.event10,hwSprout10:s.sprout10};
-  Object.entries(map).forEach(([id,val])=>{const e=document.getElementById(id); if(e)e.value=val??0;});
   setHwChars((s.chars&&s.chars.length)?s.chars:[defaultHwChar("main")]);
   renderHomework();
 }
@@ -695,10 +821,13 @@ function dungeonCalc(dungeonKey, modeKey, weeklyEnergy){
 }
 function calcChar(c, weeklyAuto, weeklyMainBonus){
   const role=HW_ROLE[c.role]||HW_ROLE.sub;
-  const weekly=weeklyAuto+(role.event?weeklyMainBonus:0)+role.buy+(+c.manualDaily||0)*7+(+c.manualWeekly||0);
+  const sanctCost=sanctuaryCost(c);
+  const gross=weeklyAuto+(role.event?weeklyMainBonus:0)+role.buy+(+c.manualDaily||0)*7+(+c.manualWeekly||0);
+  const weekly=Math.max(0,gross-sanctCost);
   const base=dungeonCalc(c.dungeon||"fallen_deva",c.mode||"hard",weekly);
   const manualDailyProfit=+c.manualDailyProfit||0;
-  return {...base,char:c,role,weeklyEnergy:weekly,dungeonProfit:base.profit,manualDailyProfit,profit:base.profit+manualDailyProfit*7};
+  const sanctProfit=sanctuaryProfit(c);
+  return {...base,char:c,role,weeklyEnergy:weekly,sanctCost,sanctProfit,dungeonProfit:base.profit,manualDailyProfit,profit:base.profit+manualDailyProfit*7+sanctProfit};
 }
 function updateHwChar(id, patch, redrawCharacters=true){
   const chars=hwChars().map(c=>c.id===id?{...c,...patch}:c);
@@ -725,6 +854,14 @@ function renderHwCharacters(chars){
       <select data-hw="mode">${modeOptions(c.dungeon||"fallen_deva",c.mode||"hard")}</select>
       <button class="hw-mini" data-hw-manual title="${esc(manualTip)}">${manual?"수기*":"수기"}</button>
       <button class="hw-mini" data-hw-remove>삭제</button>
+      <div class="hw-sanct">
+        <span class="cap">성역</span>
+        ${HW_SANCTUARIES.map(s=>`<label><input type="checkbox" data-sanct="${s.key}" ${c.sanctuaries?.[s.key]?'checked':''}>${s.label}</label>`).join("")}
+        <span class="cut">
+          <span class="od${sanctuaryCost(c)?' on':''}" title="선택 성역당 오드 ${SANCTUARY_COST} 차감(주간)">${sanctuaryCost(c)?`오드 −${fmt(sanctuaryCost(c))}`:'오드 차감 없음'}</span>
+          <span class="rd${sanctuaryProfit(c)?' on':''}" title="성역 레이드 예상수익(키나)">${sanctuaryProfit(c)?`레이드 +${fmt(sanctuaryProfit(c))}`:''}</span>
+        </span>
+      </div>
     </div>`;
   }).join("");
 }
@@ -757,20 +894,20 @@ function renderHomework(redrawCharacters=true){
   const totalEnergy=rows.reduce((a,r)=>a+r.weeklyEnergy,0);
   const totalRuns=rows.reduce((a,r)=>a+r.runs,0);
   const totalProfit=rows.reduce((a,r)=>a+r.profit,0);
+  const totalSanctProfit=rows.reduce((a,r)=>a+r.sanctProfit,0);
   document.getElementById("hwResult").innerHTML=`<div class="hw-kpi">
     <div class="hw-k"><div class="t">하루 자동 충전</div><div class="v">${fmt(Math.floor(dailyAuto))}</div><div class="s">${cycle}시간마다 ${fmt(charge)}</div></div>
     <div class="hw-k"><div class="t">전역 이벤트 수급</div><div class="v">${fmt(Math.floor(weeklyEvent))}</div><div class="s">본캐에만 합산 · 일 ${fmt(dailyEvent)}</div></div>
     <div class="hw-k"><div class="t">새싹 보너스</div><div class="v">${fmt(Math.floor(weeklySprout))}</div><div class="s">본캐에만 합산 · 주간 제한</div></div>
     <div class="hw-k"><div class="t">주간 총 에너지</div><div class="v">${fmt(Math.floor(totalEnergy))}</div><div class="s">${rows.length}캐릭터 합산</div></div>
-    <div class="hw-k"><div class="t">예상 주간 수익</div><div class="v">${fmtFull(totalProfit)}</div><div class="s">총 ${fmt(totalRuns)}판 · 하루 ${(totalRuns/7).toFixed(2)}판</div></div>
+    <div class="hw-k"><div class="t">예상 주간 수익 <span class="raid-hint">(괄호=레이드)</span></div><div class="v">${fmtFull(totalProfit)}${totalSanctProfit?` <span class="raid">(${fmtFull(totalSanctProfit)})</span>`:''}</div><div class="s">총 ${fmt(totalRuns)}판 · 하루 ${(totalRuns/7).toFixed(2)}판</div></div>
   </div>
-  <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 수익(키나)</th><th>주간 판수</th><th>하루 판수</th><th>일간 부가수익(키나)</th><th>예상 수익(키나)</th><th>잔여</th></tr></thead>
+  <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 수익(키나)</th><th>주간 판수</th><th>하루 판수</th><th>일간 부가수익(키나)</th><th>예상 수익(키나) <span class="raid-hint">(괄호=레이드)</span></th><th>잔여</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td>${esc(r.char.name||'')}</td><td>${r.role.label}</td><td>${r.dungeon}</td><td>${r.name}</td><td class="num">${fmt(Math.floor(r.weeklyEnergy))}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmtFull(r.reward)}</td>
-      <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
-  <div class="hw-note">현재 던전 수익 정보는 타락한 데바의 성 기준입니다. 본캐는 전역 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다.</div>`;
+      <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}${r.sanctProfit?` <span class="raid">(${fmtFull(r.sanctProfit)})</span>`:''}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
+  <div class="hw-note">현재 던전 수익 정보는 타락한 데바의 성 기준입니다. 본캐는 전역 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(루드라·침식·무스펠)은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 레이드 수익(루드라 ${fmtFull(HW_SANCTUARIES[0].profit)} · 침식 ${fmtFull(HW_SANCTUARIES[1].profit)} · 무스펠 ${fmtFull(HW_SANCTUARIES[2].profit)} 키나)은 던전 수익과 별도로 예상 수익에 합산되며 괄호로 따로 표기합니다.</div>`;
 }
 function initHomework(){
-  ["hwEvent40","hwEvent10","hwSprout10"].forEach(id=>document.getElementById(id)?.addEventListener("input",renderHomework));
   document.getElementById("hwAddMain")?.addEventListener("click",()=>addHwChar("main"));
   document.getElementById("hwAddSub")?.addEventListener("click",()=>addHwChar("sub"));
   document.getElementById("hwCharacters")?.addEventListener("input",e=>{
@@ -779,7 +916,11 @@ function initHomework(){
   });
   document.getElementById("hwCharacters")?.addEventListener("change",e=>{
     const card=e.target.closest(".hw-char"); if(!card)return;
-    if(e.target.dataset.hw==="dungeon") updateHwChar(card.dataset.id,{dungeon:e.target.value,mode:"hard"});
+    if(e.target.dataset.sanct){
+      const c=hwChars().find(x=>x.id===card.dataset.id); if(!c)return;
+      updateHwChar(card.dataset.id,{sanctuaries:{...(c.sanctuaries||{}),[e.target.dataset.sanct]:e.target.checked}});
+    }
+    else if(e.target.dataset.hw==="dungeon") updateHwChar(card.dataset.id,{dungeon:e.target.value,mode:"hard"});
     else if(e.target.dataset.hw) updateHwChar(card.dataset.id,{[e.target.dataset.hw]:e.target.value});
   });
   document.getElementById("hwCharacters")?.addEventListener("click",e=>{
@@ -1301,10 +1442,167 @@ function initSkillTip(){
   D.addEventListener("scroll",hideTip);
 }
 
+// ── 내 캐릭터(등록) ─────────────────────────────────────────────
+// 등록한 캐릭터를 프리셋(그룹)별로 관리. 브라우저 localStorage 저장.
+const MC_KEY="aion2_mychars";          // 캐릭터 레코드 배열
+const MC_GROUP_KEY="aion2_mychar_groups"; // 빈 그룹도 유지하기 위한 그룹명 목록
+function mcChars(){try{return JSON.parse(localStorage.getItem(MC_KEY)||"[]");}catch(e){return [];}}
+function setMcChars(v){localStorage.setItem(MC_KEY,JSON.stringify(v));}
+function mcGroupList(){try{return JSON.parse(localStorage.getItem(MC_GROUP_KEY)||"[]");}catch(e){return [];}}
+function setMcGroupList(v){localStorage.setItem(MC_GROUP_KEY,JSON.stringify(v));}
+const mcKey=(sid,cid)=>sid+":"+cid;
+function mcAllGroups(){
+  const g=[...mcGroupList()];
+  mcChars().forEach(c=>{ if(c.group && !g.includes(c.group)) g.push(c.group); });
+  return g;
+}
+function mcHas(sid,cid){const k=mcKey(sid,cid);return mcChars().some(c=>c.key===k);}
+function mcAddGroup(name){
+  name=(name||"").trim(); if(!name){alert("그룹 이름을 입력하세요.");return;}
+  const g=mcGroupList(); if(!g.includes(name)){g.push(name);setMcGroupList(g);}
+  renderMyChars();
+}
+function mcRemoveGroup(name){
+  if(!confirm(`'${name}' 그룹과 그 안의 캐릭터 등록을 모두 삭제할까요?`))return;
+  setMcGroupList(mcGroupList().filter(n=>n!==name));
+  setMcChars(mcChars().filter(c=>c.group!==name));
+  renderMyChars(); refreshRegButtons();
+}
+function mcRemoveChar(key){
+  setMcChars(mcChars().filter(c=>c.key!==key));
+  renderMyChars(); refreshRegButtons();
+}
+// 등록된 캐릭터의 전투력·레벨 등을 상세 프로필로 최신화(변경 시에만 저장/재렌더)
+function mcSyncStats(sid,cid,p){
+  if(!p)return; const k=mcKey(sid,cid); const arr=mcChars(); const c=arr.find(x=>x.key===k);
+  if(!c)return; let ch=false; const set=(f,v)=>{ if(v!=null&&c[f]!==v){c[f]=v;ch=true;} };
+  set("cp",p.combatPower); set("level",p.characterLevel); set("name",p.characterName);
+  set("serverName",p.serverName); set("race",p.raceId); set("img",p.profileImage);
+  if(ch){ setMcChars(arr); renderMyChars(); }
+}
+// 전투력 없는(검색으로 등록한) 캐릭터는 저장 캐시에서 조용히 보충 — 외부 재조회 없이 로컬 DB만 읽음
+let mcBackfilling=false;
+function mcBackfillMissing(){
+  if(mcBackfilling)return;
+  const missing=mcChars().filter(c=>c.cp==null);
+  if(!missing.length)return;
+  mcBackfilling=true;
+  Promise.all(missing.map(c=>j(`/api/char/cached?${charQS(c.serverId,c.characterId)}`)
+    .then(r=>{const p=r&&r.data&&r.data.info&&r.data.info.profile; return p?{key:c.key,p}:null;})
+    .catch(()=>null)))
+    .then(res=>{
+      mcBackfilling=false;
+      const arr=mcChars(); let ch=false;
+      res.filter(Boolean).forEach(({key,p})=>{const c=arr.find(x=>x.key===key);
+        if(c&&p.combatPower!=null&&c.cp!==p.combatPower){c.cp=p.combatPower; if(p.characterLevel!=null)c.level=p.characterLevel; ch=true;}});
+      if(ch){ setMcChars(arr); renderMyChars(); }
+    });
+}
+
+// 등록 후보를 담아두고 모달에서 그룹을 '검색 → 선택'
+let pendingReg=null;
+function openRegModal(rec){
+  if(mcHas(rec.serverId,rec.characterId)){ // 이미 등록됨 → 해제
+    mcRemoveChar(mcKey(rec.serverId,rec.characterId)); return;
+  }
+  pendingReg=rec;
+  document.getElementById("mcModalTitle").textContent=`'${rec.name}' 등록 — 그룹 선택`;
+  const s=document.getElementById("mcModalSearch"); s.value="";
+  renderRegGroups("");
+  document.getElementById("mcModal").classList.add("on");
+  s.focus();
+}
+function closeRegModal(){document.getElementById("mcModal").classList.remove("on");pendingReg=null;}
+// 검색어(부분 일치)로 기존 그룹을 필터링해 목록 렌더. 정확히 일치하는 그룹이 없으면 '새 그룹 만들기' 행 추가.
+function renderRegGroups(q){
+  const box=document.getElementById("mcModalGroups"); if(!box)return;
+  q=(q||"").trim(); const ql=q.toLowerCase();
+  const chars=mcChars(), groups=mcAllGroups();
+  const hit=groups.filter(g=>!ql||g.toLowerCase().includes(ql));
+  let html="";
+  if(q && !groups.some(g=>g===q))
+    html+=`<div class="mc-grow new" data-new="${esc(q)}"><span class="gn">＋ '${esc(q)}' 새 그룹으로 등록</span></div>`;
+  html+=hit.map(g=>`<div class="mc-grow" data-g="${esc(g)}">
+      <span class="gn">${esc(g)}</span><span class="gc">${chars.filter(c=>c.group===g).length}명</span></div>`).join("");
+  if(!hit.length && !q) html+='<div class="none">아직 그룹이 없습니다. 위에 이름을 입력해 새 그룹으로 등록하세요.</div>';
+  if(!hit.length && q && groups.some(g=>g===q)) html+='';
+  box.innerHTML=html;
+  box.querySelectorAll("[data-g]").forEach(r=>r.onclick=()=>regToGroup(r.dataset.g));
+  box.querySelectorAll("[data-new]").forEach(r=>r.onclick=()=>regToGroup(r.dataset.new));
+}
+function regToGroup(group){
+  group=(group||"").trim(); if(!group||!pendingReg)return;
+  const g=mcGroupList(); if(!g.includes(group)){g.push(group);setMcGroupList(g);}
+  const rec={...pendingReg,key:mcKey(pendingReg.serverId,pendingReg.characterId),group};
+  const arr=mcChars().filter(c=>c.key!==rec.key); arr.push(rec); setMcChars(arr);
+  closeRegModal(); renderMyChars(); refreshRegButtons();
+}
+
+// 검색 결과 카드 / 상세 화면의 ⭐등록 버튼 상태를 현재 등록 여부에 맞춰 갱신
+function regLabel(on){return on?"✓ 등록됨":"⭐ 등록";}
+function refreshRegButtons(){
+  document.querySelectorAll("[data-reg]").forEach(b=>{
+    const on=mcHas(+b.dataset.sid||b.dataset.sid, b.dataset.cid);
+    b.classList.toggle("on",on); b.textContent=regLabel(on);
+  });
+}
+
+function renderMyChars(){
+  const box=document.getElementById("mcBody"); if(!box)return;
+  box.innerHTML="";
+  const groups=mcAllGroups(), chars=mcChars();
+  if(!groups.length){
+    box.innerHTML=`<div class="mc-empty">등록된 캐릭터가 없습니다.<br>
+      위에서 <b>그룹을 추가</b>하고, <b>🧝 캐릭터</b> 탭에서 검색해 <b>⭐ 등록</b> 하세요.</div>`;
+    return;
+  }
+  groups.forEach(gname=>{
+    const gchars=chars.filter(c=>c.group===gname);
+    const g=el("div","mc-group");
+    const h=el("div","mc-group-h");
+    h.innerHTML=`<span class="gname">${esc(gname)}</span><span class="gcount">${gchars.length}명</span>
+      <span class="spacer"></span><button class="hw-mini" data-delgroup="${esc(gname)}">그룹 삭제</button>`;
+    g.appendChild(h);
+    const grid=el("div","mc-grid");
+    if(!gchars.length){ grid.innerHTML=`<div class="mc-empty" style="padding:16px">이 그룹에 등록된 캐릭터가 없습니다.</div>`; }
+    gchars.forEach(c=>{
+      const card=el("div","mc-card");
+      card.style.setProperty("--c",c.race===1?"#8ff0d0":"#ffadc0");
+      card.innerHTML=`<button class="mc-del" data-del="${esc(c.key)}" title="등록 해제">✕</button>
+        <img class="ico" src="${c.img||''}" ${oe}>
+        <div><div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">⚔️ ${c.cp!=null?Math.floor(c.cp):'–'}</span></div>
+        <div class="sub">Lv.${c.level??'?'} · ${esc(c.serverName||'')} · ${c.race===1?'천족':'마족'}</div></div>`;
+      card.onclick=(e)=>{
+        if(e.target.closest("[data-del]"))return;
+        showView("char"); openChar(c.serverId,c.characterId);
+      };
+      grid.appendChild(card);
+    });
+    g.appendChild(grid);
+    box.appendChild(g);
+  });
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>mcRemoveChar(b.dataset.del));
+  box.querySelectorAll("[data-delgroup]").forEach(b=>b.onclick=()=>mcRemoveGroup(b.dataset.delgroup));
+  mcBackfillMissing();
+}
+function initMyChars(){
+  on("mcGroupAdd","click",()=>{const i=document.getElementById("mcGroupName");mcAddGroup(i.value);i.value="";});
+  on("mcGroupName","keydown",e=>{if(e.key==="Enter"){mcAddGroup(e.target.value);e.target.value="";}});
+  on("mcModalCancel","click",closeRegModal);
+  on("mcModalSearch","input",e=>renderRegGroups(e.target.value));
+  on("mcModalSearch","keydown",e=>{   // Enter → 필터 결과의 첫 행(새 그룹 우선) 선택
+    if(e.key!=="Enter")return;
+    const first=document.querySelector("#mcModalGroups .mc-grow"); if(first)first.click();
+  });
+  document.getElementById("mcModal").addEventListener("click",e=>{if(e.target.id==="mcModal")closeRegModal();});
+  renderMyChars();
+}
+
 async function charSearch(){
   const q=document.getElementById("cq").value.trim();
   const box=document.getElementById("clist");
   if(!q){box.innerHTML="";return;}
+  charCache.clear();   // 새 검색 → 캐시 무효화(다음 클릭부터 최신 재조회)
   box.innerHTML='<div class="meta">검색 중…</div>';
   let d; try{ d=await j("/api/char/search?q="+encodeURIComponent(q)); }
   catch(e){ box.innerHTML='<div class="empty">검색 실패</div>'; return; }
@@ -1314,13 +1612,19 @@ async function charSearch(){
   list.forEach(c=>{
     const card=el("div","card");
     card.style.setProperty("--c",c.race===1?"#8ff0d0":"#ffadc0");
-    card.innerHTML=`<img class="ico" src="${c.profileImageUrl||''}" ${oe}>
+    const on=mcHas(c.serverId,c.characterId);
+    card.innerHTML=`<button class="mc-reg mc-reg-card${on?' on':''}" data-reg data-sid="${c.serverId}" data-cid="${c.characterId}">${regLabel(on)}</button>
+      <img class="ico" src="${c.profileImageUrl||''}" ${oe}>
       <div><div class="nm">${c.name}</div>
       <div class="sub">Lv.${c.level} · ${c.serverName||''} <span class="race">${c.race===1?'천족':'마족'}</span></div></div>`;
-    card.onclick=()=>{
+    card.onclick=(e)=>{
+      if(e.target.closest("[data-reg]"))return;
       document.querySelectorAll("#clist .card.active").forEach(x=>x.classList.remove("active"));
       card.classList.add("active"); openChar(c.serverId,c.characterId);
     };
+    card.querySelector("[data-reg]").onclick=()=>openRegModal({
+      serverId:c.serverId,characterId:c.characterId,name:c.name,level:c.level,
+      serverName:c.serverName,race:c.race,img:c.profileImageUrl,cp:c.combatPower});
     box.appendChild(card);
   });
 }
@@ -1380,13 +1684,42 @@ const simpleCard=(o,label)=>`<div class="gear" style="--c:${gc(o.grade)}">
     ${o.enchantLevel!=null?`<div class="gear-en">+${o.enchantLevel||0}</div>`:(o.level!=null?`<div class="gear-en" style="font-size:12px">Lv.${o.level}</div>`:'')}
   </div></div>`;
 
+// 캐릭터 상세 로딩 전략(stale-while-revalidate):
+//  1) 세션 메모리 캐시(charCache) → 새 검색 전까지 재조회 없이 즉시 재랜딩.
+//  2) 서버에 저장된 이력(char_cache DB)이 있으면 먼저 즉시 노출.
+//  3) 백그라운드로 최신 수집 → 저장. 서버 해시가 노출본과 다를 때만 화면을 잠깐 갱신
+//     (동일하면 새로고침하지 않아 깜빡임 없음).
+const charCache=new Map();
+let curOpenKey=null;
+const charQS=(sid,cid)=>`serverId=${encodeURIComponent(sid)}&characterId=${encodeURIComponent(cid)}`;
 async function openChar(serverId,characterId){
+  const key=serverId+":"+characterId;
+  curOpenKey=key;
+  const mem=charCache.get(key);
+  if(mem){ lastChar=mem; renderChar(mem); return; }   // 세션 내 재클릭 → 즉시
+
   const D=document.getElementById("cdetail");
-  D.innerHTML='<div class="empty">불러오는 중… <br><span class="muted">장비 상세까지 함께 가져옵니다 (~2초)</span></div>';
-  let d; try{ d=await j(`/api/char/detail?serverId=${encodeURIComponent(serverId)}&characterId=${encodeURIComponent(characterId)}`); }
-  catch(e){ D.innerHTML='<div class="empty">불러오기 실패</div>'; return; }
-  if(d.error){ D.innerHTML=`<div class="empty">${d.error}</div>`; return; }
-  lastChar=d; renderChar(d);
+  let shown=false, shownHash=null;
+  // 저장된 이력 즉시 노출
+  try{
+    const c=await j(`/api/char/cached?${charQS(serverId,characterId)}`);
+    if(curOpenKey!==key) return;                       // 사이에 다른 캐릭 선택됨
+    if(c&&c.data){
+      c.data.__serverId=serverId; c.data.__characterId=characterId;
+      lastChar=c.data; renderChar(c.data); shown=true; shownHash=c.hash;
+    }
+  }catch(e){}
+  if(!shown&&curOpenKey===key)
+    D.innerHTML='<div class="empty">불러오는 중… <br><span class="muted">장비 상세까지 함께 가져옵니다 (~2초)</span></div>';
+
+  // 백그라운드 최신 수집
+  let r; try{ r=await j(`/api/char/detail?${charQS(serverId,characterId)}`); }
+  catch(e){ if(!shown&&curOpenKey===key) D.innerHTML='<div class="empty">불러오기 실패</div>'; return; }
+  if(r.error){ if(!shown&&curOpenKey===key) D.innerHTML=`<div class="empty">${r.error}</div>`; return; }
+  const fresh=r.data; fresh.__serverId=serverId; fresh.__characterId=characterId;
+  charCache.set(key,fresh);                            // 이후 클릭은 즉시
+  if(curOpenKey!==key) return;                         // 다른 캐릭 보는 중이면 갱신 안 함
+  if(!shown||r.hash!==shownHash){ lastChar=fresh; renderChar(fresh); }  // 값이 바뀌었을 때만 갱신
 }
 function renderChar(d){
   const info=d.info||{}, eq=d.equipment||{}, p=info.profile||{};
@@ -1403,10 +1736,16 @@ function renderChar(d){
       <div class="meta">${badge}Lv.${p.characterLevel||'?'} · <b style="color:var(--txt)">${p.className||''}</b> · ${p.genderName||''}<br>
         ${p.serverName||''} 서버 · ${p.regionName||''} 지역</div>
       ${p.titleName?`<div class="title-line">🏅 ${p.titleName}</div>`:''}
+      ${d.__serverId!=null?`<div class="badges"><button class="mc-reg" data-reg data-sid="${d.__serverId}" data-cid="${d.__characterId}">${regLabel(mcHas(d.__serverId,d.__characterId))}</button></div>`:''}
     </div>
     <div class="cp"><div class="lab">전투력</div><div class="num">${fmt(p.combatPower)}</div>
       ${top?`<div class="rk">${top.rankingContentsName} ${fmt(top.rank)}위</div>`:''}</div>`;
   D.appendChild(head);
+  const regBtn=head.querySelector("[data-reg]");
+  if(regBtn) regBtn.onclick=()=>openRegModal({
+    serverId:d.__serverId,characterId:d.__characterId,name:p.characterName,level:p.characterLevel,
+    serverName:p.serverName,race:p.raceId,img:p.profileImage,cp:p.combatPower});
+  if(d.__serverId!=null) mcSyncStats(d.__serverId,d.__characterId,p);   // 등록돼 있으면 전투력 등 최신화
 
   // 장비 목록(진단·코덱스 공용) + 스탯 목록
   const items=(eq.equipment&&eq.equipment.equipmentList)||[];
@@ -1594,7 +1933,9 @@ function initScreen(){
 
 renderTabs();
 initSkillTip();
+initSettings();
 initHomework();
+initMyChars();
 initScreen();
 on("cbtn","click",charSearch);
 on("cq","keydown",e=>{ if(e.key==="Enter") charSearch(); });

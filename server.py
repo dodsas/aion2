@@ -17,6 +17,7 @@
 from __future__ import annotations
 import argparse
 import concurrent.futures
+import hashlib
 import json
 import sqlite3
 import ssl
@@ -32,6 +33,8 @@ import crawl_craft as ccf  # 공유 스키마 상수(PRICE_OVERRIDES_DDL, V_*_SQ
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "aion2_craft.db"
+# 캐릭터 상세 캐시 전용 DB(크롤러가 재생성하는 craft.db 와 분리 · git 미추적).
+CHAR_CACHE_DB = BASE_DIR / "char_cache.db"
 IMG_DIR = BASE_DIR / "images"
 INDEX = BASE_DIR / "index.html"
 
@@ -40,6 +43,28 @@ def db():
     con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     return con
+
+
+def char_db():
+    con = sqlite3.connect(CHAR_CACHE_DB, timeout=10)
+    con.row_factory = sqlite3.Row
+    return con
+
+
+def ensure_char_cache_schema():
+    """캐릭터 상세를 '화면 노출 기준 JSON' 한 컬럼(data)에 저장하고,
+    변경 감지용 sha256(hash)을 함께 둔다. k = 'serverId:characterId'."""
+    con = char_db()
+    try:
+        con.executescript(
+            "CREATE TABLE IF NOT EXISTS char_cache("
+            " k TEXT PRIMARY KEY,"
+            " data TEXT NOT NULL,"
+            " hash TEXT NOT NULL,"
+            " updated_at TEXT NOT NULL);")
+        con.commit()
+    finally:
+        con.close()
 
 
 def db_rw():
@@ -405,7 +430,46 @@ def api_char_detail(q):
             if det:
                 s["detail"] = det
 
-    return {"info": info, "equipment": equipment}
+    detail = {"info": info, "equipment": equipment}
+    # 화면 노출 기준 JSON 을 한 컬럼에 저장하고 sha256 해시를 함께 반환한다.
+    # (sort_keys 로 정규화 → 키 순서 변동만으로 해시가 바뀌지 않게)
+    payload = json.dumps(detail, ensure_ascii=False, sort_keys=True)
+    h = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    try:
+        con = char_db()
+        try:
+            con.execute(
+                "INSERT INTO char_cache(k, data, hash, updated_at) VALUES(?,?,?,?) "
+                "ON CONFLICT(k) DO UPDATE SET data=excluded.data, "
+                "hash=excluded.hash, updated_at=excluded.updated_at",
+                (f"{sid}:{cid}", payload, h,
+                 datetime.now(timezone.utc).isoformat()))
+            con.commit()
+        finally:
+            con.close()
+    except Exception:
+        pass  # 캐시 저장 실패는 조회 자체를 막지 않는다
+    return {"data": detail, "hash": h}
+
+
+def api_char_cached(q):
+    """저장된(이력 있는) 캐릭터 상세를 즉시 반환. 없으면 data=None."""
+    cid = q.get("characterId", [None])[0]
+    sid = q.get("serverId", [None])[0]
+    if not cid or not sid:
+        return {"data": None, "hash": None}
+    try:
+        con = char_db()
+        try:
+            r = con.execute("SELECT data, hash FROM char_cache WHERE k=?",
+                            (f"{sid}:{cid}",)).fetchone()
+        finally:
+            con.close()
+    except Exception:
+        r = None
+    if not r:
+        return {"data": None, "hash": None}
+    return {"data": json.loads(r["data"]), "hash": r["hash"]}
 
 
 def api_char_item(q):
@@ -428,6 +492,7 @@ ROUTES = {
 NET_ROUTES = {
     "/api/char/search": api_char_search,
     "/api/char/detail": api_char_detail,
+    "/api/char/cached": api_char_cached,
     "/api/char/item": api_char_item,
 }
 
@@ -436,15 +501,19 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass  # 조용히
 
-    def _send(self, code, body, ctype="application/json; charset=utf-8"):
+    def _send(self, code, body, ctype="application/json; charset=utf-8", cache=None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        if cache is not None:
+            self.send_header("Cache-Control", cache)
         self.end_headers()
         self.wfile.write(body)
 
     def _json(self, obj, code=200):
-        self._send(code, json.dumps(obj, ensure_ascii=False).encode("utf-8"))
+        # API 응답은 항상 최신이어야 하므로 캐시 금지
+        self._send(code, json.dumps(obj, ensure_ascii=False).encode("utf-8"),
+                   cache="no-store")
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -452,7 +521,8 @@ class Handler(BaseHTTPRequestHandler):
 
         if path in ("/", "/index.html"):
             if INDEX.exists():
-                self._send(200, INDEX.read_bytes(), "text/html; charset=utf-8")
+                self._send(200, INDEX.read_bytes(), "text/html; charset=utf-8",
+                           cache="no-store, must-revalidate")
             else:
                 self._send(500, b"index.html missing", "text/plain")
             return
@@ -514,6 +584,7 @@ def main():
     if not DB_PATH.exists():
         raise SystemExit("aion2_craft.db 없음 — 먼저 crawl_craft.py 실행")
     ensure_schema()
+    ensure_char_cache_schema()
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"아이온2 제작 뷰어: http://{args.host}:{args.port}  (Ctrl+C 종료)")
     try:
