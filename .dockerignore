@@ -8,9 +8,12 @@ __pycache__
 *.pyc
 *.db-shm
 *.db-wal
+char_cache.db
+app_store.db
 logs
 raw
 .env
+.env.example
 .server.pid
 .update.lock
 # 배포 메타 (호스트에서만 쓰고 이미지엔 불필요)

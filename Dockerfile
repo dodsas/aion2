@@ -24,4 +24,6 @@ EXPOSE 8770
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl -fsS http://localhost:8770/ >/dev/null 2>&1 || exit 1
 
-CMD ["python", "server.py", "--host", "0.0.0.0", "--port", "8770"]
+# 포트는 하드코딩하지 않는다: Render 는 PORT 를 주입하며 server.py 가 이를 읽는다
+# (없으면 8770). host 만 0.0.0.0 으로 고정해 컨테이너 외부에서 접속되게 한다.
+CMD ["python", "server.py", "--host", "0.0.0.0"]

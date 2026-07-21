@@ -11,9 +11,11 @@ __pycache__/
 .update.lock
 logs/
 
-# 시크릿 (Jenkins 접속정보 등 — 절대 커밋 금지)
+# 시크릿 (Jenkins·Turso 접속정보 등 — 절대 커밋 금지)
 .env
 .env.*
+# 예시 템플릿은 커밋한다 (git 은 라인 끝 주석 미지원 → 부정 패턴은 반드시 단독 줄)
+!.env.example
 
 
 # SQLite 임시 파일 (WAL 모드)
@@ -22,6 +24,9 @@ logs/
 
 # 캐릭터 상세 캐시 DB (서버가 자동 생성 · 재생성 가능)
 char_cache.db
+
+# 로컬 상태 저장소 폴백 (Turso 미설정 시 server.py 가 자동 생성)
+app_store.db
 
 # 크롤 원본 스냅샷 (crawl_craft.py 로 재생성 가능 · 디버그용)
 raw/

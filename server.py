@@ -19,6 +19,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import os
 import sqlite3
 import ssl
 import threading
@@ -30,41 +31,24 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote, urlencode
 
 import crawl_craft as ccf  # 공유 스키마 상수(PRICE_OVERRIDES_DDL, V_*_SQL)
+from store import Store, load_dotenv  # 상태 저장소(Turso 또는 로컬 SQLite 자동 선택)
+
+load_dotenv()  # .env → os.environ (로컬 개발용; 없으면 무시)
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "aion2_craft.db"
-# 캐릭터 상세 캐시 전용 DB(크롤러가 재생성하는 craft.db 와 분리 · git 미추적).
-CHAR_CACHE_DB = BASE_DIR / "char_cache.db"
 IMG_DIR = BASE_DIR / "images"
 INDEX = BASE_DIR / "index.html"
+
+# 상태 데이터(캐릭터 캐시 · 내 캐릭터 · 파티 모집 · 숙제 등) 저장소.
+# TURSO_* 환경변수가 있으면 Turso, 없으면 로컬 app_store.db 로 폴백한다.
+STORE = Store()
 
 
 def db():
     con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     return con
-
-
-def char_db():
-    con = sqlite3.connect(CHAR_CACHE_DB, timeout=10)
-    con.row_factory = sqlite3.Row
-    return con
-
-
-def ensure_char_cache_schema():
-    """캐릭터 상세를 '화면 노출 기준 JSON' 한 컬럼(data)에 저장하고,
-    변경 감지용 sha256(hash)을 함께 둔다. k = 'serverId:characterId'."""
-    con = char_db()
-    try:
-        con.executescript(
-            "CREATE TABLE IF NOT EXISTS char_cache("
-            " k TEXT PRIMARY KEY,"
-            " data TEXT NOT NULL,"
-            " hash TEXT NOT NULL,"
-            " updated_at TEXT NOT NULL);")
-        con.commit()
-    finally:
-        con.close()
 
 
 def db_rw():
@@ -436,17 +420,7 @@ def api_char_detail(q):
     payload = json.dumps(detail, ensure_ascii=False, sort_keys=True)
     h = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     try:
-        con = char_db()
-        try:
-            con.execute(
-                "INSERT INTO char_cache(k, data, hash, updated_at) VALUES(?,?,?,?) "
-                "ON CONFLICT(k) DO UPDATE SET data=excluded.data, "
-                "hash=excluded.hash, updated_at=excluded.updated_at",
-                (f"{sid}:{cid}", payload, h,
-                 datetime.now(timezone.utc).isoformat()))
-            con.commit()
-        finally:
-            con.close()
+        STORE.char_set(f"{sid}:{cid}", payload, h)
     except Exception:
         pass  # 캐시 저장 실패는 조회 자체를 막지 않는다
     return {"data": detail, "hash": h}
@@ -459,17 +433,12 @@ def api_char_cached(q):
     if not cid or not sid:
         return {"data": None, "hash": None}
     try:
-        con = char_db()
-        try:
-            r = con.execute("SELECT data, hash FROM char_cache WHERE k=?",
-                            (f"{sid}:{cid}",)).fetchone()
-        finally:
-            con.close()
+        r = STORE.char_get(f"{sid}:{cid}")
     except Exception:
         r = None
     if not r:
         return {"data": None, "hash": None}
-    return {"data": json.loads(r["data"]), "hash": r["hash"]}
+    return {"data": r["data"], "hash": r["hash"]}
 
 
 def api_char_item(q):
@@ -481,6 +450,32 @@ def api_char_item(q):
     return fetch_official("/api/character/equipment/item", params)
 
 
+# ---------- 범용 상태 저장(KV) — 내 캐릭터/그룹·파티 모집·숙제·설정·보유량 ----------
+# 클라이언트가 localStorage 대신 사용하는 서버 저장소. 값은 JSON 그대로 보관한다.
+# 인증이 없으므로 현재는 배포 인스턴스 전체가 공유하는 단일 데이터셋이다(소규모 길드용).
+ALLOWED_KV = {
+    "mychars", "mychar_groups", "parties",
+    "homework_presets", "homework_chars", "op_cfg", "own",
+}
+
+
+def api_store_get(q):
+    k = (q.get("k", [""])[0] or "").strip()
+    if k not in ALLOWED_KV:
+        return {"error": "unknown key"}
+    return {"k": k, "v": STORE.kv_get(k)}
+
+
+def api_store_set(data):
+    k = (data.get("k") or "").strip()
+    if k not in ALLOWED_KV:
+        return {"error": "unknown key"}
+    if "v" not in data:
+        return {"error": "v required"}
+    STORE.kv_set(k, data["v"])
+    return {"ok": True, "k": k}
+
+
 ROUTES = {
     "/api/meta": api_meta,
     "/api/search": api_search,
@@ -488,12 +483,14 @@ ROUTES = {
     "/api/item": api_item,
 }
 
-# 네트워크(공식 API) 프록시 라우트 — DB 불필요
+# 네트워크(공식 API) 프록시 + 상태 저장소 라우트 — 크래프트 DB 불필요
 NET_ROUTES = {
     "/api/char/search": api_char_search,
     "/api/char/detail": api_char_detail,
     "/api/char/cached": api_char_cached,
     "/api/char/item": api_char_item,
+    "/api/store": api_store_get,
+    "/api/health": lambda q: {"ok": True, "store": STORE.kind},
 }
 
 
@@ -558,12 +555,15 @@ class Handler(BaseHTTPRequestHandler):
 
         self._send(404, b"not found", "text/plain")
 
+    def _read_json(self):
+        length = int(self.headers.get("Content-Length", 0) or 0)
+        return json.loads(self.rfile.read(length) or b"{}")
+
     def do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/set_price":
             try:
-                length = int(self.headers.get("Content-Length", 0) or 0)
-                data = json.loads(self.rfile.read(length) or b"{}")
+                data = self._read_json()
                 con = db_rw()
                 try:
                     result = api_set_price(con, data)
@@ -573,20 +573,29 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"error": str(e)}, 500)
             return
+        if parsed.path == "/api/store":
+            try:
+                self._json(api_store_set(self._read_json()))
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
         self._send(404, b"not found", "text/plain")
+
+    do_PUT = do_POST  # /api/store 는 PUT 도 허용
 
 
 def main():
+    # Render 등 PaaS 는 PORT 를 주입한다. CLI 인자 > 환경변수 > 기본값 순.
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=8770)
-    ap.add_argument("--host", default="127.0.0.1")
+    ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8770)))
+    ap.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
     args = ap.parse_args()
     if not DB_PATH.exists():
         raise SystemExit("aion2_craft.db 없음 — 먼저 crawl_craft.py 실행")
     ensure_schema()
-    ensure_char_cache_schema()
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"아이온2 제작 뷰어: http://{args.host}:{args.port}  (Ctrl+C 종료)")
+    print(f"아이온2 제작 뷰어: http://{args.host}:{args.port}  "
+          f"(저장소: {STORE.kind}, Ctrl+C 종료)")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

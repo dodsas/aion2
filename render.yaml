@@ -1,0 +1,31 @@
+# Render Blueprint — 무료 플랜 Docker 웹 서비스로 배포.
+#
+# 사용법:
+#   1) 이 리포를 GitHub 에 푸시.
+#   2) Render 대시보드 → New + → Blueprint → 이 리포 선택 → Apply.
+#      (render.yaml 을 자동 인식해 아래 서비스를 생성한다.)
+#   3) 첫 배포 후 서비스 → Environment 에서 시크릿 2개를 입력:
+#        TURSO_DATABASE_URL, TURSO_AUTH_TOKEN   (발급법은 .env.example 참고)
+#      저장하면 자동 재배포되며, 이후 상태 데이터가 Turso 에 영속 저장된다.
+#
+# 참고:
+#   - Render 무료 플랜은 디스크가 비영속이라, Turso 를 설정하지 않으면 로컬 SQLite
+#     폴백 데이터가 재배포/슬립 시 사라진다. 영속이 필요하면 Turso 설정은 필수.
+#   - 무료 웹 서비스는 15분 무접속 시 슬립하며, 다음 요청에서 콜드 스타트한다.
+#   - PORT 는 Render 가 자동 주입한다(server.py 가 읽음). 지정 불필요.
+services:
+  - type: web
+    name: aion2-viewer
+    runtime: docker
+    plan: free
+    region: singapore           # 무료 플랜에서 선택 가능한 아시아 리전
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: TURSO_DATABASE_URL
+        sync: false              # 대시보드에서 직접 입력하는 시크릿
+      - key: TURSO_AUTH_TOKEN
+        sync: false
