@@ -411,8 +411,15 @@
   .hw-charge .desc{font-size:10.5px;color:var(--dim)}
   .hw-actions{display:flex;gap:7px;flex-wrap:wrap}
   .hw-chars{display:grid;gap:10px;margin:12px 0}
-  .hw-char{display:grid;grid-template-columns:minmax(120px,1fr) 92px minmax(170px,1.1fr) 96px auto auto;gap:8px;align-items:center;
-           background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--etched);border-radius:8px;padding:9px 10px;box-shadow:var(--shadow),var(--hl)}
+  .hw-char{--c:var(--accent);display:grid;grid-template-columns:40px minmax(120px,1fr) minmax(150px,180px) 104px auto;gap:10px;align-items:center;
+           background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--etched);border-radius:8px;padding:9px 11px;box-shadow:var(--shadow),var(--hl)}
+  .hw-char.main{border-color:color-mix(in srgb,var(--gold) 42%,var(--line))}
+  .hw-char .hw-ico{width:40px;height:40px;border-radius:8px;background:#0b1016;border:1px solid color-mix(in srgb,var(--c) 34%,var(--line));object-fit:cover}
+  .hw-char .hw-nm{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
+  .hw-char .hw-nm b{font-weight:800;letter-spacing:-.15px}
+  .hw-role{font-size:11px;font-weight:800;padding:1px 8px;border-radius:20px;border:1px solid var(--line);color:var(--dim)}
+  .hw-role.main{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,var(--line));background:color-mix(in srgb,var(--gold) 15%,transparent)}
+  .hw-cp{font-size:11px;font-weight:900;color:var(--gold);white-space:nowrap}
   .hw-char input,.hw-char select,.hw-modal input{padding:8px 9px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);min-width:0}
   .hw-sanct{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding-top:8px;margin-top:2px;border-top:1px dashed var(--etched);font-size:12px;color:var(--dim)}
   .hw-sanct .cap{font-weight:800;color:var(--txt)}
@@ -469,8 +476,8 @@
   .mc-card:hover .mc-del{opacity:1}
   .mc-card .mc-del:hover{color:var(--danger);border-color:var(--danger)}
   .mc-empty{color:var(--dim);padding:40px 10px;text-align:center;line-height:1.8}
-  #mcModalSearch{width:100%;padding:9px 11px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);margin-bottom:10px}
-  #mcModalSearch:focus{border-color:var(--gold);outline:none}
+  #mcModalSearch,#identSearch{width:100%;padding:9px 11px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);margin-bottom:10px}
+  #mcModalSearch:focus,#identSearch:focus{border-color:var(--gold);outline:none}
   .mc-glist{max-height:280px;overflow:auto;display:flex;flex-direction:column;gap:6px}
   .mc-grow{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;cursor:pointer;
            background:linear-gradient(180deg,#16222d,#0f151c);transition:border-color .12s,background .12s}
@@ -485,6 +492,38 @@
   .mc-reg:hover{border-color:var(--gold)}
   .mc-reg.on{background:linear-gradient(180deg,#1e2f28,#12211b);border-color:var(--gold);color:var(--gold)}
   .card .mc-reg-card{position:absolute;top:6px;right:7px;z-index:3;padding:3px 7px;font-size:11px}
+
+  /* 내 캐릭터 탭 · 상단(신원/검색/그룹) */
+  .mc-top{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 18px 4px;align-items:start}
+  .mc-ident,.mc-csearch,.mc-addgroup{background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--line);border-radius:8px;padding:11px 12px;box-shadow:var(--shadow),var(--hl)}
+  .mc-addgroup{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+  .mc-addgroup input,.mc-ident-sw input,.mc-csrow input{padding:9px 11px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);width:100%}
+  .mc-addgroup input:focus,.mc-ident-sw input:focus,.mc-csrow input:focus{border-color:var(--gold);outline:none}
+  .mc-ident-cur{font-size:12px;color:var(--dim);font-weight:800;margin-bottom:8px}
+  .mc-ident-cur b{display:inline-block;margin-left:6px;font-size:15px;color:var(--gold)}
+  .mc-switchlist{margin-top:8px;max-height:168px;overflow:auto;display:flex;flex-direction:column;gap:5px}
+  .mc-swrow{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;cursor:pointer;text-align:left;
+            background:linear-gradient(180deg,#16222d,#0f151c);color:var(--txt);font:inherit;transition:border-color .12s,background .12s}
+  .mc-swrow:hover{border-color:var(--gold)}
+  .mc-swrow.on{border-color:var(--gold);background:linear-gradient(180deg,#1e2f28,#12211b)}
+  .mc-swrow .gn{font-weight:800;flex:1}
+  .mc-swrow .gc{color:var(--dim);font-size:11px;font-weight:700}
+  .mc-swrow.on .gc{color:var(--gold)}
+  .mc-switchlist .none{color:var(--dim);font-size:11.5px;padding:10px 4px;text-align:center;line-height:1.6}
+  .mc-csrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+  .mc-clist{margin-top:9px;max-height:210px;overflow:auto}
+  .mc-clist .card{margin:6px 0;gap:9px;padding:9px 10px}
+  .mc-clist .ico{width:38px;height:38px}
+  .mc-clist .meta{color:var(--dim);font-size:11.5px;font-weight:700;padding:2px 2px 4px}
+  .mc-clist .empty{color:var(--dim);font-size:12px;padding:10px 4px}
+  .mc-setcur{padding:5px 10px;border-radius:20px;font:800 11px/1 inherit;font-family:inherit;cursor:pointer;white-space:nowrap;
+             background:linear-gradient(180deg,#1a2530,#111923);border:1px solid var(--etched);color:var(--dim)}
+  .mc-setcur:hover{border-color:var(--gold);color:var(--gold)}
+  .mc-setcur.on{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 15%,transparent)}
+  .mc-group.cur .mc-group-h{border-bottom-color:color-mix(in srgb,var(--gold) 50%,var(--line))}
+  .mc-group.cur .gname::before{content:"★ ";color:var(--gold)}
+  .mc-card.main{border-color:color-mix(in srgb,var(--gold) 50%,var(--line))}
+  .mc-crown{position:absolute;top:5px;left:8px;font-size:13px;z-index:2}
 
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -511,6 +550,9 @@
     .hw-char{grid-template-columns:1fr}
     .hw-modal-grid{grid-template-columns:1fr}
     .mc-preset{min-width:0;width:100%}
+    .mc-top{grid-template-columns:1fr;padding:14px 14px 2px}
+    .hw-char{grid-template-columns:40px 1fr;gap:8px}
+    .hw-char select,.hw-char [data-hw-manual]{grid-column:1/-1}
     .mc-grid{grid-template-columns:1fr}
     .mc-body{padding:14px}
   }
@@ -533,6 +575,134 @@
                      box-shadow:0 0 8px currentColor}
   .btn.ghost{background:linear-gradient(180deg,#1a2530,#111923);color:var(--txt);border:1px solid var(--etched);box-shadow:var(--hl)}
   .btn.ghost:hover{border-color:var(--accent);filter:none}
+
+  /* ── 파티 탭 ─────────────────────────────────────────────── */
+  .pt-root{flex:1;overflow:auto;padding:20px 24px}
+  .pt-head{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:16px}
+  .pt-head h2{margin:0;font-size:17px;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+  .pt-head .spacer{flex:1}
+  .pt-head .pt-sub{color:var(--dim);font-size:12.5px;font-weight:700}
+  .pt-dot{width:9px;height:9px;border-radius:50%;box-shadow:0 0 10px currentColor}
+  .pt-cap{padding:4px 11px;border-radius:20px;font-size:12px;font-weight:800;color:var(--dim);
+          background:linear-gradient(180deg,#1a2530,#111923);border:1px solid var(--etched)}
+  .pt-cap b{color:var(--gold)}
+  .pt-cap.over{border-color:var(--danger)} .pt-cap.over b{color:var(--danger)}
+
+  .pt-empty{color:var(--dim);font-size:13px;padding:14px;text-align:center;line-height:1.7}
+  .pt-empty.big{padding:60px 20px;font-size:14px;border:1px dashed var(--line);border-radius:12px}
+
+  /* 모집 목록 카드 */
+  .pt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+  .pt-rc{--c:var(--accent);position:relative;overflow:hidden;padding:15px 16px;cursor:pointer;border-radius:12px;
+         border:1px solid color-mix(in srgb,var(--c) 32%,var(--line));
+         background:linear-gradient(135deg,color-mix(in srgb,var(--c) 13%,transparent),transparent 46%),linear-gradient(180deg,var(--slot-hi),var(--slot));
+         box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 12px 26px -22px #000;transition:transform .12s,border-color .12s}
+  .pt-rc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c);box-shadow:0 0 16px color-mix(in srgb,var(--c) 70%,transparent)}
+  .pt-rc:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 60%,var(--line))}
+  .pt-rc .t{font-size:16px;font-weight:900;letter-spacing:-.2px}
+  .pt-rc .meta{color:var(--dim);font-size:12px;font-weight:700;margin-top:7px}
+  .pt-rc .bars{display:flex;gap:8px;margin-top:12px}
+  .pt-rc .bar{flex:1;font-size:11.5px;font-weight:700;color:var(--dim);padding:5px 9px;border-radius:7px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+  .pt-rc .bar b{color:var(--gold);font-weight:900;font-size:13px}
+  .pt-rcx,.pt-acx{position:absolute;top:8px;right:9px;width:22px;height:22px;line-height:20px;text-align:center;border-radius:6px;
+        background:rgba(0,0,0,.35);border:1px solid var(--etched);color:var(--dim);cursor:pointer;font-size:12px;padding:0;opacity:0;transition:opacity .12s}
+  .pt-rc:hover .pt-rcx{opacity:1}
+  .pt-rcx:hover,.pt-acx:hover{color:var(--danger);border-color:var(--danger)}
+
+  /* 상세: 2단(내 캐릭터 풀 | 신청/달력) */
+  .pt-detail{display:flex;gap:18px;align-items:flex-start}
+  .pt-pool{width:300px;flex-shrink:0}
+  .pt-main{flex:1;min-width:0}
+  .pt-sech{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:900;color:var(--gold);
+           margin:2px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);letter-spacing:-.2px}
+  .pt-main .pt-sech:not(:first-child){margin-top:18px}
+  .pt-sech span{color:var(--dim);font-size:11.5px;font-weight:600}
+  .pt-sech span.hint{color:var(--teal)}
+  .pt-unmark{margin-left:auto;padding:5px 9px;background:transparent;border:1px solid var(--etched);border-radius:6px;
+    color:var(--dim);font:800 11px/1 inherit;font-family:inherit;cursor:pointer}
+  .pt-unmark:hover{color:var(--danger);border-color:var(--danger)}
+  .pt-poolbody{display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 240px);overflow:auto;padding-right:4px}
+  .pt-pg{color:var(--dim);font-size:11px;font-weight:800;margin:8px 0 2px;letter-spacing:.3px}
+
+  /* 카드(풀/신청/현황 공통 골격) */
+  .pt-pc,.pt-ac,.pt-rc2{--c:var(--accent);position:relative;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;
+        border:1px solid color-mix(in srgb,var(--c) 28%,var(--line));background:linear-gradient(180deg,var(--slot-hi),var(--slot));overflow:hidden}
+  .pt-pc::before,.pt-ac::before,.pt-rc2::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
+  .pt-pc .nm,.pt-ac .nm,.pt-rc2 .nm{font-weight:800;letter-spacing:-.15px;font-size:13px}
+  .pt-cp{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:900;white-space:nowrap;color:var(--gold);
+         background:rgba(143,240,208,.1);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent)}
+  .pt-pc-b,.pt-ac-b{min-width:0}
+  .pt-pc{cursor:grab} .pt-pc:hover{border-color:color-mix(in srgb,var(--c) 60%,var(--line))}
+  .pt-pc.dragging{opacity:.4} .pt-pc.applied{opacity:.5;cursor:default}
+  .pt-pc .pt-add{margin-left:auto;font-size:16px;font-weight:900;color:var(--gold);width:20px;text-align:center;flex-shrink:0}
+  .pt-pc .pt-badge{margin-left:auto;font-size:10px;font-weight:800;color:var(--dim);flex-shrink:0}
+
+  .pt-drop{display:flex;flex-wrap:wrap;gap:8px;min-height:64px;padding:10px;border-radius:10px;border:1.5px dashed var(--line);
+           background:rgba(255,255,255,.015);transition:border-color .12s,background .12s}
+  .pt-drop.dragover{border-color:var(--gold);background:rgba(143,240,208,.06)}
+  .pt-dropempty{color:var(--dim);font-size:12.5px;margin:auto;padding:12px}
+  .pt-ac{width:220px;cursor:pointer;padding-right:26px}
+  .pt-ac:hover{border-color:color-mix(in srgb,var(--c) 55%,var(--line))}
+  .pt-ac.active{box-shadow:0 0 0 2px color-mix(in srgb,var(--c) 70%,#fff),0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent)}
+  .pt-ac-sub{color:var(--dim);font-size:11px;margin-top:2px;display:flex;align-items:center;gap:5px}
+  .pt-gtag{display:inline-block;padding:1px 7px;border-radius:5px;background:linear-gradient(180deg,#243440,#15202a);border:1px solid #334657;color:#b8cbc8;font-weight:700;font-size:10.5px}
+  .pt-acx{opacity:.7} .pt-ac:hover .pt-acx,.pt-rc2:hover .pt-acx{opacity:1}
+
+  /* 달력 */
+  .pt-cal{display:flex;flex-direction:column;gap:5px}
+  .pt-cal-row{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .pt-wd{text-align:center;font-size:11px;font-weight:800;color:var(--dim);padding:2px 0}
+  .pt-wd.wd0,.pt-cell.wd0 .pt-cell-d{color:var(--danger)}   /* 일요일 강조 */
+  .pt-wd.wd6,.pt-cell.wd6 .pt-cell-d{color:var(--teal)}     /* 토요일 강조 */
+  .pt-cell{position:relative;min-height:66px;border-radius:8px;border:1px solid var(--line);padding:5px 6px;cursor:pointer;
+           background:linear-gradient(180deg,var(--slot-hi),var(--slot));transition:border-color .1s,background .1s}
+  .pt-cell.empty{background:none;border-color:transparent;cursor:default}
+  .pt-cell:not(.empty):hover{border-color:var(--etched)}
+  .pt-cell.mine{border-color:var(--gold);background:linear-gradient(180deg,#17312b,#102019);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 30%,transparent)}
+  .pt-cell.foc{border-color:var(--teal)}
+  .pt-cell-d{font-size:12px;font-weight:800}
+  .pt-cell-n{position:absolute;top:5px;right:6px;font-size:10px;font-weight:800;color:var(--gold)}
+  .pt-cell-av{display:flex;flex-wrap:wrap;gap:2px;margin-top:5px;align-items:center}
+  .pt-cell-av img{width:18px;height:18px;border-radius:4px;object-fit:contain;background:#0e151d;border:1px solid var(--line)}
+  .pt-cell-av span{font-size:10px;color:var(--dim);font-weight:700}
+
+  .pt-roster{display:flex;flex-wrap:wrap;gap:8px}
+
+  /* 신청자 = 그룹 카드(소속 캐릭터 칩 노출) */
+  .pt-gc{position:relative;width:264px;padding:9px 11px 10px;border-radius:10px;border:1px solid var(--line);
+         background:linear-gradient(180deg,var(--slot-hi),var(--slot));cursor:pointer;overflow:hidden}
+  .pt-gc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+  .pt-gc:hover{border-color:var(--etched)}
+  .pt-gc.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 0 3px rgba(143,240,208,.18)}
+  .pt-gc.day{cursor:default}
+  .pt-gc-h{display:flex;align-items:baseline;gap:8px;padding-right:22px}
+  .pt-gname{font-weight:900;font-size:13.5px;color:var(--gold);letter-spacing:-.2px}
+  .pt-gc-meta{color:var(--dim);font-size:11px;font-weight:700;white-space:nowrap}
+  .pt-gc-mem{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .pt-mem{--c:var(--accent);position:relative;display:inline-flex;align-items:center;gap:5px;padding:3px 8px 3px 4px;border-radius:20px;
+          background:rgba(255,255,255,.04);border:1px solid color-mix(in srgb,var(--c) 34%,var(--line));font-size:11px;line-height:1}
+  .pt-mem img{width:20px;height:20px;border-radius:50%;object-fit:contain;background:#0e151d;border:1px solid var(--line)}
+  .pt-mem b{font-weight:800;letter-spacing:-.1px}
+  .pt-mem i{font-style:normal;color:var(--gold);font-weight:900;font-size:10.5px}
+  .pt-mem i::before{content:"⚔️"}
+  .pt-memx{width:15px;height:15px;line-height:12px;text-align:center;border-radius:50%;padding:0;margin-left:1px;
+           background:rgba(0,0,0,.3);border:1px solid var(--etched);color:var(--dim);cursor:pointer;font-size:11px}
+  .pt-memx:hover{color:var(--danger);border-color:var(--danger)}
+
+  /* 생성 모달 타입/주차 선택 */
+  .pt-typesel{display:flex;gap:8px}
+  .pt-typebtn{--c:var(--accent);flex:1;padding:11px 8px;border-radius:9px;cursor:pointer;font:800 13px/1.2 inherit;font-family:inherit;color:var(--txt);
+              border:1px solid color-mix(in srgb,var(--c) 30%,var(--etched));background:linear-gradient(180deg,var(--slot-hi),var(--slot))}
+  .pt-typebtn:hover{border-color:color-mix(in srgb,var(--c) 60%,var(--line))}
+  .pt-typebtn.on{border-color:var(--c);box-shadow:0 0 0 1px var(--c),inset 0 0 22px -14px var(--c);color:var(--c)}
+  .pt-typebtn small{display:block;font-weight:600;font-size:10.5px;color:var(--dim);margin-top:3px}
+  .pt-typebtn.on small{color:inherit;opacity:.85}
+  .pt-capnote{margin-top:12px;font-size:12px;color:var(--dim);text-align:center} .pt-capnote b{color:var(--gold)}
+
+  @media (max-width:820px){
+    .pt-detail{flex-direction:column} .pt-pool{width:100%}
+    .pt-poolbody{max-height:none;flex-direction:row;flex-wrap:wrap} .pt-pc{width:calc(50% - 3px)}
+  }
 </style>
 </head>
 <body>
@@ -555,8 +725,8 @@
   </div>
 </section>
 
-<!-- 캐릭터 탭 (공식 aion2.plaync.com 데이터 조회) · 메인 -->
-<section class="view active" id="view-char">
+<!-- 캐릭터 탭 (공식 aion2.plaync.com 데이터 조회) · 탭 숨김, 검색 로직만 내 캐릭터 탭에서 재사용 -->
+<section class="view" id="view-char">
   <div class="toolbar">
     <div class="search"><input id="cq" placeholder="캐릭터 닉네임 검색 (예: 보리뚜)" autocomplete="off"></div>
     <button id="cbtn" class="btn">검색</button>
@@ -567,15 +737,29 @@
   </div>
 </section>
 
-<!-- 내 캐릭터 탭 (등록한 캐릭터를 프리셋(그룹)별로 관리) -->
-<section class="view" id="view-mychar">
-  <div class="toolbar">
-    <div class="mc-preset">
-      <div class="top">
-        <input id="mcGroupName" placeholder="새 그룹 이름 (예: 본계정, 부캐)">
-        <button class="hw-mini" id="mcGroupAdd">그룹 추가</button>
+<!-- 내 캐릭터 탭 · 메인 (그룹=신원 · 캐릭터 검색/등록 · 그룹 관리) -->
+<section class="view active" id="view-mychar">
+  <div class="mc-top">
+    <!-- 현재 그룹(=나): 검색해서 클릭하면 그 그룹이 '나'가 되고 이 기기에 저장됨 -->
+    <div class="mc-ident">
+      <div class="mc-ident-cur">현재 그룹(나) <b id="mcCurName">—</b></div>
+      <div class="mc-ident-sw">
+        <input id="mcGroupSwitch" placeholder="그룹 검색해서 '나'로 전환 (예: 보리)" autocomplete="off" spellcheck="false">
+        <div id="mcGroupSwitchList" class="mc-switchlist"></div>
       </div>
-      <div class="mc-note">캐릭터 탭에서 검색 결과나 상세 화면의 <b>⭐ 등록</b> 버튼으로 캐릭터를 그룹에 담을 수 있습니다.</div>
+    </div>
+    <!-- 캐릭터 검색 → ⭐등록 → 그룹 지정 -->
+    <div class="mc-csearch">
+      <div class="mc-csrow">
+        <input id="mcCq" placeholder="캐릭터 닉네임 검색 → ⭐등록 (예: 보리뚜)" autocomplete="off">
+        <button class="btn" id="mcCbtn">검색</button>
+      </div>
+      <div id="mcClist" class="mc-clist"></div>
+    </div>
+    <!-- 새 그룹 만들기 -->
+    <div class="mc-addgroup">
+      <input id="mcGroupName" placeholder="새 그룹 이름 (예: 본계정, 부캐)">
+      <button class="hw-mini" id="mcGroupAdd">그룹 추가</button>
     </div>
   </div>
   <div id="mcBody" class="mc-body"></div>
@@ -590,25 +774,12 @@
           <h2>오드 에너지 숙제 계산기</h2>
           <p>자동 충전, 이벤트 수급, 새싹 보너스, 주간 구매량을 합산해 주간 소모 판수와 예상 수익을 계산합니다. 던전은 2배 보상 기준입니다.</p>
         </div>
-        <div class="hw-preset">
-          <div class="top">
-            <input id="hwPresetName" placeholder="프리셋 이름">
-            <button class="hw-mini" id="hwPresetSave">저장</button>
-          </div>
-          <div class="bottom">
-            <select id="hwPresetList"><option value="">프리셋 선택</option></select>
-            <button class="hw-mini" id="hwPresetLoad">불러오기</button>
-            <button class="hw-mini" id="hwPresetDelete">삭제</button>
-          </div>
-        </div>
       </div>
       <div class="hw-grid">
         <div class="hw-box"><label>자동 충전</label><div class="hw-info"><b>3시간마다 15</b><span>하루 120 · 주간 840 고정</span></div></div>
         <div class="hw-box"><label>운영자 설정</label><div class="hw-info"><b>전역 이벤트 · 새싹 보너스</b><span>⚙️ 설정 탭에서 입력</span></div></div>
-        <div class="hw-box"><label>캐릭터 추가</label><div class="hw-actions">
-          <button class="hw-mini" id="hwAddMain">본캐 추가</button>
-          <button class="hw-mini" id="hwAddSub">부캐 추가</button>
-        </div><div class="hw-role-note">본캐: 전역 이벤트 + 새싹 + 주간 구매 40×40<br>부캐: 주간 구매 8×40</div></div>
+        <div class="hw-box"><label>대상 캐릭터</label><div class="hw-info"><b id="hwGroupName">현재 그룹</b><span>🗂️ 내 캐릭터 탭에서 선택한 그룹으로 자동 구성</span></div>
+        <div class="hw-role-note">본캐(전투력 최고): 전역 이벤트 + 새싹 + 주간 구매 40×40<br>부캐: 주간 구매 8×40</div></div>
       </div>
       <div id="hwCharacters" class="hw-chars"></div>
       <div id="hwResult"></div>
@@ -643,6 +814,38 @@
   </div>
 </div>
 
+<!-- 최초 진입 신원(본인 이름=그룹) 선택/입력 모달. 선택 전까지 유지(배경 클릭으로 닫히지 않음). -->
+<div id="identModal" class="hw-modal-back">
+  <div class="hw-modal">
+    <h3>본인 이름을 선택하거나 입력하세요</h3>
+    <label>이름(그룹)을 검색해 선택하거나, 없으면 새 이름으로 시작합니다.</label>
+    <input id="identSearch" placeholder="이름 검색 (예: 보리) 또는 새 이름 입력" autocomplete="off" spellcheck="false">
+    <div id="identList" class="mc-glist"></div>
+  </div>
+</div>
+
+<!-- 파티 탭 (모집 생성 → 내 캐릭터 카드를 드래그로 신청 → 달력에 참석일 표시/현황 관리) -->
+<section class="view" id="view-party">
+  <div id="partyRoot" class="pt-root"></div>
+</section>
+<!-- 파티 모집 생성 모달 -->
+<div id="ptModal" class="hw-modal-back">
+  <div class="hw-modal">
+    <h3>파티 모집하기</h3>
+    <label>콘텐츠</label>
+    <div id="ptTypeSel" class="pt-typesel"></div>
+    <label style="margin-top:13px">기간 · 수요일 기준 한 주 (수~화)</label>
+    <div id="ptWeekSel" class="pt-typesel"></div>
+    <label style="margin-top:13px">총 몇 번 (판수)</label>
+    <input id="ptRuns" type="number" min="1" value="1">
+    <div class="pt-capnote" id="ptCapNote"></div>
+    <div class="hw-modal-actions">
+      <button class="hw-mini" id="ptModalCancel">취소</button>
+      <button class="btn" id="ptModalCreate">모집 생성</button>
+    </div>
+  </div>
+</div>
+
 <!-- 화면공유 탭 (맥북 OBS→MediaMTX. WebRTC(WHEP) 저지연 우선, .m3u8 이면 HLS 폴백) -->
 <section class="view" id="view-screen">
   <div class="toolbar">
@@ -672,7 +875,7 @@
       <div class="hw-head">
         <div>
           <h2>운영자 설정</h2>
-          <p>운영자만 조정하는 전역 값입니다. 모든 프리셋·계산에 공통 반영되며, 프리셋 저장/불러오기와 분리되어 항상 유지됩니다. (지금은 나만 사용하므로 항상 노출)</p>
+          <p>운영자만 조정하는 전역 값입니다. 모든 계산에 공통 반영되며 항상 유지됩니다. (지금은 나만 사용하므로 항상 노출)</p>
         </div>
       </div>
       <div class="hw-grid">
@@ -705,16 +908,53 @@ const fmtFull=n=>n==null?"–":Math.floor(n).toLocaleString("ko-KR");
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
 const img=f=>f?("/"+f):"";
 let META={}, curCode=null, debounce=null;
-// 보유량: 아이템 코드별 사용자가 가진 수량(브라우저에 저장, 아이템 단위 전역)
-let OWN=JSON.parse(localStorage.getItem("aion2_own")||"{}");
+// 보유량: 아이템 코드별 사용자가 가진 수량. 서버 저장소(SB)에서 부팅 시 로드된다.
+let OWN={};
 
 async function j(u){const r=await fetch(u);return r.json();}
+
+// ── 서버 저장소(SB) ───────────────────────────────────────────────
+// 상태 데이터(내 캐릭터/그룹·파티·숙제·설정·보유량)를 서버(Turso 또는 로컬
+// SQLite)에 저장한다. 기존 동기 호출부를 유지하기 위해, 부팅 시 서버 값을 메모리
+// 캐시(SB)에 채우고(sbLoad) 쓰기는 캐시 갱신 + 서버 저장(디바운스)로 처리한다(sbSave).
+// 서버 접속 실패 시 localStorage 로 폴백해 오프라인에서도 계속 동작한다.
+const SB={};
+const SB_KEYS=["mychars","mychar_groups","parties","homework_chars","op_cfg","own"];
+// 서버 키 → (구버전) localStorage 키. 기존 사용자의 로컬 데이터를 자동 이관하는 데도 쓴다.
+const SB_LEGACY={mychars:"aion2_mychars",mychar_groups:"aion2_mychar_groups",parties:"aion2_parties",
+  homework_chars:"aion2_homework_chars",op_cfg:"aion2_operator_cfg",own:"aion2_own"};
+function sbLocal(k){try{const s=localStorage.getItem(SB_LEGACY[k]);return s?JSON.parse(s):null;}catch(e){return null;}}
+function sbGet(k,def){return SB[k]==null?def:SB[k];}
+let sbTimers={};
+function sbPut(k,v){
+  return fetch("/api/store",{method:"PUT",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({k,v})}).catch(()=>{});
+}
+function sbSave(k,v){
+  SB[k]=v;
+  try{localStorage.setItem(SB_LEGACY[k],JSON.stringify(v));}catch(e){}   // 오프라인 폴백 겸 로컬 캐시
+  clearTimeout(sbTimers[k]);
+  sbTimers[k]=setTimeout(()=>sbPut(k,SB[k]),300);
+}
+async function sbLoad(){
+  await Promise.all(SB_KEYS.map(async k=>{
+    let v=null;
+    try{const r=await j("/api/store?k="+k); v=r&&r.v;}catch(e){v=null;}
+    if(v==null){                        // 서버에 없음 → 기존 localStorage 값이 있으면 서버로 이관
+      const loc=sbLocal(k);
+      if(loc!=null){ v=loc; sbPut(k,loc); }
+    }
+    SB[k]=v;
+  }));
+  OWN=sbGet("own",{})||{};
+}
 
 // ── 탭(기능 구분) ─────────────────────────────────────────────
 // 새 기능은 여기 한 줄 추가 + 위 HTML 에 <section class="view" id="view-<id>"> 만 붙이면 된다.
 const TABS=[
-  {id:"char",  label:"🧝 캐릭터"},
   {id:"mychar", label:"🗂️ 내 캐릭터"},
+  // {id:"char",  label:"🧝 캐릭터"},   // 기능 유지, 탭만 숨김 (검색은 내 캐릭터 탭으로 이관)
+  {id:"party", label:"🛡️ 파티"},
   // {id:"craft", label:"⚒️ 제작"},   // 기능 유지, 탭만 숨김
   {id:"homework", label:"📅 숙제"},
   // {id:"screen", label:"📱 화면공유"},   // 기능 유지, 탭만 숨김
@@ -723,6 +963,8 @@ const TABS=[
 function showView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+id));
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view===id));
+  // 파티 탭 진입 시 내 캐릭터 풀(그룹/전투력)을 최신으로 다시 그린다.
+  if(id==="party" && typeof renderParty==="function") renderParty();
 }
 function renderTabs(){
   const nav=document.getElementById("tabs");
@@ -743,7 +985,6 @@ const HOMEWORK_DUNGEONS={
     },
   },
 };
-const HW_PRESET_KEY="aion2_homework_presets";
 const HW_CHARS_KEY="aion2_homework_chars";
 let hwManualTarget=null;
 const HW_ROLE={
@@ -761,17 +1002,31 @@ const SANCTUARY_COST=160;
 function sanctuaryCost(c){return HW_SANCTUARIES.filter(s=>c.sanctuaries?.[s.key]).length*SANCTUARY_COST;}
 function sanctuaryProfit(c){return HW_SANCTUARIES.reduce((a,s)=>a+(c.sanctuaries?.[s.key]?s.profit:0),0);}
 function hwNum(id){return +(document.getElementById(id)?.value||0);}
-function hwPresets(){try{return JSON.parse(localStorage.getItem(HW_PRESET_KEY)||"{}");}catch(e){return {};}}
-function setHwPresets(v){localStorage.setItem(HW_PRESET_KEY,JSON.stringify(v));}
-function hwChars(){try{return JSON.parse(localStorage.getItem(HW_CHARS_KEY)||"[]");}catch(e){return [];}}
-function setHwChars(v){localStorage.setItem(HW_CHARS_KEY,JSON.stringify(v));}
-function defaultHwChar(role="main"){
-  return {id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:HW_ROLE[role].label,role,dungeon:"fallen_deva",mode:"hard",manualDaily:0,manualWeekly:0,manualDailyProfit:0,sanctuaries:{}};
+// 숙제 설정은 등록 캐릭 key 별 {mode, manual*, sanctuaries} 맵으로 DB(sbSave)에 저장한다.
+// 본캐 여부는 저장하지 않고 그룹 내 전투력 최고로 매번 자동 판정한다.
+function hwSettings(){const v=sbGet("homework_chars",{}); return (v && !Array.isArray(v))?v:{};}
+function setHwSettings(v){sbSave("homework_chars",v);}
+function updateHwSetting(key, patch, redraw=true){
+  const st=hwSettings(); st[key]={...(st[key]||{}),...patch}; setHwSettings(st); renderHomework(redraw);
+}
+// 현재 그룹(=나)의 등록 캐릭터 → 숙제 행. 전투력 최고 = 본캐, 나머지 부캐. 설정은 key 로 병합.
+function hwGroupChars(){
+  const g=effectiveGroup();
+  const chars=mcChars().filter(c=>c.group===g);
+  let mainKey=null,maxCp=-1; chars.forEach(c=>{const cp=c.cp||0; if(cp>maxCp){maxCp=cp;mainKey=c.key;}});
+  const st=hwSettings();
+  return chars.map(c=>{
+    const s=st[c.key]||{};
+    return {key:c.key,name:c.name,img:c.img,cp:c.cp,level:c.level,race:c.race,
+      role:c.key===mainKey?"main":"sub",dungeon:s.dungeon||"fallen_deva",mode:s.mode||"hard",
+      manualDaily:+s.manualDaily||0,manualWeekly:+s.manualWeekly||0,manualDailyProfit:+s.manualDailyProfit||0,
+      sanctuaries:s.sanctuaries||{}};
+  });
 }
 // 운영자 전용 전역 설정(전역 이벤트 수급·새싹 보너스). 프리셋과 분리, 별도 키에 저장해 항상 유지.
 const OP_CFG_KEY="aion2_operator_cfg";
-function opCfg(){try{return JSON.parse(localStorage.getItem(OP_CFG_KEY)||"{}");}catch(e){return {};}}
-function setOpCfg(v){localStorage.setItem(OP_CFG_KEY,JSON.stringify(v));}
+function opCfg(){return sbGet("op_cfg",{})||{};}
+function setOpCfg(v){sbSave("op_cfg",v);}
 function loadOpCfg(){
   const c=opCfg(), map={hwEvent40:c.event40,hwEvent10:c.event10,hwSprout10:c.sprout10};
   Object.entries(map).forEach(([id,val])=>{const e=document.getElementById(id); if(e)e.value=val??0;});
@@ -782,36 +1037,6 @@ function persistOpCfg(){
 function initSettings(){
   loadOpCfg();
   ["hwEvent40","hwEvent10","hwSprout10"].forEach(id=>document.getElementById(id)?.addEventListener("input",()=>{persistOpCfg();renderHomework();}));
-}
-function hwState(){
-  return { chars:hwChars() };
-}
-function applyHwState(s){
-  setHwChars((s.chars&&s.chars.length)?s.chars:[defaultHwChar("main")]);
-  renderHomework();
-}
-function renderHwPresets(){
-  const sel=document.getElementById("hwPresetList"); if(!sel)return;
-  const cur=sel.value, presets=hwPresets();
-  sel.innerHTML='<option value="">프리셋 선택</option>'+Object.keys(presets).sort().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
-  if(presets[cur]) sel.value=cur;
-}
-function saveHwPreset(){
-  const name=(document.getElementById("hwPresetName")?.value||"").trim();
-  if(!name){alert("프리셋 이름을 입력하세요.");return;}
-  const presets=hwPresets(); presets[name]=hwState(); setHwPresets(presets); renderHwPresets();
-  document.getElementById("hwPresetList").value=name;
-}
-function loadHwPreset(){
-  const name=document.getElementById("hwPresetList")?.value;
-  const preset=hwPresets()[name];
-  if(preset){document.getElementById("hwPresetName").value=name; applyHwState(preset);}
-}
-function deleteHwPreset(){
-  const name=document.getElementById("hwPresetList")?.value;
-  if(!name)return;
-  const presets=hwPresets(); delete presets[name]; setHwPresets(presets);
-  document.getElementById("hwPresetName").value=""; renderHwPresets();
 }
 function dungeonCalc(dungeonKey, modeKey, weeklyEnergy){
   const dungeon=HOMEWORK_DUNGEONS[dungeonKey]||HOMEWORK_DUNGEONS.fallen_deva;
@@ -829,12 +1054,6 @@ function calcChar(c, weeklyAuto, weeklyMainBonus){
   const sanctProfit=sanctuaryProfit(c);
   return {...base,char:c,role,weeklyEnergy:weekly,sanctCost,sanctProfit,dungeonProfit:base.profit,manualDailyProfit,profit:base.profit+manualDailyProfit*7+sanctProfit};
 }
-function updateHwChar(id, patch, redrawCharacters=true){
-  const chars=hwChars().map(c=>c.id===id?{...c,...patch}:c);
-  setHwChars(chars); renderHomework(redrawCharacters);
-}
-function removeHwChar(id){setHwChars(hwChars().filter(c=>c.id!==id)); renderHomework();}
-function addHwChar(role){const chars=hwChars(); chars.push(defaultHwChar(role)); setHwChars(chars); renderHomework();}
 function dungeonOptions(selected){
   return Object.entries(HOMEWORK_DUNGEONS).map(([k,d])=>`<option value="${k}" ${k===selected?'selected':''}>${d.name}</option>`).join("");
 }
@@ -844,16 +1063,18 @@ function modeOptions(dungeonKey, selected){
 }
 function renderHwCharacters(chars){
   const box=document.getElementById("hwCharacters");
+  if(!chars.length){ box.innerHTML=`<div class="mc-empty">현재 그룹에 등록된 캐릭터가 없습니다.<br>🗂️ 내 캐릭터 탭에서 그룹을 선택하거나 캐릭터를 등록하세요.</div>`; return; }
   box.innerHTML=chars.map(c=>{
     const manual=(+c.manualDaily||0)||(+c.manualWeekly||0)||(+c.manualDailyProfit||0);
     const manualTip=manual?`추가 에너지 일 ${fmt(c.manualDaily||0)} · 주 ${fmt(c.manualWeekly||0)} · 일간 부가수익 ${fmtFull(c.manualDailyProfit||0)} 키나`:"수기 추가";
-    return `<div class="hw-char" data-id="${c.id}">
-      <input data-hw="name" value="${esc(c.name||'')}" placeholder="캐릭터명">
-      <select data-hw="role"><option value="main" ${c.role==='main'?'selected':''}>본캐</option><option value="sub" ${c.role==='sub'?'selected':''}>부캐</option></select>
-      <select data-hw="dungeon">${dungeonOptions(c.dungeon||"fallen_deva")}</select>
-      <select data-hw="mode">${modeOptions(c.dungeon||"fallen_deva",c.mode||"hard")}</select>
+    return `<div class="hw-char${c.role==='main'?' main':''}" data-key="${esc(c.key)}" style="--c:${c.race===1?'#8ff0d0':'#ffadc0'}">
+      <img class="hw-ico" src="${c.img||''}" ${oe}>
+      <div class="hw-nm"><b>${esc(c.name||'')}</b>
+        <span class="hw-role ${c.role}">${c.role==='main'?'👑 본캐':'부캐'}</span>
+        <span class="hw-cp" title="전투력">⚔️ ${cpShort(c.cp)??'–'}</span></div>
+      <select data-hw="dungeon" title="던전">${dungeonOptions(c.dungeon||"fallen_deva")}</select>
+      <select data-hw="mode" title="난이도">${modeOptions(c.dungeon||"fallen_deva",c.mode||"hard")}</select>
       <button class="hw-mini" data-hw-manual title="${esc(manualTip)}">${manual?"수기*":"수기"}</button>
-      <button class="hw-mini" data-hw-remove>삭제</button>
       <div class="hw-sanct">
         <span class="cap">성역</span>
         ${HW_SANCTUARIES.map(s=>`<label><input type="checkbox" data-sanct="${s.key}" ${c.sanctuaries?.[s.key]?'checked':''}>${s.label}</label>`).join("")}
@@ -865,9 +1086,9 @@ function renderHwCharacters(chars){
     </div>`;
   }).join("");
 }
-function openHwManual(id){
-  const c=hwChars().find(x=>x.id===id); if(!c)return;
-  hwManualTarget=id;
+function openHwManual(key){
+  const c=hwGroupChars().find(x=>x.key===key); if(!c)return;
+  hwManualTarget=key;
   document.getElementById("hwManualTitle").textContent=`수기 추가 · ${c.name||"캐릭터"}`;
   document.getElementById("hwManualDaily").value=c.manualDaily||0;
   document.getElementById("hwManualWeekly").value=c.manualWeekly||0;
@@ -877,7 +1098,7 @@ function openHwManual(id){
 function closeHwManual(){hwManualTarget=null;document.getElementById("hwManualModal").classList.remove("on");}
 function saveHwManual(){
   if(!hwManualTarget)return;
-  updateHwChar(hwManualTarget,{manualDaily:hwNum("hwManualDaily"),manualWeekly:hwNum("hwManualWeekly"),manualDailyProfit:hwNum("hwManualDailyProfit")});
+  updateHwSetting(hwManualTarget,{manualDaily:hwNum("hwManualDaily"),manualWeekly:hwNum("hwManualWeekly"),manualDailyProfit:hwNum("hwManualDailyProfit")});
   closeHwManual();
 }
 function renderHomework(redrawCharacters=true){
@@ -887,8 +1108,8 @@ function renderHomework(redrawCharacters=true){
   const weeklyEvent=dailyEvent*7;
   const weeklySprout=hwNum("hwSprout10")*10;
   const weeklyMainBonus=weeklyEvent+weeklySprout;
-  let chars=hwChars();
-  if(!chars.length){chars=[defaultHwChar("main")]; setHwChars(chars);}
+  const gn=document.getElementById("hwGroupName"); if(gn)gn.textContent=effectiveGroup()||"(그룹 미선택)";
+  const chars=hwGroupChars();
   if(redrawCharacters) renderHwCharacters(chars);
   const rows=chars.map(c=>calcChar(c,weeklyAuto,weeklyMainBonus));
   const totalEnergy=rows.reduce((a,r)=>a+r.weeklyEnergy,0);
@@ -908,40 +1129,29 @@ function renderHomework(redrawCharacters=true){
   <div class="hw-note">현재 던전 수익 정보는 타락한 데바의 성 기준입니다. 본캐는 전역 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(루드라·침식·무스펠)은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 레이드 수익(루드라 ${fmtFull(HW_SANCTUARIES[0].profit)} · 침식 ${fmtFull(HW_SANCTUARIES[1].profit)} · 무스펠 ${fmtFull(HW_SANCTUARIES[2].profit)} 키나)은 던전 수익과 별도로 예상 수익에 합산되며 괄호로 따로 표기합니다.</div>`;
 }
 function initHomework(){
-  document.getElementById("hwAddMain")?.addEventListener("click",()=>addHwChar("main"));
-  document.getElementById("hwAddSub")?.addEventListener("click",()=>addHwChar("sub"));
-  document.getElementById("hwCharacters")?.addEventListener("input",e=>{
-    const card=e.target.closest(".hw-char"); if(!card||!e.target.dataset.hw)return;
-    updateHwChar(card.dataset.id,{[e.target.dataset.hw]:e.target.value},e.target.dataset.hw!=="name");
-  });
   document.getElementById("hwCharacters")?.addEventListener("change",e=>{
     const card=e.target.closest(".hw-char"); if(!card)return;
+    const key=card.dataset.key;
     if(e.target.dataset.sanct){
-      const c=hwChars().find(x=>x.id===card.dataset.id); if(!c)return;
-      updateHwChar(card.dataset.id,{sanctuaries:{...(c.sanctuaries||{}),[e.target.dataset.sanct]:e.target.checked}});
+      const c=hwGroupChars().find(x=>x.key===key); if(!c)return;
+      updateHwSetting(key,{sanctuaries:{...(c.sanctuaries||{}),[e.target.dataset.sanct]:e.target.checked}});
     }
-    else if(e.target.dataset.hw==="dungeon") updateHwChar(card.dataset.id,{dungeon:e.target.value,mode:"hard"});
-    else if(e.target.dataset.hw) updateHwChar(card.dataset.id,{[e.target.dataset.hw]:e.target.value});
+    else if(e.target.dataset.hw==="dungeon") updateHwSetting(key,{dungeon:e.target.value,mode:"hard"});  // 던전 변경 → 난이도 기본 어려움
+    else if(e.target.dataset.hw==="mode") updateHwSetting(key,{mode:e.target.value});   // 난이도 변경 → DB 저장
   });
   document.getElementById("hwCharacters")?.addEventListener("click",e=>{
-    if(e.target.closest("[data-hw-manual]")) openHwManual(e.target.closest(".hw-char").dataset.id);
-    if(e.target.closest("[data-hw-remove]")) removeHwChar(e.target.closest(".hw-char").dataset.id);
+    if(e.target.closest("[data-hw-manual]")) openHwManual(e.target.closest(".hw-char").dataset.key);
   });
   document.getElementById("hwManualCancel")?.addEventListener("click",closeHwManual);
   document.getElementById("hwManualSave")?.addEventListener("click",saveHwManual);
   document.getElementById("hwManualModal")?.addEventListener("click",e=>{if(e.target.id==="hwManualModal")closeHwManual();});
-  document.getElementById("hwPresetSave")?.addEventListener("click",saveHwPreset);
-  document.getElementById("hwPresetLoad")?.addEventListener("click",loadHwPreset);
-  document.getElementById("hwPresetDelete")?.addEventListener("click",deleteHwPreset);
-  document.getElementById("hwPresetList")?.addEventListener("change",loadHwPreset);
-  renderHwPresets();
   renderHomework();
 }
 
 function setOwn(code,val){
   const v=val.trim();
   if(v==="" || +v<=0) delete OWN[code]; else OWN[code]=+v;
-  localStorage.setItem("aion2_own",JSON.stringify(OWN));
+  sbSave("own",OWN);
   recalc();
 }
 
@@ -1447,31 +1657,128 @@ function initSkillTip(){
 // 등록한 캐릭터를 프리셋(그룹)별로 관리. 브라우저 localStorage 저장.
 const MC_KEY="aion2_mychars";          // 캐릭터 레코드 배열
 const MC_GROUP_KEY="aion2_mychar_groups"; // 빈 그룹도 유지하기 위한 그룹명 목록
-function mcChars(){try{return JSON.parse(localStorage.getItem(MC_KEY)||"[]");}catch(e){return [];}}
-function setMcChars(v){localStorage.setItem(MC_KEY,JSON.stringify(v));}
-function mcGroupList(){try{return JSON.parse(localStorage.getItem(MC_GROUP_KEY)||"[]");}catch(e){return [];}}
-function setMcGroupList(v){localStorage.setItem(MC_GROUP_KEY,JSON.stringify(v));}
+function mcChars(){return sbGet("mychars",[])||[];}
+function setMcChars(v){sbSave("mychars",v);}
+function mcGroupList(){return sbGet("mychar_groups",[])||[];}
+function setMcGroupList(v){sbSave("mychar_groups",v);}
 const mcKey=(sid,cid)=>sid+":"+cid;
 function mcAllGroups(){
   const g=[...mcGroupList()];
   mcChars().forEach(c=>{ if(c.group && !g.includes(c.group)) g.push(c.group); });
   return g;
 }
+// ── 그룹 = 신원(나) ───────────────────────────────────────────────
+// 로그인 없이, "마지막으로 클릭(선택)한 그룹"을 이 기기의 '나'로 취급한다.
+// 서버가 아닌 localStorage 에 저장해 기기별로 영속(다음 방문에도 자동 복원).
+const CUR_GROUP_KEY="aion2_current_group";
+function currentGroup(){try{return localStorage.getItem(CUR_GROUP_KEY)||"";}catch(e){return "";}}
+// 실제로 쓸 그룹 = 이 기기에서 '내가 선택한' 그룹만. 자동 폴백하지 않는다.
+// (선택 전에는 "" → 최초 진입 이름 선택/입력 모달을 띄운다. 시크릿 창도 여기서 다시 물어봄)
+function effectiveGroup(){
+  const cur=currentGroup();
+  return (cur && mcAllGroups().includes(cur)) ? cur : "";
+}
+function setCurrentGroup(name){
+  name=(name||"").trim(); if(!name)return;
+  try{localStorage.setItem(CUR_GROUP_KEY,name);}catch(e){}
+  refreshIdentityViews();
+}
+// 신원(그룹)에 의존하는 화면들을 한 번에 갱신.
+function refreshIdentityViews(){
+  updateCurName();
+  renderGroupSwitch(document.getElementById("mcGroupSwitch")?.value||"");
+  renderMyChars();
+  if(document.getElementById("hwCharacters")) renderHomework();
+}
+function updateCurName(){
+  const e=document.getElementById("mcCurName"); if(!e)return;
+  const g=effectiveGroup(); e.textContent=g||"(선택 안 됨)";
+}
+// 그룹 검색 → 클릭하면 그 그룹이 '나'가 된다.
+function renderGroupSwitch(q){
+  const box=document.getElementById("mcGroupSwitchList"); if(!box)return;
+  q=(q||"").trim(); const ql=q.toLowerCase();
+  const groups=mcAllGroups(), cur=effectiveGroup(), chars=mcChars();
+  if(!groups.length){ box.innerHTML=`<div class="none">아직 그룹이 없습니다. 아래에서 캐릭터를 검색해 등록하면 그룹이 생깁니다.</div>`; return; }
+  const hit=groups.filter(g=>!ql||g.toLowerCase().includes(ql));
+  box.innerHTML=hit.length?hit.map(g=>`<button class="mc-swrow${g===cur?' on':''}" data-sw="${esc(g)}">
+      <span class="gn">${esc(g)}</span><span class="gc">${chars.filter(c=>c.group===g).length}명${g===cur?' · 현재 나':''}</span></button>`).join("")
+    :`<div class="none">'${esc(q)}' 와 일치하는 그룹이 없습니다.</div>`;
+  box.querySelectorAll("[data-sw]").forEach(b=>b.onclick=()=>{
+    setCurrentGroup(b.dataset.sw);
+    const inp=document.getElementById("mcGroupSwitch"); if(inp)inp.value="";
+    renderGroupSwitch("");
+  });
+}
+// ── 최초 진입 신원 선택 모달 ─────────────────────────────────────
+function needsIdentity(){ return !effectiveGroup(); }
+function openIdentModal(){
+  const s=document.getElementById("identSearch"); if(!s)return;
+  s.value=""; renderIdentList("");
+  document.getElementById("identModal").classList.add("on"); s.focus();
+}
+function closeIdentModal(){document.getElementById("identModal")?.classList.remove("on");}
+function renderIdentList(q){
+  const box=document.getElementById("identList"); if(!box)return;
+  q=(q||"").trim(); const ql=q.toLowerCase();
+  const groups=mcAllGroups(), chars=mcChars();
+  const hit=groups.filter(g=>!ql||g.toLowerCase().includes(ql));
+  let html="";
+  if(q && !groups.some(g=>g===q))
+    html+=`<div class="mc-grow new" data-newident="${esc(q)}"><span class="gn">＋ '${esc(q)}' 새 이름으로 시작</span></div>`;
+  html+=hit.map(g=>`<div class="mc-grow" data-ident="${esc(g)}">
+      <span class="gn">${esc(g)}</span><span class="gc">${chars.filter(c=>c.group===g).length}명</span></div>`).join("");
+  if(!groups.length && !q) html+='<div class="none">등록된 이름이 없습니다. 위에 본인 이름을 입력해 시작하세요.</div>';
+  box.innerHTML=html;
+  box.querySelectorAll("[data-ident]").forEach(r=>r.onclick=()=>pickIdentity(r.dataset.ident,false));
+  box.querySelectorAll("[data-newident]").forEach(r=>r.onclick=()=>pickIdentity(r.dataset.newident,true));
+}
+function pickIdentity(name,isNew){
+  name=(name||"").trim(); if(!name)return;
+  if(isNew){ const g=mcGroupList(); if(!g.includes(name)){g.push(name);setMcGroupList(g);} }  // 새 이름 = 새 그룹(공유)
+  closeIdentModal();
+  setCurrentGroup(name);   // 이 기기의 '나'로 저장 + 화면 갱신
+}
+// 캐릭터 검색(내 캐릭터 탭 내부) → ⭐등록. 상세 화면은 노출하지 않는다.
+async function mcCharSearch(){
+  const q=document.getElementById("mcCq").value.trim();
+  const box=document.getElementById("mcClist");
+  if(!q){box.innerHTML="";return;}
+  box.innerHTML='<div class="meta">검색 중…</div>';
+  let d; try{ d=await j("/api/char/search?q="+encodeURIComponent(q)); }
+  catch(e){ box.innerHTML='<div class="empty">검색 실패</div>'; return; }
+  const list=d.list||[];
+  box.innerHTML=""; box.appendChild(el("div","meta",`캐릭터 ${list.length}명 · ⭐등록으로 그룹에 담기`));
+  if(!list.length){ box.appendChild(el("div","empty","결과 없음")); return; }
+  list.forEach(c=>{
+    const card=el("div","card");
+    card.style.setProperty("--c",c.race===1?"#8ff0d0":"#ffadc0");
+    const on=mcHas(c.serverId,c.characterId);
+    card.innerHTML=`<button class="mc-reg mc-reg-card${on?' on':''}" data-reg data-sid="${c.serverId}" data-cid="${c.characterId}">${regLabel(on)}</button>
+      <img class="ico" src="${c.profileImageUrl||''}" ${oe}>
+      <div><div class="nm">${esc(c.name)}</div>
+      <div class="sub">Lv.${c.level} · ${esc(c.serverName||'')} <span class="race">${c.race===1?'천족':'마족'}</span></div></div>`;
+    card.querySelector("[data-reg]").onclick=()=>openRegModal({
+      serverId:c.serverId,characterId:c.characterId,name:c.name,level:c.level,
+      serverName:c.serverName,race:c.race,img:c.profileImageUrl,cp:c.combatPower});
+    box.appendChild(card);
+  });
+}
 function mcHas(sid,cid){const k=mcKey(sid,cid);return mcChars().some(c=>c.key===k);}
 function mcAddGroup(name){
   name=(name||"").trim(); if(!name){alert("그룹 이름을 입력하세요.");return;}
   const g=mcGroupList(); if(!g.includes(name)){g.push(name);setMcGroupList(g);}
-  renderMyChars();
+  setCurrentGroup(name);   // 새로 만든 그룹을 바로 '나'로
 }
 function mcRemoveGroup(name){
   if(!confirm(`'${name}' 그룹과 그 안의 캐릭터 등록을 모두 삭제할까요?`))return;
   setMcGroupList(mcGroupList().filter(n=>n!==name));
   setMcChars(mcChars().filter(c=>c.group!==name));
-  renderMyChars(); refreshRegButtons();
+  refreshIdentityViews(); refreshRegButtons();
 }
 function mcRemoveChar(key){
   setMcChars(mcChars().filter(c=>c.key!==key));
-  renderMyChars(); refreshRegButtons();
+  refreshIdentityViews(); refreshRegButtons();
 }
 // 등록된 캐릭터의 전투력·레벨 등을 상세 프로필로 최신화(변경 시에만 저장/재렌더)
 function mcSyncStats(sid,cid,p){
@@ -1479,7 +1786,7 @@ function mcSyncStats(sid,cid,p){
   if(!c)return; let ch=false; const set=(f,v)=>{ if(v!=null&&c[f]!==v){c[f]=v;ch=true;} };
   set("cp",p.combatPower); set("level",p.characterLevel); set("name",p.characterName);
   set("serverName",p.serverName); set("race",p.raceId); set("img",p.profileImage);
-  if(ch){ setMcChars(arr); renderMyChars(); }
+  if(ch){ setMcChars(arr); refreshIdentityViews(); }
 }
 // 전투력 없는(검색으로 등록한) 캐릭터는 저장 캐시에서 조용히 보충 — 외부 재조회 없이 로컬 DB만 읽음
 let mcBackfilling=false;
@@ -1496,7 +1803,7 @@ function mcBackfillMissing(){
       const arr=mcChars(); let ch=false;
       res.filter(Boolean).forEach(({key,p})=>{const c=arr.find(x=>x.key===key);
         if(c&&p.combatPower!=null&&c.cp!==p.combatPower){c.cp=p.combatPower; if(p.characterLevel!=null)c.level=p.characterLevel; ch=true;}});
-      if(ch){ setMcChars(arr); renderMyChars(); }
+      if(ch){ setMcChars(arr); refreshIdentityViews(); }
     });
 }
 
@@ -1536,7 +1843,9 @@ function regToGroup(group){
   const g=mcGroupList(); if(!g.includes(group)){g.push(group);setMcGroupList(g);}
   const rec={...pendingReg,key:mcKey(pendingReg.serverId,pendingReg.characterId),group};
   const arr=mcChars().filter(c=>c.key!==rec.key); arr.push(rec); setMcChars(arr);
-  closeRegModal(); renderMyChars(); refreshRegButtons();
+  closeRegModal();
+  setCurrentGroup(group);   // 방금 등록한 그룹을 '나'로 (refreshIdentityViews 포함)
+  refreshRegButtons();
 }
 
 // 검색 결과 카드 / 상세 화면의 ⭐등록 버튼 상태를 현재 등록 여부에 맞춰 갱신
@@ -1551,44 +1860,55 @@ function refreshRegButtons(){
 function renderMyChars(){
   const box=document.getElementById("mcBody"); if(!box)return;
   box.innerHTML="";
-  const groups=mcAllGroups(), chars=mcChars();
+  const groups=mcAllGroups(), chars=mcChars(), cur=effectiveGroup();
   if(!groups.length){
     box.innerHTML=`<div class="mc-empty">등록된 캐릭터가 없습니다.<br>
-      위에서 <b>그룹을 추가</b>하고, <b>🧝 캐릭터</b> 탭에서 검색해 <b>⭐ 등록</b> 하세요.</div>`;
+      위에서 <b>캐릭터를 검색</b>해 <b>⭐ 등록</b> 하면 그룹이 만들어집니다.</div>`;
     return;
   }
   groups.forEach(gname=>{
     const gchars=chars.filter(c=>c.group===gname);
-    const g=el("div","mc-group");
+    const isCur=gname===cur;
+    // 본캐 = 그룹 내 전투력 최고 캐릭터
+    let mainKey=null,maxCp=-1; gchars.forEach(c=>{const cp=c.cp||0; if(cp>maxCp){maxCp=cp;mainKey=c.key;}});
+    const g=el("div","mc-group"+(isCur?" cur":""));
     const h=el("div","mc-group-h");
     h.innerHTML=`<span class="gname">${esc(gname)}</span><span class="gcount">${gchars.length}명</span>
+      <button class="mc-setcur${isCur?' on':''}" data-setcur="${esc(gname)}">${isCur?'✓ 현재 나':'나로 선택'}</button>
       <span class="spacer"></span><button class="hw-mini" data-delgroup="${esc(gname)}">그룹 삭제</button>`;
     g.appendChild(h);
     const grid=el("div","mc-grid");
     if(!gchars.length){ grid.innerHTML=`<div class="mc-empty" style="padding:16px">이 그룹에 등록된 캐릭터가 없습니다.</div>`; }
     gchars.forEach(c=>{
-      const card=el("div","mc-card");
+      const card=el("div","mc-card"+(c.key===mainKey?" main":""));
       card.style.setProperty("--c",c.race===1?"#8ff0d0":"#ffadc0");
       card.innerHTML=`<button class="mc-del" data-del="${esc(c.key)}" title="등록 해제">✕</button>
+        ${c.key===mainKey?'<span class="mc-crown" title="본캐 (전투력 최고)">👑</span>':''}
         <img class="ico" src="${c.img||''}" ${oe}>
-        <div><div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">⚔️ ${c.cp!=null?Math.floor(c.cp):'–'}</span></div>
+        <div><div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">⚔️ ${cpShort(c.cp)??'–'}</span></div>
         <div class="sub">Lv.${c.level??'?'} · ${esc(c.serverName||'')} · ${c.race===1?'천족':'마족'}</div></div>`;
-      card.onclick=(e)=>{
-        if(e.target.closest("[data-del]"))return;
-        showView("char"); openChar(c.serverId,c.characterId);
-      };
+      card.onclick=(e)=>{ if(e.target.closest("[data-del]"))return; setCurrentGroup(gname); };  // 클릭 = 이 그룹이 나
       grid.appendChild(card);
     });
     g.appendChild(grid);
     box.appendChild(g);
   });
-  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>mcRemoveChar(b.dataset.del));
-  box.querySelectorAll("[data-delgroup]").forEach(b=>b.onclick=()=>mcRemoveGroup(b.dataset.delgroup));
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=e=>{e.stopPropagation();mcRemoveChar(b.dataset.del);});
+  box.querySelectorAll("[data-delgroup]").forEach(b=>b.onclick=e=>{e.stopPropagation();mcRemoveGroup(b.dataset.delgroup);});
+  box.querySelectorAll("[data-setcur]").forEach(b=>b.onclick=e=>{e.stopPropagation();setCurrentGroup(b.dataset.setcur);});
   mcBackfillMissing();
 }
 function initMyChars(){
+  // 캐릭터 검색 → 등록
+  on("mcCbtn","click",mcCharSearch);
+  on("mcCq","keydown",e=>{if(e.key==="Enter")mcCharSearch();});
+  // 그룹 검색 → '나' 전환
+  on("mcGroupSwitch","input",e=>renderGroupSwitch(e.target.value));
+  on("mcGroupSwitch","keydown",e=>{if(e.key==="Enter"){const f=document.querySelector("#mcGroupSwitchList .mc-swrow"); if(f)f.click();}});
+  // 새 그룹 만들기
   on("mcGroupAdd","click",()=>{const i=document.getElementById("mcGroupName");mcAddGroup(i.value);i.value="";});
   on("mcGroupName","keydown",e=>{if(e.key==="Enter"){mcAddGroup(e.target.value);e.target.value="";}});
+  // 등록 모달(그룹 검색→선택)
   on("mcModalCancel","click",closeRegModal);
   on("mcModalSearch","input",e=>renderRegGroups(e.target.value));
   on("mcModalSearch","keydown",e=>{   // Enter → 필터 결과의 첫 행(새 그룹 우선) 선택
@@ -1596,7 +1916,10 @@ function initMyChars(){
     const first=document.querySelector("#mcModalGroups .mc-grow"); if(first)first.click();
   });
   document.getElementById("mcModal").addEventListener("click",e=>{if(e.target.id==="mcModal")closeRegModal();});
-  renderMyChars();
+  // 최초 진입 신원 선택 모달
+  on("identSearch","input",e=>renderIdentList(e.target.value));
+  on("identSearch","keydown",e=>{if(e.key==="Enter"){const f=document.querySelector("#identList .mc-grow");if(f)f.click();}});
+  refreshIdentityViews();
 }
 
 async function charSearch(){
@@ -1739,7 +2062,7 @@ function renderChar(d){
       ${p.titleName?`<div class="title-line">🏅 ${p.titleName}</div>`:''}
       ${d.__serverId!=null?`<div class="badges"><button class="mc-reg" data-reg data-sid="${d.__serverId}" data-cid="${d.__characterId}">${regLabel(mcHas(d.__serverId,d.__characterId))}</button></div>`:''}
     </div>
-    <div class="cp"><div class="lab">전투력</div><div class="num">${fmt(p.combatPower)}</div>
+    <div class="cp"><div class="lab">전투력</div><div class="num">${p.combatPower!=null?fmt(cpShort(p.combatPower)):'–'}</div>
       ${top?`<div class="rk">${top.rankingContentsName} ${fmt(top.rank)}위</div>`:''}</div>`;
   D.appendChild(head);
   const regBtn=head.querySelector("[data-reg]");
@@ -1932,16 +2255,339 @@ function initScreen(){
   });
 }
 
+// ── 파티 구성/모집 ─────────────────────────────────────────────
+// 루드라·침식·무스펠 파티를 모집한다. 기간은 "수요일~화요일" 한 주 단위로,
+// 이번주 또는 다음주만 고를 수 있다(오늘 기준 자동 산출).
+// 내 캐릭터 카드를 드래그해 신청하며, 신청은 "그룹(인원)" 단위로 관리한다.
+//  · 한 그룹(사람)이 여러 캐릭을 넣을 수 있다.
+//  · 참석일은 파티 단위(p.dates)로 찍는다 — 어차피 내 파티라 그룹을 따로 고를 필요 없이
+//    달력에서 날짜를 클릭하면 신청자 전원이 그 날 참석으로 바로 표시된다.
+//  · 인원(그룹) ≤ 10, 캐릭 합계 ≤ 판수 × 10.
+//
+// ▸ 저장은 지금 localStorage 지만, 나중에 서버 DB 로 이관할 것을 대비해
+//   모든 읽기/쓰기를 async PartyStore 한 계층으로 격리했다. DB 전환 시
+//   각 메서드 몸통만 fetch("/api/party/...") 로 교체하면 UI 는 그대로다.
+// 구(舊) 포맷(캐릭 단위 신청) → 신 포맷(그룹 단위) 자동 변환. dev 중 데이터 보존용.
+function ptNormalize(p){
+  if(!p||!Array.isArray(p.applicants))return p;
+  if(p.applicants.some(a=>a && !Array.isArray(a.chars))){
+    const byG={};
+    p.applicants.forEach(a=>{
+      const g=a.group||a.name||a.key||"기타";
+      const e=byG[g]||(byG[g]={group:g,chars:[]});
+      e.chars.push({key:a.key,characterId:a.characterId,serverId:a.serverId,name:a.name,
+        img:a.img,cp:a.cp,race:a.race,serverName:a.serverName,level:a.level});
+    });
+    p.applicants=Object.values(byG);
+  }
+  // 구(舊): 참석일이 그룹별(e.dates)이었음 → 파티 단위(p.dates)로 합쳐 올린다.
+  if(!Array.isArray(p.dates)){
+    const set=new Set();
+    p.applicants.forEach(e=>{ (e&&e.dates||[]).forEach(d=>set.add(d)); });
+    p.dates=[...set];
+  }
+  p.applicants.forEach(e=>{ if(e) delete e.dates; });
+  return p;
+}
+// 서버 저장소(SB) 의 'parties' 키에 저장된다. 부팅 시 sbLoad 로 캐시에 올라와 있어
+// 읽기는 즉시(sbGet), 쓰기는 sbSave(디바운스+서버 반영)로 처리한다.
+const PartyStore={
+  async all(){ return (sbGet("parties",[])||[]).map(ptNormalize); },
+  async get(id){ return (await this.all()).find(p=>p.id===id)||null; },
+  async _saveAll(list){ sbSave("parties",list); },
+  async upsert(p){ const l=await this.all(); const i=l.findIndex(x=>x.id===p.id); if(i>=0)l[i]=p; else l.push(p); await this._saveAll(l); return p; },
+  async remove(id){ await this._saveAll((await this.all()).filter(p=>p.id!==id)); },
+};
+
+const PARTY_TYPES=[
+  {key:"rudra",   label:"루드라", color:"var(--g7)", icon:"🐉"},
+  {key:"erosion", label:"침식",   color:"var(--g6)", icon:"🌑"},
+  {key:"muspell", label:"무스펠", color:"var(--g5)", icon:"🔥"},
+];
+const ptType=k=>PARTY_TYPES.find(t=>t.key===k)||PARTY_TYPES[0];
+const PT_MAX_PEOPLE=10;                       // 인원(그룹) 상한
+const ptMaxChars=p=>p.runs*PT_MAX_PEOPLE;     // 캐릭 상한 = 판수 × 10
+const ptCharCount=p=>p.applicants.reduce((n,g)=>n+g.chars.length,0);
+const ptPeople=p=>p.applicants.length;        // 인원 = 그룹 수
+// 전투력 노출: 680,006 → 680 (천 단위 이하 절삭)
+const cpShort=cp=>cp!=null?Math.floor(cp/1000):null;
+const ptCp=cpShort;   // 파티 탭 하위 호환
+
+// 날짜 유틸(로컬 기준, UTC 오프바이원 회피)
+function ptParse(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);}
+function ptYmd(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+function ptMd(s){const d=ptParse(s);return (d.getMonth()+1)+"/"+d.getDate();}
+const PT_WD=["일","월","화","수","목","금","토"];
+const PT_COLS=[3,4,5,6,0,1,2];        // 요일 컬럼 순서: 수 목 금 토 일 월 화
+// 그 날짜가 속한 주의 수요일(주 시작). 자정 기준으로 정규화.
+function ptWeekStart(dt){const x=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate());const off=(x.getDay()-3+7)%7;x.setDate(x.getDate()-off);return x;}
+// which: 'this'|'next' → 오늘 기준 수~화 한 주 범위
+function ptWeekRange(which){
+  const s=ptWeekStart(new Date()); if(which==="next")s.setDate(s.getDate()+7);
+  const e=new Date(s); e.setDate(e.getDate()+6);
+  return {start:ptYmd(s), end:ptYmd(e)};
+}
+function ptCalRows(start,end){
+  const first=ptParse(start), last=ptParse(end), anchor=ptWeekStart(first), rows={};
+  for(let d=new Date(first); d<=last; d.setDate(d.getDate()+1)){
+    const wi=Math.round((ptWeekStart(d)-anchor)/(7*864e5)), ci=PT_COLS.indexOf(d.getDay());
+    (rows[wi]||(rows[wi]={}))[ci]=ptYmd(d);
+  }
+  return rows;
+}
+
+const ptState={openId:null, focusDate:null};
+let ptNewType="rudra", ptNewWeek="this", ptDragKey=null;
+
+// 모집 생성 모달
+function ptOpenCreate(){
+  ptNewType="rudra"; ptNewWeek="this";
+  const sel=document.getElementById("ptTypeSel");
+  sel.innerHTML=PARTY_TYPES.map(t=>`<button type="button" class="pt-typebtn${t.key===ptNewType?' on':''}" data-t="${t.key}" style="--c:${t.color}">${t.icon} ${t.label}</button>`).join("");
+  sel.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{ptNewType=b.dataset.t;
+    sel.querySelectorAll(".pt-typebtn").forEach(x=>x.classList.toggle("on",x.dataset.t===ptNewType));});
+  const wsel=document.getElementById("ptWeekSel");
+  const wk={this:ptWeekRange("this"), next:ptWeekRange("next")};
+  wsel.innerHTML=[["this","이번주"],["next","다음주"]].map(([w,lab])=>
+    `<button type="button" class="pt-typebtn${w===ptNewWeek?' on':''}" data-w="${w}"><span>${lab}</span><small>${ptMd(wk[w].start)}~${ptMd(wk[w].end)}</small></button>`).join("");
+  wsel.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{ptNewWeek=b.dataset.w;
+    wsel.querySelectorAll(".pt-typebtn").forEach(x=>x.classList.toggle("on",x.dataset.w===ptNewWeek));});
+  document.getElementById("ptRuns").value=1;
+  ptCapNote();
+  document.getElementById("ptModal").classList.add("on");
+}
+function ptCloseCreate(){document.getElementById("ptModal").classList.remove("on");}
+function ptCapNote(){
+  const runs=Math.max(1,+document.getElementById("ptRuns").value||1);
+  document.getElementById("ptCapNote").innerHTML=`총 <b>${runs}판</b> · 최대 캐릭 <b>${runs*PT_MAX_PEOPLE}</b> · 인원 <b>${PT_MAX_PEOPLE}명</b> (그룹 기준)`;
+}
+async function ptCreate(){
+  const runs=Math.max(1,+document.getElementById("ptRuns").value||1);
+  const {start,end}=ptWeekRange(ptNewWeek);
+  const id="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  await PartyStore.upsert({id,type:ptNewType,week:ptNewWeek,start,end,runs,createdAt:new Date().toISOString(),applicants:[]});
+  ptCloseCreate();
+  ptState.openId=id; ptState.focusDate=null;
+  renderParty();
+}
+
+// 신청(그룹 단위): 캐릭을 그 그룹 엔트리에 담는다. (모두 PartyStore 경유)
+async function ptAddApplicant(charKey){
+  const p=await PartyStore.get(ptState.openId); if(!p)return;
+  const c=mcChars().find(x=>x.key===charKey); if(!c)return;
+  const gname=c.group||c.name||c.key;
+  let e=p.applicants.find(g=>g.group===gname);
+  if(e && e.chars.some(x=>x.key===c.key))return;                        // 이미 담김
+  if(ptCharCount(p)>=ptMaxChars(p)){alert(`최대 ${ptMaxChars(p)}캐릭까지 신청할 수 있습니다 (${p.runs}판 × ${PT_MAX_PEOPLE}명).`);return;}
+  if(!e && ptPeople(p)>=PT_MAX_PEOPLE){alert(`인원(그룹)은 최대 ${PT_MAX_PEOPLE}명까지 신청할 수 있습니다.`);return;}
+  if(!e){e={group:gname,chars:[]};p.applicants.push(e);}
+  e.chars.push({key:c.key,characterId:c.characterId,serverId:c.serverId,name:c.name,
+    img:c.img,cp:c.cp,race:c.race,serverName:c.serverName,level:c.level});
+  await PartyStore.upsert(p); renderParty();
+}
+async function ptRemoveChar(group,key){    // 그룹에서 캐릭 1개 제외(마지막이면 그룹 제거)
+  const p=await PartyStore.get(ptState.openId); if(!p)return;
+  const e=p.applicants.find(g=>g.group===group); if(!e)return;
+  e.chars=e.chars.filter(x=>x.key!==key);
+  if(!e.chars.length){ p.applicants=p.applicants.filter(g=>g.group!==group); }
+  await PartyStore.upsert(p); renderParty();
+}
+async function ptRemoveGroup(group){       // 그룹 통째로 신청 취소
+  const p=await PartyStore.get(ptState.openId); if(!p)return;
+  p.applicants=p.applicants.filter(g=>g.group!==group);
+  await PartyStore.upsert(p); renderParty();
+}
+async function ptClickDate(date){          // 파티 참석일 토글(신청자 전원) + 포커스
+  const p=await PartyStore.get(ptState.openId); if(!p)return;
+  if(!Array.isArray(p.dates))p.dates=[];
+  const i=p.dates.indexOf(date);
+  if(i>=0)p.dates.splice(i,1); else p.dates.push(date);
+  await PartyStore.upsert(p);
+  ptState.focusDate=date; renderParty();
+}
+async function ptUnmark(date){             // 날짜별 현황에서 그 날 참석 취소(파티 단위)
+  const p=await PartyStore.get(ptState.openId); if(!p||!date)return;
+  p.dates=(p.dates||[]).filter(d=>d!==date);
+  await PartyStore.upsert(p); renderParty();
+}
+
+// ── 렌더 ─────────────────────────────────────────────
+function ptRaceCol(r){return r===1?"#8ff0d0":"#ffadc0";}
+function ptPoolCard(c,applied){
+  const cp=ptCp(c.cp);
+  return `<div class="pt-pc${applied?' applied':''}" ${applied?'':'draggable="true"'} data-key="${esc(c.key)}" style="--c:${ptRaceCol(c.race)}">
+    <img class="ico sm" src="${c.img||''}" ${oe}>
+    <div class="pt-pc-b"><div class="nm">${esc(c.name)}</div><div class="pt-cp">⚔️ ${cp??'–'}</div></div>
+    ${applied?'<span class="pt-badge">신청됨</span>':'<span class="pt-add">＋</span>'}
+  </div>`;
+}
+// 소속 캐릭 칩(프로필+전투력). removable 이면 개별 제외 버튼 노출.
+function ptMemberChip(group,c,removable){
+  const cp=ptCp(c.cp);
+  return `<span class="pt-mem" style="--c:${ptRaceCol(c.race)}" title="${esc(c.name)} ⚔️${cp??'–'}">
+    <img src="${c.img||''}" ${oe}><b>${esc(c.name)}</b><i>${cp??'–'}</i>${removable?`<button class="pt-memx" data-rmc="${esc(group)}||${esc(c.key)}" title="캐릭 제외">×</button>`:''}
+  </span>`;
+}
+// 신청자 = 그룹(인원) 1명. 그룹명 + 소속 캐릭터 카드.
+function ptGroupCard(e){
+  return `<div class="pt-gc" data-group="${esc(e.group)}">
+    <button class="pt-acx" data-rmg="${esc(e.group)}" title="그룹 신청 취소">✕</button>
+    <div class="pt-gc-h"><span class="pt-gname">${esc(e.group)}</span>
+      <span class="pt-gc-meta">${e.chars.length}캐릭</span></div>
+    <div class="pt-gc-mem">${e.chars.map(c=>ptMemberChip(e.group,c,true)).join("")}</div>
+  </div>`;
+}
+function ptCalendarHtml(p){
+  const rows=ptCalRows(p.start,p.end), dates=p.dates||[];
+  let h=`<div class="pt-cal"><div class="pt-cal-row">`;
+  PT_COLS.forEach(dw=>{h+=`<div class="pt-wd wd${dw}">${PT_WD[dw]}</div>`;});
+  h+=`</div>`;
+  Object.keys(rows).map(Number).sort((x,y)=>x-y).forEach(wi=>{
+    h+=`<div class="pt-cal-row">`;
+    for(let ci=0;ci<7;ci++){
+      const ymd=rows[wi][ci];
+      if(!ymd){h+=`<div class="pt-cell empty"></div>`;continue;}
+      const dw=PT_COLS[ci], on=dates.includes(ymd);
+      const att=on?p.applicants:[], foc=ptState.focusDate===ymd;
+      h+=`<div class="pt-cell wd${dw}${on?' mine':''}${foc?' foc':''}" data-date="${ymd}">
+        <div class="pt-cell-d">${ptMd(ymd)}</div>
+        ${att.length?`<div class="pt-cell-n">${att.length}명</div>`:''}
+        <div class="pt-cell-av">${att.slice(0,6).map(g=>`<img src="${g.chars[0]?.img||''}" ${oe} title="${esc(g.group)}">`).join("")}${att.length>6?`<span>+${att.length-6}</span>`:''}</div>
+      </div>`;
+    }
+    h+=`</div>`;
+  });
+  return h+`</div>`;
+}
+function ptDayRosterHtml(p){
+  const d=ptState.focusDate;
+  if(!d) return `<div class="pt-sech">날짜별 신청 현황 <span>달력에서 날짜를 클릭하세요</span></div>`;
+  const on=(p.dates||[]).includes(d), att=on?p.applicants:[];
+  let h=`<div class="pt-sech">${ptMd(d)} (${PT_WD[ptParse(d).getDay()]}) 신청 현황 <span>${att.length}명 참석</span>${on?`<button class="pt-unmark" data-unmark="${d}" title="이 날 참석 취소">참석 취소</button>`:''}</div><div class="pt-roster">`;
+  if(!att.length) h+=`<div class="pt-empty">이 날은 참석으로 표시되지 않았습니다. 달력에서 날짜를 클릭해 표시하세요.</div>`;
+  else att.forEach(e=>{
+    h+=`<div class="pt-gc day">
+      <div class="pt-gc-h"><span class="pt-gname">${esc(e.group)}</span><span class="pt-gc-meta">${e.chars.length}캐릭</span></div>
+      <div class="pt-gc-mem">${e.chars.map(c=>ptMemberChip(e.group,c,false)).join("")}</div>
+    </div>`;
+  });
+  return h+`</div>`;
+}
+
+async function renderPartyList(root){
+  const parties=await PartyStore.all();
+  let html=`<div class="pt-head"><h2>🛡️ 파티 모집</h2><span class="spacer"></span><button class="btn" id="ptNew">＋ 파티 모집하기</button></div>`;
+  if(!parties.length){
+    html+=`<div class="pt-empty big">아직 모집이 없습니다.<br><b>파티 모집하기</b>로 루드라·침식·무스펠 파티를 열어보세요.</div>`;
+  }else{
+    html+=`<div class="pt-list">`;
+    parties.slice().reverse().forEach(p=>{
+      const T=ptType(p.type), max=ptMaxChars(p);
+      html+=`<div class="pt-rc" data-open="${p.id}" style="--c:${T.color}">
+        <button class="pt-rcx" data-delc="${p.id}" title="삭제">✕</button>
+        <div class="t">${T.icon} ${T.label}</div>
+        <div class="meta">${ptMd(p.start)} ~ ${ptMd(p.end)} · ${p.runs}판${p.week?` · ${p.week==="next"?"다음주":"이번주"}`:""}</div>
+        <div class="bars"><div class="bar">캐릭 <b>${ptCharCount(p)}</b>/${max}</div><div class="bar">인원 <b>${ptPeople(p)}</b>/${PT_MAX_PEOPLE}</div></div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  root.innerHTML=html;
+  on("ptNew","click",ptOpenCreate);
+  root.querySelectorAll("[data-open]").forEach(c=>c.onclick=e=>{
+    if(e.target.closest("[data-delc]"))return;
+    ptState.openId=c.dataset.open; ptState.activeKey=null; ptState.focusDate=null; renderParty();});
+  root.querySelectorAll("[data-delc]").forEach(b=>b.onclick=async e=>{
+    e.stopPropagation();
+    if(confirm("이 모집을 삭제할까요?")){await PartyStore.remove(b.dataset.delc); renderParty();}});
+}
+
+async function renderPartyDetail(root){
+  const p=await PartyStore.get(ptState.openId);
+  if(!p){ ptState.openId=null; return renderPartyList(root); }
+  const T=ptType(p.type), max=ptMaxChars(p), pool=mcChars();
+  const inParty=key=>p.applicants.some(g=>g.chars.some(x=>x.key===key));
+  let html=`<div class="pt-head">
+    <button class="hw-mini" id="ptBack">← 목록</button>
+    <h2><span class="pt-dot" style="color:${T.color}"></span>${T.icon} ${T.label}</h2>
+    <span class="pt-sub">${ptMd(p.start)} ~ ${ptMd(p.end)} · ${p.runs}판${p.week?` · ${p.week==="next"?"다음주":"이번주"}`:""}</span>
+    <span class="spacer"></span>
+    <span class="pt-cap${ptCharCount(p)>max?' over':''}">캐릭 <b>${ptCharCount(p)}</b>/${max}</span>
+    <span class="pt-cap${ptPeople(p)>PT_MAX_PEOPLE?' over':''}">인원 <b>${ptPeople(p)}</b>/${PT_MAX_PEOPLE}</span>
+    <button class="hw-mini" id="ptDel">모집 삭제</button>
+  </div><div class="pt-detail">`;
+  // 왼쪽: 내 캐릭터 풀 (그룹별)
+  html+=`<div class="pt-pool"><div class="pt-sech">내 캐릭터 <span>드래그하거나 클릭해 신청</span></div><div class="pt-poolbody">`;
+  if(!pool.length){ html+=`<div class="pt-empty">등록된 캐릭터가 없습니다.<br>🗂️ 내 캐릭터 탭에서 등록하세요.</div>`; }
+  else [...new Set(pool.map(c=>c.group))].forEach(g=>{
+    html+=`<div class="pt-pg">${esc(g)}</div>`;
+    pool.filter(c=>c.group===g).forEach(c=>{ html+=ptPoolCard(c, inParty(c.key)); });
+  });
+  html+=`</div></div>`;
+  // 오른쪽: 신청자(그룹) + 달력 + 날짜별 현황
+  html+=`<div class="pt-main">`;
+  html+=`<div class="pt-sech">신청자 <span>${ptPeople(p)}인원 · ${ptCharCount(p)}캐릭</span></div>`;
+  html+=`<div class="pt-drop" id="ptDrop">`;
+  if(!p.applicants.length) html+=`<div class="pt-dropempty">여기로 캐릭터 카드를 드래그하세요 · 같은 그룹은 한 인원으로 묶입니다</div>`;
+  else p.applicants.forEach(e=>{ html+=ptGroupCard(e); });
+  html+=`</div>`;
+  html+=`<div class="pt-sech">참석 달력 <span>날짜를 클릭하면 신청자 전원이 그 날 참석으로 표시돼요</span></div>`;
+  html+=ptCalendarHtml(p);
+  html+=ptDayRosterHtml(p);
+  html+=`</div></div>`;
+  root.innerHTML=html;
+
+  on("ptBack","click",()=>{ptState.openId=null;ptState.focusDate=null;renderParty();});
+  on("ptDel","click",async()=>{ if(confirm("이 모집을 삭제할까요?")){await PartyStore.remove(p.id);ptState.openId=null;renderParty();} });
+  // 풀: 클릭 추가 + 드래그
+  root.querySelectorAll(".pt-pc[draggable=true]").forEach(card=>{
+    card.onclick=()=>ptAddApplicant(card.dataset.key);
+    card.addEventListener("dragstart",e=>{ptDragKey=card.dataset.key;e.dataTransfer.setData("text/plain",card.dataset.key);e.dataTransfer.effectAllowed="copy";card.classList.add("dragging");});
+    card.addEventListener("dragend",()=>{ptDragKey=null;card.classList.remove("dragging");});
+  });
+  const drop=document.getElementById("ptDrop");
+  drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("dragover");});
+  drop.addEventListener("dragleave",()=>drop.classList.remove("dragover"));
+  drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("dragover");
+    const k=e.dataTransfer.getData("text/plain")||ptDragKey; if(k)ptAddApplicant(k);});
+  // 캐릭 개별 제외 / 그룹 취소 (그룹 선택 단계는 없앰 — 참석은 파티 단위)
+  root.querySelectorAll("[data-rmg]").forEach(b=>b.onclick=e=>{e.stopPropagation();ptRemoveGroup(b.dataset.rmg);});
+  root.querySelectorAll("[data-rmc]").forEach(b=>b.onclick=e=>{e.stopPropagation();const [g,k]=b.dataset.rmc.split("||");ptRemoveChar(g,k);});
+  // 달력 날짜 클릭 / 날짜별 현황에서 참석 취소
+  root.querySelectorAll(".pt-cell[data-date]").forEach(cell=>cell.onclick=()=>ptClickDate(cell.dataset.date));
+  root.querySelectorAll("[data-unmark]").forEach(b=>b.onclick=()=>ptUnmark(b.dataset.unmark));
+}
+
+async function renderParty(){
+  const root=document.getElementById("partyRoot"); if(!root)return;
+  if(ptState.openId) await renderPartyDetail(root);
+  else await renderPartyList(root);
+}
+function initParty(){
+  on("ptModalCancel","click",ptCloseCreate);
+  on("ptModalCreate","click",ptCreate);
+  on("ptRuns","input",ptCapNote);
+  document.getElementById("ptModal").addEventListener("click",e=>{if(e.target.id==="ptModal")ptCloseCreate();});
+  renderParty();
+}
+
 renderTabs();
 initSkillTip();
-initSettings();
-initHomework();
-initMyChars();
 initScreen();
 on("cbtn","click",charSearch);
 on("cq","keydown",e=>{ if(e.key==="Enter") charSearch(); });
 boot();
-document.getElementById("cq").focus();   // 메인 = 캐릭터 검색
+document.getElementById("mcCq")?.focus();   // 메인 = 내 캐릭터 탭의 캐릭터 검색
+// 서버 저장소(Turso/로컬)를 메모리 캐시로 하이드레이트한 뒤, 저장 데이터에 의존하는
+// 화면(운영자 설정·숙제·내 캐릭터·파티)을 초기화한다.
+(async ()=>{
+  await sbLoad();
+  initSettings();
+  initHomework();
+  initMyChars();
+  initParty();
+  if(needsIdentity()) openIdentModal();   // 최초 진입/시크릿: 본인 이름 먼저 선택
+})();
 </script>
 </body>
 </html>
