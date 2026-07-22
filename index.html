@@ -3105,7 +3105,9 @@ function ptTeamHtml(p, date){
       <div class="tc-b"><div class="nm">${esc(c.name)}</div><div class="sub">${esc(c._group)} · ${cp??'–'}</div></div>
     </div>`;
   };
-  const byRole=(list,r)=>list.filter(c=>ptRoleOf(c)===r);
+  // 같은 포지션(role) 안에서는 전투력 내림차순으로 정렬한다. cp 없는 캐릭은 뒤로 밀린다.
+  const byRole=(list,r)=>list.filter(c=>ptRoleOf(c)===r)
+    .slice().sort((a,b)=>(b.cp??-1)-(a.cp??-1));
   const roleBlock=list=>["deal","tank","heal"].map(r=>{
     const arr=byRole(list,r); if(!arr.length) return '';
     return `<div class="pt-tm-role"><span class="pt-tm-roleh">${PT_ROLE_LABEL[r]} · ${arr.length}</span><div class="pt-tm-body">${arr.map(chip).join("")}</div></div>`;
