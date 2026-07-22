@@ -2788,8 +2788,14 @@ const ptCanManageGroup=group=>isAdmin||group===effectiveGroup();
 const ptCanDeleteParty=p=>!!p?.creatorGroup&&p.creatorGroup===effectiveGroup();
 // 완료(=히스토리) 여부. 완료된 파티는 신청·팀 배정·시간/판수 변경 등 모든 편집이 잠긴다.
 const ptIsCompleted=p=>!!p?.completedAt;
-// 완료·복구 권한: 파티 생성 그룹 또는 관리자.
-const ptCanComplete=p=>isAdmin||(!!p?.creatorGroup&&p.creatorGroup===effectiveGroup());
+// 완료·복구 권한: 관리자 · 파티 생성 그룹 · 파티에 참여한 그룹 누구나 (실사용상 파티 종료는
+// 참여자 아무나 할 수 있어야 자연스럽다).
+function ptCanComplete(p){
+  if(isAdmin) return true;
+  const me=effectiveGroup(); if(!me) return false;
+  if(p?.creatorGroup===me) return true;
+  return !!(p?.applicants||[]).some(e=>e.group===me);
+}
 function ptExpectedStart(p){
   const count={};
   (p.applicants||[]).forEach(e=>ptDates(e).forEach(d=>{count[d]=(count[d]||0)+1;}));
@@ -2994,7 +3000,7 @@ async function ptRemoveGroup(group){       // 그룹 통째로 신청 취소
 }
 async function ptCompleteParty(id){        // 파티 완료 처리 → 히스토리 섹션으로 이동
   const p=await PartyStore.get(id); if(!p) return false;
-  if(!ptCanComplete(p)){alert("파티 완료 처리는 모집 생성 그룹 또는 관리자만 가능합니다.");return false;}
+  if(!ptCanComplete(p)){alert("파티 완료 처리는 참여자·모집 생성자·관리자만 가능합니다.");return false;}
   if(ptIsCompleted(p)){return true;}   // 이미 완료된 경우 idempotent
   p.completedAt=new Date().toISOString();
   p.history.push({at:p.completedAt,group:effectiveGroup()||"알 수 없음",field:"상태",before:"진행중",after:"완료"});
@@ -3003,7 +3009,7 @@ async function ptCompleteParty(id){        // 파티 완료 처리 → 히스토
 }
 async function ptRestoreParty(id){         // 완료된 파티를 다시 활성으로 복구
   const p=await PartyStore.get(id); if(!p) return false;
-  if(!ptCanComplete(p)){alert("복구는 모집 생성 그룹 또는 관리자만 가능합니다.");return false;}
+  if(!ptCanComplete(p)){alert("복구는 참여자·모집 생성자·관리자만 가능합니다.");return false;}
   if(!ptIsCompleted(p)){return true;}
   const before=p.completedAt;
   delete p.completedAt;
