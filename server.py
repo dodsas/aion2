@@ -17,12 +17,15 @@
 from __future__ import annotations
 import argparse
 import concurrent.futures
+import hmac
 import hashlib
 import json
 import os
+import secrets
 import sqlite3
 import ssl
 import threading
+import time
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
@@ -43,6 +46,14 @@ INDEX = BASE_DIR / "index.html"
 # 상태 데이터(캐릭터 캐시 · 내 캐릭터 · 파티 모집 · 숙제 등) 저장소.
 # TURSO_* 환경변수가 있으면 Turso, 없으면 로컬 app_store.db 로 폴백한다.
 STORE = Store()
+
+# 관리자 인증은 환경변수에 둔 단일 계정 + HttpOnly 세션 쿠키로 처리한다.
+# 세션은 서버 메모리에만 유지되므로 서버 재시작 시 자연스럽게 만료된다.
+ADMIN_ID = os.environ.get("ADMIN_ID", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+ADMIN_SESSION_TTL = 8 * 60 * 60
+ADMIN_SESSIONS: dict[str, float] = {}
+ADMIN_SESSION_LOCK = threading.Lock()
 
 
 def db():
@@ -459,6 +470,49 @@ ALLOWED_KV = {
 }
 
 
+def delete_requests():
+    return STORE.kv_get("group_delete_requests") or []
+
+
+def save_delete_requests(requests):
+    STORE.kv_set("group_delete_requests", requests)
+
+
+def api_delete_request(data):
+    group = (data.get("group") or "").strip()
+    if not group or len(group) > 80:
+        return {"error": "invalid group"}
+    requests = delete_requests()
+    if any(r.get("group") == group for r in requests):
+        return {"ok": True, "already_requested": True}
+    requests.append({"group": group, "requested_at": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+    save_delete_requests(requests)
+    return {"ok": True}
+
+
+def api_admin_delete_action(data):
+    group = (data.get("group") or "").strip()
+    action = data.get("action")
+    if not group or action not in ("delete", "dismiss"):
+        return {"error": "invalid request"}
+    current_requests = delete_requests()
+    if not any(r.get("group") == group for r in current_requests):
+        return {"error": "delete request not found"}
+    requests = [r for r in current_requests if r.get("group") != group]
+    save_delete_requests(requests)
+    if action == "delete":
+        chars = STORE.kv_get("mychars") or []
+        STORE.kv_set("mychars", [c for c in chars if c.get("group") != group])
+        groups = STORE.kv_get("mychar_groups") or []
+        STORE.kv_set("mychar_groups", [g for g in groups if g != group])
+        parties = STORE.kv_get("parties") or []
+        for party in parties:
+            if isinstance(party, dict) and isinstance(party.get("applicants"), list):
+                party["applicants"] = [a for a in party["applicants"] if a.get("group") != group]
+        STORE.kv_set("parties", parties)
+    return {"ok": True, "deleted": action == "delete"}
+
+
 def api_store_get(q):
     k = (q.get("k", [""])[0] or "").strip()
     if k not in ALLOWED_KV:
@@ -498,19 +552,42 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass  # 조용히
 
-    def _send(self, code, body, ctype="application/json; charset=utf-8", cache=None):
+    def _send(self, code, body, ctype="application/json; charset=utf-8", cache=None, headers=None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         if cache is not None:
             self.send_header("Cache-Control", cache)
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(body)
 
-    def _json(self, obj, code=200):
+    def _json(self, obj, code=200, headers=None):
         # API 응답은 항상 최신이어야 하므로 캐시 금지
         self._send(code, json.dumps(obj, ensure_ascii=False).encode("utf-8"),
-                   cache="no-store")
+                   cache="no-store", headers=headers)
+
+    def _admin_session(self):
+        cookies = self.headers.get("Cookie", "")
+        token = next((p.strip()[len("aion2_admin_session="):] for p in cookies.split(";")
+                      if p.strip().startswith("aion2_admin_session=")), "")
+        if not token:
+            return False
+        now = time.time()
+        with ADMIN_SESSION_LOCK:
+            expiry = ADMIN_SESSIONS.get(token, 0)
+            if expiry > now:
+                return True
+            if token:
+                ADMIN_SESSIONS.pop(token, None)
+        return False
+
+    def _require_admin(self):
+        if self._admin_session():
+            return True
+        self._json({"error": "admin authentication required"}, 401)
+        return False
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -532,6 +609,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, f.read_bytes(), "image/png")
             else:
                 self._send(404, b"", "image/png")
+            return
+
+        if path == "/api/admin/session":
+            self._json({"authenticated": self._admin_session(), "enabled": bool(ADMIN_ID and ADMIN_PASSWORD)})
+            return
+        if path == "/api/admin/delete-requests":
+            if self._require_admin():
+                self._json({"requests": delete_requests()})
             return
 
         if path in NET_ROUTES:
@@ -561,6 +646,44 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/admin/login":
+            try:
+                data = self._read_json()
+                valid = bool(ADMIN_ID and ADMIN_PASSWORD) and hmac.compare_digest(
+                    str(data.get("id") or ""), ADMIN_ID) and hmac.compare_digest(
+                    str(data.get("password") or ""), ADMIN_PASSWORD)
+                if not valid:
+                    self._json({"error": "invalid credentials"}, 401)
+                    return
+                token = secrets.token_urlsafe(32)
+                with ADMIN_SESSION_LOCK:
+                    ADMIN_SESSIONS[token] = time.time() + ADMIN_SESSION_TTL
+                self._json({"ok": True}, headers={"Set-Cookie": f"aion2_admin_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={ADMIN_SESSION_TTL}"})
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
+        if parsed.path == "/api/admin/logout":
+            cookies = self.headers.get("Cookie", "")
+            token = next((p.strip()[len("aion2_admin_session="):] for p in cookies.split(";")
+                          if p.strip().startswith("aion2_admin_session=")), "")
+            with ADMIN_SESSION_LOCK:
+                ADMIN_SESSIONS.pop(token, None)
+            self._json({"ok": True}, headers={"Set-Cookie": "aion2_admin_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"})
+            return
+        if parsed.path == "/api/delete-requests":
+            try:
+                self._json(api_delete_request(self._read_json()))
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
+        if parsed.path == "/api/admin/delete-requests/action":
+            if not self._require_admin():
+                return
+            try:
+                self._json(api_admin_delete_action(self._read_json()))
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
         if parsed.path == "/api/set_price":
             try:
                 data = self._read_json()
