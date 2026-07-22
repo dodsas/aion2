@@ -753,6 +753,9 @@
   .pt-gc:hover{border-color:var(--etched)}
   .pt-gc.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 0 3px rgba(143,240,208,.18)}
   .pt-gc.day{cursor:default}
+  .pt-gc.day.pending{border-style:dashed;opacity:.9}
+  .pt-gc.day.pending::before{background:var(--dim)}
+  .pt-gc.day.pending .pt-gname{color:var(--dim)}
   .pt-gc-h{display:flex;align-items:baseline;gap:8px;padding-right:22px}
   .pt-gname{font-weight:900;font-size:13.5px;color:var(--gold);letter-spacing:-.2px}
   .pt-gc-meta{color:var(--dim);font-size:11px;font-weight:700;white-space:nowrap}
@@ -768,6 +771,39 @@
   .pt-memx{width:15px;height:15px;line-height:12px;text-align:center;border-radius:50%;padding:0;margin-left:1px;
            background:rgba(0,0,0,.3);border:1px solid var(--etched);color:var(--dim);cursor:pointer;font-size:11px}
   .pt-memx:hover{color:var(--danger);border-color:var(--danger)}
+
+  /* 팀 편성(PC 전용) */
+  .pt-tm-wrap{margin-top:6px}
+  .pt-tm-grid{display:flex;gap:10px;margin-top:10px;align-items:flex-start}
+  .pt-tm-runs{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
+  .pt-tm-run{padding-top:8px;border-top:1px dashed var(--etched)}
+  .pt-tm-run:first-child{padding-top:0;border-top:none}
+  .pt-tm-run-h{font-weight:900;font-size:13px;color:var(--gold);margin-bottom:8px;letter-spacing:-.2px}
+  .pt-tm-run-teams{display:flex;gap:10px;flex-wrap:wrap}
+  .pt-tm-run-teams .pt-tm-team{flex:1;min-width:220px}
+  .pt-tm-pool,.pt-tm-team{padding:9px 11px 10px;border-radius:10px;
+        border:1px solid var(--line);background:linear-gradient(180deg,var(--slot-hi),var(--slot));min-height:110px;transition:border-color .12s,background .12s}
+  .pt-tm-pool{flex:0 0 280px;border-style:dashed}
+  .pt-tm-pool.over,.pt-tm-team.over{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 8%,#0f151c)}
+  .pt-tm-poolh,.pt-tm-teamh{display:flex;align-items:center;gap:6px;font-weight:900;font-size:12.5px;color:var(--gold);margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .pt-tm-poolh b,.pt-tm-teamh b{color:var(--gold);font-weight:900}
+  .pt-tm-teamh.over,.pt-tm-team.over .pt-tm-teamh b{color:var(--danger)}
+  .pt-tm-role{margin-bottom:6px}
+  .pt-tm-role:last-child{margin-bottom:0}
+  .pt-tm-roleh{display:block;font-size:10.5px;font-weight:800;color:var(--dim);margin:4px 0 4px;letter-spacing:.3px}
+  .pt-tm-body{display:flex;flex-direction:column;gap:5px}
+  .pt-tm-chip{--r:var(--dim);position:relative;display:flex;align-items:center;gap:8px;padding:5px 8px 5px 12px;
+        border-radius:7px;border:1px solid var(--line);background:#0f151c;cursor:grab;user-select:none;overflow:hidden;transition:border-color .1s,transform .1s}
+  .pt-tm-chip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--r)}
+  .pt-tm-chip:hover{border-color:var(--etched);transform:translateY(-1px)}
+  .pt-tm-chip.dragging{opacity:.35;cursor:grabbing}
+  .pt-tm-chip img{width:24px;height:24px;border-radius:5px;object-fit:contain;background:#0e151d;border:1px solid var(--line);flex-shrink:0}
+  .pt-tm-chip .tc-b{flex:1;min-width:0}
+  .pt-tm-chip .tc-b .nm{font-weight:800;font-size:12px;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pt-tm-chip .tc-b .sub{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pt-tm-chip.role-tank{--r:#8ff0d0}
+  .pt-tm-chip.role-heal{--r:#ffd28a}
+  .pt-tm-chip.role-deal{--r:#ffadc0}
 
   /* 생성 모달 타입/주차 선택 */
   .pt-typesel{display:flex;gap:8px}
@@ -795,6 +831,8 @@
     .pt-cell-n{position:static;display:block;margin-top:1px}
     .pt-cell-av{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));justify-items:center;width:100%;gap:3px;margin-top:7px}
     .pt-cell-av img{justify-self:center}
+    /* 팀 편성은 드래그·드롭 기반 PC 전용 기능 — 모바일에선 숨겨 방해 요소를 없앤다. */
+    .pt-tm-wrap{display:none}
   }
 </style>
 </head>
@@ -1059,9 +1097,18 @@ let META={}, curCode=null, debounce=null;
 // 보유량: 아이템 코드별 사용자가 가진 수량. 서버 저장소(SB)에서 부팅 시 로드된다.
 let OWN={};
 
-// credentials 를 명시하지 않으면 iOS WKWebView / Safari 일부 버전에서 same-origin 쿠키가
-// 응답에 포함된 Set-Cookie 를 저장하지 않거나 후속 요청에 실려 나가지 않는 사례가 있다.
-async function j(u){const r=await fetch(u,{credentials:"same-origin"});return r.json();}
+// iOS 웹뷰(카톡 인앱 브라우저 등)는 Set-Cookie 를 무시하거나 후속 요청에 쿠키를 실어주지
+// 않는 사례가 많아, 관리자 토큰을 별도로 localStorage 에 저장해 Authorization 헤더로 보낸다.
+// 서버는 Bearer 토큰을 최우선으로 검증하고 없을 때만 쿠키를 확인한다.
+const ADMIN_TOKEN_KEY="aion2_admin_token";
+function adminToken(){try{return localStorage.getItem(ADMIN_TOKEN_KEY)||"";}catch(e){return "";}}
+function setAdminToken(t){try{ if(t) localStorage.setItem(ADMIN_TOKEN_KEY,t); else localStorage.removeItem(ADMIN_TOKEN_KEY); }catch(e){}}
+function authHeaders(base){
+  const h=Object.assign({},base||{});
+  const t=adminToken(); if(t) h["Authorization"]="Bearer "+t;
+  return h;
+}
+async function j(u){const r=await fetch(u,{credentials:"same-origin",headers:authHeaders()});return r.json();}
 
 // ── 서버 저장소(SB) ───────────────────────────────────────────────
 // 상태 데이터(내 캐릭터/그룹·파티·숙제·설정·보유량)를 서버(Turso 또는 로컬
@@ -1100,7 +1147,8 @@ async function sbLoad(){
 }
 
 async function postJSON(path,data={}){
-  const r=await fetch(path,{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  const r=await fetch(path,{method:"POST",credentials:"same-origin",
+    headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify(data)});
   const out=await r.json().catch(()=>({error:"서버 응답을 읽지 못했습니다."}));
   if(!r.ok||out.error)throw new Error(out.error||"요청 처리에 실패했습니다.");
   return out;
@@ -1112,6 +1160,8 @@ async function refreshAdminState(){
   try{
     const s=await j("/api/admin/session");
     isAdmin=!!s.authenticated;
+    // 서버가 인증 안 됐다고 하면 로컬에 남은 stale 토큰은 정리.
+    if(!isAdmin && adminToken()) setAdminToken("");
   }catch(e){ isAdmin=false; }
   const trigger=document.getElementById("adminTrigger");
   if(trigger)trigger.textContent=isAdmin?"관리자 로그아웃":"관리자";
@@ -1177,11 +1227,13 @@ async function adminLogin(){
   const id=(document.getElementById("adminId").value||"").trim();
   const password=(document.getElementById("adminPassword").value||"").trim();
   try{
-    await postJSON("/api/admin/login",{id,password});
+    const res=await postJSON("/api/admin/login",{id,password});
+    // 서버가 body 로 준 token 을 localStorage 에 저장 → 이후 Authorization 헤더로 재사용.
+    // 쿠키가 저장/전송되지 않는 웹뷰에서도 세션 유지가 된다.
+    if(res && res.token) setAdminToken(res.token);
     closeAdminLogin(); await refreshAdminState(); showView("settings");
     if(!isAdmin){
-      // 로그인 200 이 왔는데 세션 확인이 실패 = 웹뷰가 쿠키를 저장 못한 경우.
-      error.textContent="로그인은 성공했지만 세션 저장에 실패했습니다. Safari 설정 → 개인정보 보호에서 '모든 쿠키 차단' 을 끄고 다시 시도해 주세요.";
+      error.textContent="세션 검증에 실패했습니다. 앱 종료 후 다시 시도해 주세요.";
       document.getElementById("adminLoginModal").classList.add("on");
     }
   }catch(e){ error.textContent="로그인에 실패했습니다. ID와 비밀번호를 확인하세요."; }
@@ -2281,6 +2333,7 @@ function initAdmin(){
   on("adminTrigger","click",async()=>{
     if(!isAdmin){openAdminLogin();return;}
     await postJSON("/api/admin/logout").catch(()=>{});
+    setAdminToken("");   // Bearer 토큰 함께 정리
     await refreshAdminState();
   });
   on("adminLoginCancel","click",closeAdminLogin);
@@ -2661,6 +2714,32 @@ function ptNormalize(p){
   if(typeof p.creatorGroup!=="string")p.creatorGroup="";
   if(!Array.isArray(p.history))p.history=[];
   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(p.time||""))p.time="21:00";
+  // 팀 편성 저장소: p.teams[date][charKey] = teamIdx(0..N-1). PC 파티 상세에서만 편집한다.
+  if(!p.teams||typeof p.teams!=="object")p.teams={};
+  // 방어: 같은 그룹명 엔트리 두 개면 병합(chars/dates 유니온), 같은 캐릭 key 가 여러 엔트리 혹은
+  // 한 엔트리 안에 중복돼 있으면 첫 등장만 남긴다. 읽을 때마다 자동 정리 → 어떤 경로로 중복이
+  // 생기더라도 화면·카운트·팀 편성이 항상 유일 캐릭 기준으로 동작한다.
+  const byGroup={};
+  p.applicants.forEach(e=>{
+    if(!e||typeof e.group!=="string")return;
+    const g=byGroup[e.group];
+    if(!g) byGroup[e.group]={group:e.group,chars:[...(Array.isArray(e.chars)?e.chars:[])],
+                             dates:[...(Array.isArray(e.dates)?e.dates:[])]};
+    else{
+      (e.chars||[]).forEach(c=>{ if(!g.chars.some(x=>x&&c&&x.key===c.key)) g.chars.push(c); });
+      (e.dates||[]).forEach(d=>{ if(!g.dates.includes(d)) g.dates.push(d); });
+    }
+  });
+  p.applicants=Object.values(byGroup);
+  const seen=new Set();
+  p.applicants.forEach(e=>{
+    e.chars=(e.chars||[]).filter(c=>{
+      if(!c||!c.key) return true;
+      if(seen.has(c.key)) return false;
+      seen.add(c.key); return true;
+    });
+  });
+  p.applicants=p.applicants.filter(e=>Array.isArray(e.chars)&&e.chars.length);
   return p;
 }
 // 서버 저장소(SB) 의 'parties' 키에 저장된다. 부팅 시 sbLoad 로 캐시에 올라와 있어
@@ -2970,6 +3049,7 @@ function ptRenderDayRoster(p){
   const box=document.getElementById("ptDayRoster"); if(!box)return;
   box.innerHTML=ptDayRosterHtml(p);
   box.querySelectorAll("[data-unmark]").forEach(b=>b.onclick=()=>ptUnmark(b.dataset.unmark));
+  ptBindTeamHandlers(p);
 }
 function ptUpdateAttendanceUI(p,date){
   const cell=document.querySelector(`#partyRoot .pt-cell[data-date="${CSS.escape(date)}"]`);
@@ -2990,20 +3070,167 @@ function ptUpdateAttendanceUI(p,date){
   document.querySelectorAll("#partyRoot .pt-cell[data-date]").forEach(c=>c.classList.toggle("foc",c.dataset.date===ptState.focusDate));
   ptRenderDayRoster(p);
 }
+// 캐릭 역할: 파티 표시용 아이콘(classMark) 과 동일 기준.
+function ptRoleOf(c){
+  const cls=c?.className||mcChars().find(x=>x.key===c?.key)?.className||"";
+  return TANK_CLASSES.has(cls)?"tank":HEAL_CLASSES.has(cls)?"heal":"deal";
+}
+const PT_ROLE_LABEL={deal:"⚔️ 딜러",tank:"🛡️ 탱커",heal:"✚ 힐러"};
+// 한 판(run) = 1팀·2팀 각 10명. teamCount = 판수 × 2, teamIdx = runIdx*2 + (0|1).
+const PT_TEAM_MAX=10;
+const PT_TEAMS_PER_RUN=2;
+
+// 특정 날짜의 팀 편성 UI(PC 전용). 참석자를 역할별로 나눈 미배정 풀 + 판별(1팀·2팀) 팀으로 렌더.
+function ptTeamHtml(p, date){
+  const att=p.applicants.filter(e=>ptDates(e).includes(date));
+  if(!att.length) return '';
+  const chars=[];
+  att.forEach(e=>e.chars.forEach(c=>chars.push({...c,_group:e.group})));
+  if(!chars.length) return '';
+  const assign=(p.teams&&p.teams[date])||{};
+  const runs=Math.max(1, p.runs||1);
+  const teamCount=runs*PT_TEAMS_PER_RUN;
+  const teams=Array.from({length:teamCount},()=>[]);
+  const unassigned=[];
+  chars.forEach(c=>{
+    const t=assign[c.key];
+    if(t!=null && Number.isInteger(t) && t>=0 && t<teamCount) teams[t].push(c);
+    else unassigned.push(c);
+  });
+
+  const chip=c=>{
+    const r=ptRoleOf(c), cp=ptCp(c.cp);
+    return `<div class="pt-tm-chip role-${r}" draggable="true" data-team-drag="${esc(c.key)}" title="${esc(c.name)} · ${esc(c.className||'')} · 전투력 ${cp??'–'}">
+      <img src="${esc(c.img||'')}" ${oe}>
+      <div class="tc-b"><div class="nm">${esc(c.name)}</div><div class="sub">${esc(c._group)} · ${cp??'–'}</div></div>
+    </div>`;
+  };
+  const byRole=(list,r)=>list.filter(c=>ptRoleOf(c)===r);
+  const roleBlock=list=>["deal","tank","heal"].map(r=>{
+    const arr=byRole(list,r); if(!arr.length) return '';
+    return `<div class="pt-tm-role"><span class="pt-tm-roleh">${PT_ROLE_LABEL[r]} · ${arr.length}</span><div class="pt-tm-body">${arr.map(chip).join("")}</div></div>`;
+  }).join("");
+  const teamCard=(team,i)=>{
+    const over=team.length>PT_TEAM_MAX;
+    const teamNo=(i%PT_TEAMS_PER_RUN)+1;
+    return `<div class="pt-tm-team${over?' over':''}" data-team-drop="${i}">
+      <div class="pt-tm-teamh${over?' over':''}">${teamNo}팀 <b>${team.length}</b>/${PT_TEAM_MAX}</div>
+      ${team.length?roleBlock(team):'<div class="pt-empty" style="padding:8px">여기로 캐릭을 끌어놓으세요</div>'}
+    </div>`;
+  };
+
+  let h=`<div class="pt-tm-wrap">
+    <div class="pt-sech" style="margin-top:14px">👥 팀 편성 <span class="hint">캐릭을 판·팀 슬롯으로 드래그 · 팀당 최대 ${PT_TEAM_MAX}명 · ${runs}판 × 2팀</span></div>
+    <div class="pt-tm-grid">
+      <div class="pt-tm-pool" data-team-drop="none">
+        <div class="pt-tm-poolh">미배정 <b>${unassigned.length}</b></div>
+        ${roleBlock(unassigned)||'<div class="pt-empty" style="padding:8px">모든 캐릭이 팀에 배정되었습니다.</div>'}
+      </div>
+      <div class="pt-tm-runs">`;
+  for(let r=0;r<runs;r++){
+    h+=`<div class="pt-tm-run">
+      <div class="pt-tm-run-h">🎯 ${r+1}판</div>
+      <div class="pt-tm-run-teams">
+        ${teamCard(teams[r*PT_TEAMS_PER_RUN], r*PT_TEAMS_PER_RUN)}
+        ${teamCard(teams[r*PT_TEAMS_PER_RUN+1], r*PT_TEAMS_PER_RUN+1)}
+      </div>
+    </div>`;
+  }
+  h+=`</div></div></div>`;
+  return h;
+}
+
+async function ptAssignTeam(date, charKey, teamIdx){
+  const p=await PartyStore.get(ptState.openId); if(!p) return;
+  p.teams=p.teams||{};
+  p.teams[date]=p.teams[date]||{};
+  if(teamIdx==null) delete p.teams[date][charKey];
+  else p.teams[date][charKey]=teamIdx;
+  // 텅 빈 날짜 맵은 정리
+  if(!Object.keys(p.teams[date]).length) delete p.teams[date];
+  await PartyStore.upsert(p);
+  ptRenderDayRoster(p);
+}
+
+function ptBindTeamHandlers(p){
+  const d=ptState.focusDate; if(!d) return;
+  const root=document.getElementById("ptDayRoster"); if(!root) return;
+  root.querySelectorAll("[data-team-drag]").forEach(el=>{
+    el.addEventListener("dragstart",e=>{
+      e.dataTransfer.setData("text/plain", el.dataset.teamDrag);
+      e.dataTransfer.effectAllowed="move";
+      el.classList.add("dragging");
+    });
+    el.addEventListener("dragend",()=>el.classList.remove("dragging"));
+  });
+  root.querySelectorAll("[data-team-drop]").forEach(zone=>{
+    zone.addEventListener("dragover",e=>{ e.preventDefault(); e.dataTransfer.dropEffect="move"; zone.classList.add("over"); });
+    zone.addEventListener("dragleave",()=>zone.classList.remove("over"));
+    zone.addEventListener("drop",async e=>{
+      e.preventDefault(); zone.classList.remove("over");
+      const key=e.dataTransfer.getData("text/plain"); if(!key) return;
+      const raw=zone.dataset.teamDrop;
+      const teamIdx=raw==="none"?null:parseInt(raw,10);
+      if(teamIdx!=null){
+        // 팀 정원·동일 판 그룹 중복 체크 — 저장 직전 최신 상태로.
+        const p2=await PartyStore.get(ptState.openId); if(!p2) return;
+        const assign=(p2.teams&&p2.teams[d])||{};
+        const cur=Object.entries(assign).filter(([k,v])=>v===teamIdx&&k!==key).length;
+        if(cur>=PT_TEAM_MAX){ alert(`팀 정원(${PT_TEAM_MAX}명)을 초과할 수 없습니다.`); return; }
+        // 드래그하는 캐릭의 소속 그룹 조회
+        const groupOf=k=>{
+          for(const en of p2.applicants||[]){
+            if((en.chars||[]).some(c=>c.key===k)) return en.group;
+          }
+          return null;
+        };
+        const draggedGroup=groupOf(key);
+        if(draggedGroup){
+          // 같은 판(runIdx) 내 다른 팀 슬롯까지 훑어 같은 그룹의 다른 캐릭이 이미 배정돼 있으면 거부.
+          const runIdx=Math.floor(teamIdx/PT_TEAMS_PER_RUN);
+          const dup=Object.entries(assign).some(([k,v])=>
+            k!==key && Math.floor(v/PT_TEAMS_PER_RUN)===runIdx && groupOf(k)===draggedGroup);
+          if(dup){ alert(`동일 판에 같은 그룹(${draggedGroup}) 캐릭 2개 이상은 배정할 수 없습니다.`); return; }
+        }
+      }
+      ptAssignTeam(d, key, teamIdx);
+    });
+  });
+}
+
 function ptDayRosterHtml(p){
   const d=ptState.focusDate;
-  if(!d) return `<div class="pt-sech">날짜별 신청 현황 <span>달력에서 날짜를 클릭하세요</span></div>`;
-  const mine=ptDates(p.applicants.find(e=>e.group===effectiveGroup())).includes(d);
-  const att=p.applicants.filter(e=>ptDates(e).includes(d));
-  let h=`<div class="pt-sech">${ptMd(d)} (${PT_WD[ptParse(d).getDay()]}) 신청 현황 <span>${att.length}명 참석</span>${mine?`<button class="pt-unmark" data-unmark="${d}" title="이 날 참석 취소">참석 취소</button>`:''}</div><div class="pt-roster">`;
-  if(!att.length) h+=`<div class="pt-empty">이 날은 참석으로 표시되지 않았습니다. 달력에서 날짜를 클릭해 표시하세요.</div>`;
-  else att.forEach(e=>{
-    h+=`<div class="pt-gc day">
-      <div class="pt-gc-h"><span class="pt-gname">${esc(e.group)}</span><span class="pt-gc-meta">${e.chars.length}캐릭</span></div>
-      <div class="pt-gc-mem">${e.chars.map(c=>ptMemberChip(e.group,c,false)).join("")}</div>
-    </div>`;
-  });
-  return h+`</div>`;
+  const pending=p.applicants.filter(e=>!ptDates(e).length);
+  let h;
+  if(!d){
+    h=`<div class="pt-sech">날짜별 신청 현황 <span>달력에서 날짜를 클릭하세요</span></div>`;
+  }else{
+    const mine=ptDates(p.applicants.find(e=>e.group===effectiveGroup())).includes(d);
+    const att=p.applicants.filter(e=>ptDates(e).includes(d));
+    h=`<div class="pt-sech">${ptMd(d)} (${PT_WD[ptParse(d).getDay()]}) 신청 현황 <span>${att.length}명 참석</span>${mine?`<button class="pt-unmark" data-unmark="${d}" title="이 날 참석 취소">참석 취소</button>`:''}</div><div class="pt-roster">`;
+    if(!att.length) h+=`<div class="pt-empty">이 날은 참석으로 표시되지 않았습니다. 달력에서 날짜를 클릭해 표시하세요.</div>`;
+    else att.forEach(e=>{
+      h+=`<div class="pt-gc day">
+        <div class="pt-gc-h"><span class="pt-gname">${esc(e.group)}</span><span class="pt-gc-meta">${e.chars.length}캐릭</span></div>
+        <div class="pt-gc-mem">${e.chars.map(c=>ptMemberChip(e.group,c,false)).join("")}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+    h+=ptTeamHtml(p, d);   // PC 전용 팀 편성 UI (모바일은 CSS 로 숨김)
+  }
+  // 참석일 미선택 그룹은 달력·날짜별 명단에 나타나지 않아 인원 수와 실제 표시가 어긋난다.
+  // 여기서 별도 섹션으로 항상 노출해 "신청은 했지만 참석일 미정"인 그룹을 눈에 띄게 한다.
+  if(pending.length){
+    h+=`<div class="pt-sech" style="margin-top:14px">⏳ 참석일 미선택 <span>${pending.length}명 · 신청은 했지만 참석일을 아직 안 골랐습니다</span></div><div class="pt-roster">`;
+    pending.forEach(e=>{
+      h+=`<div class="pt-gc day pending">
+        <div class="pt-gc-h"><span class="pt-gname">${esc(e.group)}</span><span class="pt-gc-meta">${e.chars.length}캐릭</span></div>
+        <div class="pt-gc-mem">${e.chars.map(c=>ptMemberChip(e.group,c,false)).join("")}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  return h;
 }
 function ptHistoryHtml(p){
   const rows=(p.history||[]).slice().reverse();
@@ -3099,6 +3326,7 @@ async function renderPartyDetail(root){
     b.onchange=e=>{e.stopPropagation();ptClickDate(b.dataset.attendDate);};
   });
   root.querySelectorAll("[data-unmark]").forEach(b=>b.onclick=()=>ptUnmark(b.dataset.unmark));
+  ptBindTeamHandlers(p);   // 팀 편성 UI(포커스 날짜가 있을 때만 렌더됨) 드래그·드롭 바인딩
 }
 
 async function renderParty(){

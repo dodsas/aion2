@@ -28,7 +28,7 @@ import threading
 import time
 import urllib.request
 import urllib.error
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote, urlencode
@@ -54,6 +54,14 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 ADMIN_SESSION_TTL = 8 * 60 * 60
 ADMIN_SESSIONS: dict[str, float] = {}
 ADMIN_SESSION_LOCK = threading.Lock()
+
+# 접속 로그 등 표시용 시각은 KST 로 저장한다. 클라이언트가 tz 오프셋을 그대로 잘라 표시하도록
+# isoformat 뒤 "+09:00" 이 붙는 형태 그대로 둔다.
+KST = timezone(timedelta(hours=9))
+
+
+def _now_kst() -> str:
+    return datetime.now(KST).isoformat(timespec="seconds")
 
 
 def db():
@@ -519,7 +527,7 @@ def api_access_log_add(data):
     if len(detail) > 120:
         detail = detail[:120]
     entry = {
-        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "at": _now_kst(),
         "group": group,
         "view": view,
     }
@@ -631,10 +639,22 @@ class Handler(BaseHTTPRequestHandler):
             parts.append("Secure")
         return "; ".join(parts)
 
-    def _admin_session(self):
+    def _admin_token_from_request(self):
+        # iOS 웹뷰(카톡 인앱 등)는 Set-Cookie 를 저장해도 후속 요청에 쿠키를 실어주지
+        # 않는 사례가 많다. 그래서 Authorization: Bearer <token> 을 최우선으로 확인하고
+        # 없으면 쿠키를 확인한다. 로그인 응답이 body 로 token 을 함께 돌려주기 때문에
+        # 클라이언트는 localStorage 에 담아 Authorization 헤더로 보낸다.
+        auth = self.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            t = auth[len("Bearer "):].strip()
+            if t:
+                return t
         cookies = self.headers.get("Cookie", "")
-        token = next((p.strip()[len("aion2_admin_session="):] for p in cookies.split(";")
-                      if p.strip().startswith("aion2_admin_session=")), "")
+        return next((p.strip()[len("aion2_admin_session="):] for p in cookies.split(";")
+                     if p.strip().startswith("aion2_admin_session=")), "")
+
+    def _admin_session(self):
+        token = self._admin_token_from_request()
         if not token:
             return False
         now = time.time()
@@ -725,14 +745,14 @@ class Handler(BaseHTTPRequestHandler):
                 token = secrets.token_urlsafe(32)
                 with ADMIN_SESSION_LOCK:
                     ADMIN_SESSIONS[token] = time.time() + ADMIN_SESSION_TTL
-                self._json({"ok": True}, headers={"Set-Cookie": self._admin_cookie(token, ADMIN_SESSION_TTL)})
+                # 쿠키를 저장하지 못하는 웹뷰를 위해 token 을 body 로도 반환한다.
+                self._json({"ok": True, "token": token, "ttl": ADMIN_SESSION_TTL},
+                           headers={"Set-Cookie": self._admin_cookie(token, ADMIN_SESSION_TTL)})
             except Exception as e:
                 self._json({"error": str(e)}, 500)
             return
         if parsed.path == "/api/admin/logout":
-            cookies = self.headers.get("Cookie", "")
-            token = next((p.strip()[len("aion2_admin_session="):] for p in cookies.split(";")
-                          if p.strip().startswith("aion2_admin_session=")), "")
+            token = self._admin_token_from_request()
             with ADMIN_SESSION_LOCK:
                 ADMIN_SESSIONS.pop(token, None)
             self._json({"ok": True}, headers={"Set-Cookie": self._admin_cookie("", 0)})
