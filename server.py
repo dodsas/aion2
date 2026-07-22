@@ -494,7 +494,8 @@ def api_delete_request(data):
 # 누가(그룹) 어느 탭을 봤는지 시간 순서로 기록한다. 관리자 설정에서만 조회 가능.
 # 저장은 app_kv[access_log] 에 JSON 배열로 넣고 최대 ACCESS_LOG_MAX 개까지 FIFO.
 ACCESS_LOG_MAX = 2000
-ALLOWED_ACCESS_VIEWS = {"mychar", "party", "homework", "settings"}
+# party_detail: 목록에서 특정 파티를 열었을 때. detail 필드에 어느 파티인지 요약을 담는다.
+ALLOWED_ACCESS_VIEWS = {"mychar", "party", "party_detail", "homework", "settings"}
 
 
 def get_access_log():
@@ -514,12 +515,18 @@ def api_access_log_add(data):
     group = (data.get("group") or "").strip() or "(익명)"
     if len(group) > 80:
         group = group[:80]
-    entries = get_access_log()
-    entries.append({
+    detail = (data.get("detail") or "").strip()
+    if len(detail) > 120:
+        detail = detail[:120]
+    entry = {
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "group": group,
         "view": view,
-    })
+    }
+    if detail:
+        entry["detail"] = detail
+    entries = get_access_log()
+    entries.append(entry)
     save_access_log(entries)
     return {"ok": True}
 
