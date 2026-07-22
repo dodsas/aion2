@@ -2781,6 +2781,14 @@ async function ptAddApplicant(charKey){
   const p=await PartyStore.get(ptState.openId); if(!p)return;
   const c=mcChars().find(x=>x.key===charKey); if(!c)return;
   const gname=c.group||c.name||c.key;
+  // 방어: 이 캐릭이 다른 그룹 엔트리(과거 잔재)에 담겨 있으면 먼저 그 그룹에서 뺀다.
+  // 그룹이 비게 되면 그 그룹 자체를 제거. dates 는 캐릭 이동 대상 그룹 것을 유지.
+  p.applicants.forEach(e=>{
+    if(e.group!==gname && e.chars.some(x=>x.key===c.key)){
+      e.chars=e.chars.filter(x=>x.key!==c.key);
+    }
+  });
+  p.applicants=p.applicants.filter(e=>e.chars.length||e.group===gname);
   let e=p.applicants.find(g=>g.group===gname);
   if(e && e.chars.some(x=>x.key===c.key))return;                        // 이미 담김
   if(e&&e.chars.length>=p.runs){alert(`${p.runs}판 모집에는 그룹당 최대 ${p.runs}캐릭터까지 신청할 수 있습니다.`);return;}
@@ -2790,6 +2798,30 @@ async function ptAddApplicant(charKey){
   e.chars.push({key:c.key,characterId:c.characterId,serverId:c.serverId,name:c.name,
     img:c.img,cp:c.cp,race:c.race,serverName:c.serverName,level:c.level,className:c.className});
   await PartyStore.upsert(p); renderParty();
+}
+
+// 파티 상세 진입 시 유령 신청 자동 정리:
+// 내 소유 캐릭(현 effectiveGroup 소속)이 파티의 다른 그룹 엔트리에 담겨 있으면
+// 내 그룹 엔트리로 옮긴다. 예전 그룹으로 등록됐다가 사용자가 그룹을 바꾼 잔재를 청소.
+// dates 는 내 그룹 엔트리 것을 유지하므로, 예전에 찍어둔 참석일도 살아난다.
+async function ptRealignMyChars(p){
+  const myGroup=effectiveGroup(); if(!myGroup) return false;
+  const myKeys=new Set(mcChars().filter(c=>c.group===myGroup).map(c=>c.key));
+  if(!myKeys.size) return false;
+  const strays=[];
+  p.applicants.forEach(e=>{
+    if(e.group===myGroup) return;
+    const keep=[];
+    e.chars.forEach(c=>{ if(myKeys.has(c.key)) strays.push(c); else keep.push(c); });
+    e.chars=keep;
+  });
+  if(!strays.length) return false;
+  p.applicants=p.applicants.filter(e=>e.chars.length);
+  let me=p.applicants.find(e=>e.group===myGroup);
+  if(!me){ me={group:myGroup,chars:[],dates:[]}; p.applicants.push(me); }
+  strays.forEach(c=>{ if(!me.chars.some(x=>x.key===c.key)) me.chars.push(c); });
+  await PartyStore.upsert(p);
+  return true;
 }
 async function ptRemoveChar(group,key){    // 그룹에서 캐릭 1개 제외(마지막이면 그룹 제거)
   if(!ptCanManageGroup(group)){alert("본인 그룹의 신청만 변경할 수 있습니다.");return;}
@@ -2968,8 +3000,11 @@ async function renderPartyList(root){
 async function renderPartyDetail(root){
   const p=await PartyStore.get(ptState.openId);
   if(!p){ ptState.openId=null; return renderPartyList(root); }
+  // 잔재 신청(내 캐릭이 예전 그룹 엔트리에 남아있는 케이스) 자동 정리 후 재렌더.
+  if(await ptRealignMyChars(p)) return renderPartyDetail(root);
   const T=ptType(p.type), max=ptMaxChars(p), pool=mcChars().filter(c=>c.group===effectiveGroup());
-  const inParty=key=>p.applicants.some(g=>g.chars.some(x=>x.key===key));
+  const myGroup=effectiveGroup();
+  const inParty=key=>p.applicants.some(g=>g.group===myGroup&&g.chars.some(x=>x.key===key));
   let html=`<div class="pt-head">
     <button class="hw-mini" id="ptBack">← 목록</button>
     <h2><span class="pt-dot" style="color:${T.color}"></span>${T.icon} ${T.label}</h2>
