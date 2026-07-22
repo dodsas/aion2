@@ -736,7 +736,6 @@
   .pt-mem img{width:20px;height:20px;border-radius:50%;object-fit:contain;background:#0e151d;border:1px solid var(--line)}
   .pt-mem b{font-weight:800;letter-spacing:-.1px}
   .pt-mem i{font-style:normal;color:var(--gold);font-weight:900;font-size:10.5px}
-  .pt-mem i::before{content:"⚔️"}
   .pt-memx{width:15px;height:15px;line-height:12px;text-align:center;border-radius:50%;padding:0;margin-left:1px;
            background:rgba(0,0,0,.3);border:1px solid var(--etched);color:var(--dim);cursor:pointer;font-size:11px}
   .pt-memx:hover{color:var(--danger);border-color:var(--danger)}
@@ -977,6 +976,10 @@
             <div class="row"><div><div class="name">오드 에너지 +10</div><div class="desc">본캐 적용 · 주간 획득 개수</div></div><input id="hwSprout10" type="number" min="0" value="0"></div>
           </div></div></div>
       </div>
+      <div class="hw-box">
+        <label>캐릭터 최신 정보</label>
+        <div class="hw-actions"><button class="hw-mini" id="mcRefreshAll" type="button">등록 캐릭터 전체 갱신</button><span id="mcRefreshStatus" class="hw-note" style="margin:0"></span></div>
+      </div>
       <div class="hw-note">본캐에만 합산됩니다. 전역 이벤트 수급은 일일 개수 기준, 새싹 보너스는 주간 획득 개수 기준으로 계산합니다.</div>
       <div id="adminRequestsPanel" hidden>
         <div class="hw-head" style="margin-top:24px"><div><h2>그룹 삭제 요청</h2><p>삭제 요청이 들어온 그룹만 관리할 수 있습니다.</p></div></div>
@@ -1182,7 +1185,7 @@ function hwGroupChars(){
   const st=hwSettings();
   return chars.map(c=>{
     const s=st[c.key]||{};
-    return {key:c.key,name:c.name,img:c.img,cp:c.cp,level:c.level,race:c.race,
+    return {key:c.key,name:c.name,img:c.img,cp:c.cp,level:c.level,race:c.race,className:c.className,
       role:c.key===mainKey?"main":"sub",dungeon:s.dungeon||"fallen_deva",mode:s.mode||"hard",
       manualDaily:+s.manualDaily||0,manualWeekly:+s.manualWeekly||0,manualDailyProfit:+s.manualDailyProfit||0,
       sanctuaries:s.sanctuaries||{}};
@@ -1202,6 +1205,7 @@ function persistOpCfg(){
 function initSettings(){
   loadOpCfg();
   ["hwEvent40","hwEvent10","hwSprout10"].forEach(id=>document.getElementById(id)?.addEventListener("input",()=>{persistOpCfg();renderHomework();}));
+  on("mcRefreshAll","click",refreshAllMyCharacters);
 }
 function dungeonCalc(dungeonKey, modeKey, weeklyEnergy){
   const dungeon=HOMEWORK_DUNGEONS[dungeonKey]||HOMEWORK_DUNGEONS.fallen_deva;
@@ -1236,7 +1240,7 @@ function renderHwCharacters(chars){
       <img class="hw-ico" src="${c.img||''}" ${oe}>
       <div class="hw-nm"><b>${esc(c.name||'')}</b>
         <span class="hw-role ${c.role}">${c.role==='main'?'👑 본캐':'부캐'}</span>
-        <span class="hw-cp" title="전투력">⚔️ ${cpShort(c.cp)??'–'}</span></div>
+        <span class="hw-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span></div>
       <div class="hw-dungeon-row">
         <select data-hw="dungeon" title="던전">${dungeonOptions(c.dungeon||"fallen_deva")}</select>
         <select data-hw="mode" title="난이도">${modeOptions(c.dungeon||"fallen_deva",c.mode||"hard")}</select>
@@ -1829,6 +1833,12 @@ function setMcChars(v){sbSave("mychars",v);}
 function mcGroupList(){return sbGet("mychar_groups",[])||[];}
 function setMcGroupList(v){sbSave("mychar_groups",v);}
 const mcKey=(sid,cid)=>sid+":"+cid;
+const TANK_CLASSES=new Set(["수호성","검성"]);
+const HEAL_CLASSES=new Set(["호법성","치유성"]);
+function classMark(c){
+  const cls=c?.className||mcChars().find(x=>x.key===c?.key)?.className||"";
+  return TANK_CLASSES.has(cls)?"🛡️":HEAL_CLASSES.has(cls)?"✚":"⚔️";
+}
 function mcAllGroups(){
   const g=[...mcGroupList()];
   mcChars().forEach(c=>{ if(c.group && !g.includes(c.group)) g.push(c.group); });
@@ -1998,8 +2008,41 @@ function mcSyncStats(sid,cid,p){
   if(!p)return; const k=mcKey(sid,cid); const arr=mcChars(); const c=arr.find(x=>x.key===k);
   if(!c)return; let ch=false; const set=(f,v)=>{ if(v!=null&&c[f]!==v){c[f]=v;ch=true;} };
   set("cp",p.combatPower); set("level",p.characterLevel); set("name",p.characterName);
-  set("serverName",p.serverName); set("race",p.raceId); set("img",p.profileImage);
+  set("serverName",p.serverName); set("race",p.raceId); set("img",p.profileImage); set("className",p.className);
   if(ch){ setMcChars(arr); refreshIdentityViews(); }
+}
+function mcWithProfile(c,p){
+  return {...c,
+    name:p.characterName||c.name,level:p.characterLevel??c.level,
+    serverName:p.serverName||c.serverName,race:p.raceId??c.race,
+    img:p.profileImage||c.img,cp:p.combatPower??c.cp,className:p.className||c.className};
+}
+async function refreshAllMyCharacters(){
+  const btn=document.getElementById("mcRefreshAll");
+  const status=document.getElementById("mcRefreshStatus");
+  const chars=mcChars();
+  if(!chars.length){if(status)status.textContent="갱신할 등록 캐릭터가 없습니다.";return;}
+  if(btn)btn.disabled=true;
+  let done=0, success=0, cursor=0;
+  const updated=[...chars];
+  const worker=async()=>{
+    while(cursor<chars.length){
+      const i=cursor++, c=chars[i];
+      if(status)status.textContent=`최신 정보 수집 중… ${done}/${chars.length}`;
+      try{
+        const detail=await j(`/api/char/detail?${charQS(c.serverId,c.characterId)}`);
+        const p=detail?.data?.info?.profile;
+        if(p){updated[i]=mcWithProfile(c,p);success++;}
+      }catch(e){}
+      done++;
+    }
+  };
+  await Promise.all(Array.from({length:Math.min(3,chars.length)},worker));
+  setMcChars(updated);
+  refreshIdentityViews();
+  if(typeof renderParty==="function")renderParty();
+  if(status)status.textContent=`갱신 완료 · ${success}/${chars.length}캐릭터`;
+  if(btn)btn.disabled=false;
 }
 // 전투력 없는(검색으로 등록한) 캐릭터는 저장 캐시에서 조용히 보충 — 외부 재조회 없이 로컬 DB만 읽음
 let mcBackfilling=false;
@@ -2015,7 +2058,7 @@ function mcBackfillMissing(){
       mcBackfilling=false;
       const arr=mcChars(); let ch=false;
       res.filter(Boolean).forEach(({key,p})=>{const c=arr.find(x=>x.key===key);
-        if(c&&p.combatPower!=null&&c.cp!==p.combatPower){c.cp=p.combatPower; if(p.characterLevel!=null)c.level=p.characterLevel; ch=true;}});
+        if(c&&p.combatPower!=null&&c.cp!==p.combatPower){c.cp=p.combatPower; if(p.characterLevel!=null)c.level=p.characterLevel; if(p.className)c.className=p.className; ch=true;}});
       if(ch){ setMcChars(arr); refreshIdentityViews(); }
     });
 }
@@ -2039,7 +2082,7 @@ async function openRegModal(rec){
     if(p)entry={...entry,
       name:p.characterName||entry.name,level:p.characterLevel??entry.level,
       serverName:p.serverName||entry.serverName,race:p.raceId??entry.race,
-      img:p.profileImage||entry.img,cp:p.combatPower??entry.cp};
+      img:p.profileImage||entry.img,cp:p.combatPower??entry.cp,className:p.className||entry.className};
   }catch(e){} // 상세 조회 실패 시 검색 결과 정보로 등록한다.
   mcRegistering=false;
   closeCharModal();
@@ -2087,7 +2130,7 @@ function renderMyChars(){
       card.innerHTML=`<button class="mc-del" data-del="${esc(c.key)}" title="캐릭터 제거">제거</button>
         ${c.key===mainKey?'<span class="mc-crown" title="본캐 (전투력 최고)">👑</span>':''}
         <img class="ico" src="${c.img||''}" ${oe}>
-        <div><div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">⚔️ ${cpShort(c.cp)??'–'}</span></div>
+        <div><div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span></div>
         <div class="sub">Lv.${c.level??'?'} · ${esc(c.serverName||'')} · ${c.race===1?'천족':'마족'}</div></div>`;
       card.onclick=(e)=>{ if(e.target.closest("[data-del]"))return; setCurrentGroup(gname); };  // 클릭 = 이 그룹이 나
       grid.appendChild(card);
@@ -2637,11 +2680,12 @@ async function ptAddApplicant(charKey){
   const gname=c.group||c.name||c.key;
   let e=p.applicants.find(g=>g.group===gname);
   if(e && e.chars.some(x=>x.key===c.key))return;                        // 이미 담김
+  if(e&&e.chars.length>=p.runs){alert(`${p.runs}판 모집에는 그룹당 최대 ${p.runs}캐릭터까지 신청할 수 있습니다.`);return;}
   if(ptCharCount(p)>=ptMaxChars(p)){alert(`최대 ${ptMaxChars(p)}캐릭까지 신청할 수 있습니다 (${p.runs}판 × ${PT_MAX_PEOPLE}명).`);return;}
   if(!e && ptPeople(p)>=PT_MAX_PEOPLE){alert(`인원(그룹)은 최대 ${PT_MAX_PEOPLE}명까지 신청할 수 있습니다.`);return;}
   if(!e){e={group:gname,chars:[],dates:[]};p.applicants.push(e);}
   e.chars.push({key:c.key,characterId:c.characterId,serverId:c.serverId,name:c.name,
-    img:c.img,cp:c.cp,race:c.race,serverName:c.serverName,level:c.level});
+    img:c.img,cp:c.cp,race:c.race,serverName:c.serverName,level:c.level,className:c.className});
   await PartyStore.upsert(p); renderParty();
 }
 async function ptRemoveChar(group,key){    // 그룹에서 캐릭 1개 제외(마지막이면 그룹 제거)
@@ -2693,15 +2737,15 @@ function ptPoolCard(c,applied){
   const cp=ptCp(c.cp);
   return `<div class="pt-pc${applied?' applied':''}" data-key="${esc(c.key)}" style="--c:${ptRaceCol(c.race)}">
     <img class="ico sm" src="${c.img||''}" ${oe}>
-    <div class="pt-pc-b"><div class="nm">${esc(c.name)}</div><div class="pt-cp">⚔️ ${cp??'–'}</div></div>
+    <div class="pt-pc-b"><div class="nm">${esc(c.name)}</div><div class="pt-cp">${classMark(c)} ${cp??'–'}</div></div>
     ${applied?'<span class="pt-badge">신청 취소</span>':'<span class="pt-add">＋</span>'}
   </div>`;
 }
 // 소속 캐릭 칩(프로필+전투력). removable 이면 개별 제외 버튼 노출.
 function ptMemberChip(group,c,removable){
   const cp=ptCp(c.cp);
-  return `<span class="pt-mem" style="--c:${ptRaceCol(c.race)}" title="${esc(c.name)} ⚔️${cp??'–'}">
-    <img src="${c.img||''}" ${oe}><b>${esc(c.name)}</b><i>${cp??'–'}</i>${removable?`<button class="pt-memx" data-rmc="${esc(group)}||${esc(c.key)}" title="캐릭 제외">×</button>`:''}
+  return `<span class="pt-mem" style="--c:${ptRaceCol(c.race)}" title="${esc(c.name)} ${classMark(c)}${cp??'–'}">
+    <img src="${c.img||''}" ${oe}><b>${esc(c.name)}</b><i>${classMark(c)} ${cp??'–'}</i>${removable?`<button class="pt-memx" data-rmc="${esc(group)}||${esc(c.key)}" title="캐릭 제외">×</button>`:''}
   </span>`;
 }
 // 신청자 = 그룹(인원) 1명. 그룹명 + 소속 캐릭터 카드.
