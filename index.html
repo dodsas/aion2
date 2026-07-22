@@ -1159,8 +1159,11 @@ function showView(id){
   if(id==="settings"&&!isAdmin)id="mychar";
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+id));
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view===id));
-  // 파티 탭 진입 시 내 캐릭터 풀(그룹/전투력)을 최신으로 다시 그린다.
-  if(id==="party" && typeof renderParty==="function") renderParty();
+  // 파티 탭 진입 시 항상 최상위(목록) 화면부터 노출한다.
+  if(id==="party" && typeof renderParty==="function"){
+    ptState.openId=null; ptState.focusDate=null;
+    renderParty();
+  }
 }
 function renderTabs(){
   const nav=document.getElementById("tabs");
