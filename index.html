@@ -678,10 +678,21 @@
   .pt-cp{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:900;white-space:nowrap;color:var(--gold);
          background:rgba(143,240,208,.1);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent)}
   .pt-pc-b,.pt-ac-b{min-width:0}
-  .pt-pc{cursor:pointer} .pt-pc:hover{border-color:color-mix(in srgb,var(--c) 60%,var(--line))}
-  .pt-pc.dragging{opacity:.4} .pt-pc.applied{opacity:.65;cursor:pointer}
-  .pt-pc .pt-add{margin-left:auto;font-size:16px;font-weight:900;color:var(--gold);width:20px;text-align:center;flex-shrink:0}
-  .pt-pc .pt-badge{margin-left:auto;font-size:10px;font-weight:800;color:var(--dim);flex-shrink:0}
+  .pt-pc{cursor:pointer;transition:transform .12s,border-color .12s,box-shadow .12s}
+  .pt-pc:hover{border-color:color-mix(in srgb,var(--c) 70%,var(--line));transform:translateY(-1px);box-shadow:0 8px 18px -14px color-mix(in srgb,var(--c) 80%,transparent)}
+  .pt-pc.dragging{opacity:.4} .pt-pc.applied{cursor:pointer}
+  .pt-pc.applied{background:linear-gradient(180deg,#0f1a1a,#0b1313);border-color:color-mix(in srgb,var(--gold) 24%,var(--line))}
+  .pt-pc .pt-add{margin-left:auto;font:900 11.5px/1 inherit;font-family:inherit;letter-spacing:-.1px;color:#0a1218;background:var(--gold);padding:5px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 45%,transparent),0 0 12px -6px color-mix(in srgb,var(--gold) 80%,transparent)}
+  .pt-pc:not(.applied):hover .pt-add{box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 40%,transparent),0 0 14px -4px color-mix(in srgb,var(--gold) 90%,transparent)}
+  .pt-pc .pt-badge{margin-left:auto;font:800 11px/1 inherit;font-family:inherit;color:var(--dim);padding:5px 10px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid var(--etched);white-space:nowrap;flex-shrink:0}
+  .pt-pc.applied:hover .pt-badge{color:var(--danger);border-color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent)}
+  .pt-pc .pt-check{position:absolute;top:6px;right:6px;width:14px;height:14px;line-height:12px;border-radius:50%;background:var(--gold);color:#0a1218;font-size:9px;text-align:center;font-weight:900;box-shadow:0 0 0 2px #0b1313}
+  .pt-cta{margin:0 0 10px;padding:11px 13px;border-radius:10px;font-size:12.5px;font-weight:800;color:var(--gold);line-height:1.55;
+          background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 16%,#0d1a17),color-mix(in srgb,var(--gold) 8%,#0a1512));
+          border:1px solid color-mix(in srgb,var(--gold) 55%,var(--line));animation:ptCtaPulse 2s ease-in-out infinite}
+  .pt-cta b{color:#fff}
+  @keyframes ptCtaPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gold) 0%,transparent),inset 0 0 22px -14px color-mix(in srgb,var(--gold) 70%,transparent)}50%{box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent),inset 0 0 22px -6px color-mix(in srgb,var(--gold) 90%,transparent)}}
+  @media (prefers-reduced-motion:reduce){.pt-cta{animation:none}}
 
   .pt-drop{display:flex;flex-wrap:wrap;gap:8px;min-height:64px;padding:10px;border-radius:10px;border:1.5px dashed var(--line);
            background:rgba(255,255,255,.015);transition:border-color .12s,background .12s}
@@ -2775,10 +2786,11 @@ async function ptUnmark(date){             // 날짜별 현황에서 내 그룹�
 function ptRaceCol(r){return r===1?"#8ff0d0":"#ffadc0";}
 function ptPoolCard(c,applied){
   const cp=ptCp(c.cp);
-  return `<div class="pt-pc${applied?' applied':''}" data-key="${esc(c.key)}" style="--c:${ptRaceCol(c.race)}">
+  return `<div class="pt-pc${applied?' applied':''}" data-key="${esc(c.key)}" style="--c:${ptRaceCol(c.race)}" title="${applied?'클릭 → 신청 취소':'클릭 → 이 파티에 신청'}">
+    ${applied?'<span class="pt-check" aria-hidden="true">✓</span>':''}
     <img class="ico sm" src="${c.img||''}" ${oe}>
     <div class="pt-pc-b"><div class="nm">${esc(c.name)}</div><div class="pt-cp">${classMark(c)} ${cp??'–'}</div></div>
-    ${applied?'<span class="pt-badge">신청 취소</span>':'<span class="pt-add">＋</span>'}
+    ${applied?'<span class="pt-badge">✕ 취소</span>':'<span class="pt-add">＋ 신청</span>'}
   </div>`;
 }
 // 소속 캐릭 칩(프로필+전투력). removable 이면 개별 제외 버튼 노출.
@@ -2920,7 +2932,10 @@ async function renderPartyDetail(root){
     ${ptCanDeleteParty(p)?'<button class="hw-mini" id="ptDel">모집 삭제</button>':''}
   </div><div class="pt-detail">`;
   // 왼쪽: 현재 선택한 내 그룹의 캐릭터 풀
-  html+=`<div class="pt-pool"><div class="pt-sech">내 캐릭터 <span>드래그하거나 클릭해 신청 · 다시 클릭해 취소</span></div><div class="pt-poolbody">`;
+  const meApplied=p.applicants.some(e=>e.group===effectiveGroup());
+  html+=`<div class="pt-pool"><div class="pt-sech">내 캐릭터 <span class="hint">👇 카드를 클릭해 신청 · 다시 클릭해 취소</span></div>`;
+  if(pool.length && !meApplied) html+=`<div class="pt-cta">👇 아래 <b>내 캐릭터 카드</b>를 <b>클릭</b>해야 이 파티에 신청됩니다.</div>`;
+  html+=`<div class="pt-poolbody">`;
   if(!pool.length){ html+=`<div class="pt-empty">등록된 캐릭터가 없습니다.<br>🗂️ 내 캐릭터 탭에서 등록하세요.</div>`; }
   else pool.forEach(c=>{ html+=ptPoolCard(c, inParty(c.key)); });
   html+=`</div></div>`;
