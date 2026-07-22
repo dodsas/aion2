@@ -490,6 +490,50 @@ def api_delete_request(data):
     return {"ok": True}
 
 
+# ---------- 접속 로그 ----------
+# 누가(그룹) 어느 탭을 봤는지 시간 순서로 기록한다. 관리자 설정에서만 조회 가능.
+# 저장은 app_kv[access_log] 에 JSON 배열로 넣고 최대 ACCESS_LOG_MAX 개까지 FIFO.
+ACCESS_LOG_MAX = 2000
+ALLOWED_ACCESS_VIEWS = {"mychar", "party", "homework", "settings"}
+
+
+def get_access_log():
+    return STORE.kv_get("access_log") or []
+
+
+def save_access_log(entries):
+    if len(entries) > ACCESS_LOG_MAX:
+        entries = entries[-ACCESS_LOG_MAX:]
+    STORE.kv_set("access_log", entries)
+
+
+def api_access_log_add(data):
+    view = (data.get("view") or "").strip()
+    if view not in ALLOWED_ACCESS_VIEWS:
+        return {"error": "invalid view"}
+    group = (data.get("group") or "").strip() or "(익명)"
+    if len(group) > 80:
+        group = group[:80]
+    entries = get_access_log()
+    entries.append({
+        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "group": group,
+        "view": view,
+    })
+    save_access_log(entries)
+    return {"ok": True}
+
+
+def api_admin_access_logs(q):
+    try:
+        limit = int(q.get("limit", ["300"])[0] or 300)
+    except ValueError:
+        limit = 300
+    limit = max(1, min(ACCESS_LOG_MAX, limit))
+    entries = get_access_log()
+    return {"entries": list(reversed(entries[-limit:]))}
+
+
 def api_admin_delete_action(data):
     group = (data.get("group") or "").strip()
     action = data.get("action")
@@ -618,6 +662,10 @@ class Handler(BaseHTTPRequestHandler):
             if self._require_admin():
                 self._json({"requests": delete_requests()})
             return
+        if path == "/api/admin/access-logs":
+            if self._require_admin():
+                self._json(api_admin_access_logs(parse_qs(parsed.query)))
+            return
 
         if path in NET_ROUTES:
             try:
@@ -673,6 +721,12 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/delete-requests":
             try:
                 self._json(api_delete_request(self._read_json()))
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
+        if parsed.path == "/api/access-log":
+            try:
+                self._json(api_access_log_add(self._read_json()))
             except Exception as e:
                 self._json({"error": str(e)}, 500)
             return

@@ -56,6 +56,12 @@
   .admin-requests{display:grid;gap:8px;margin-top:14px}
   .admin-request{display:flex;align-items:center;gap:10px;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:linear-gradient(180deg,#16222d,#0f151c)}
   .admin-request .name{font-weight:900;flex:1}.admin-request .date{font-size:11px;color:var(--dim)}
+  .admin-access-log{display:flex;flex-direction:column;gap:4px;margin-top:12px;max-height:520px;overflow:auto;padding-right:4px}
+  .admin-log-row{display:flex;align-items:center;gap:10px;padding:7px 11px;border:1px solid var(--line);border-radius:7px;background:#0f151c;font-size:12px}
+  .admin-log-row .grp{font-weight:900;color:var(--txt);min-width:110px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .admin-log-row .tag{padding:2px 8px;border-radius:20px;font-weight:800;font-size:11px;color:var(--gold);background:rgba(143,240,208,.1);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent)}
+  .admin-log-row .tag.party{color:#ffadc0;background:rgba(255,173,192,.09);border-color:color-mix(in srgb,#ffadc0 30%,transparent)}
+  .admin-log-row .when{margin-left:auto;color:var(--dim);font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
 
   /* 뷰(탭 본문) */
   .view{flex:1;display:none;flex-direction:column;min-height:0}
@@ -1014,6 +1020,13 @@
         <div class="hw-head" style="margin-top:24px"><div><h2>그룹 삭제 요청</h2><p>삭제 요청이 들어온 그룹만 관리할 수 있습니다.</p></div></div>
         <div id="adminRequests" class="admin-requests"></div>
       </div>
+      <div id="adminAccessLogPanel" hidden>
+        <div class="hw-head" style="margin-top:24px">
+          <div><h2>접속 로그</h2><p>누가(그룹) 어느 탭을 방문했는지 최근 순으로 표시합니다. 60초 안에 같은 탭 재방문은 합칩니다.</p></div>
+          <div style="margin-left:auto"><button class="hw-mini" id="adminAccessLogRefresh" type="button">새로고침</button></div>
+        </div>
+        <div id="adminAccessLog" class="admin-access-log"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -1091,12 +1104,42 @@ async function refreshAdminState(){
   if(trigger)trigger.textContent=isAdmin?"관리자 로그아웃":"관리자";
   const panel=document.getElementById("adminRequestsPanel");
   if(panel)panel.hidden=!isAdmin;
-  if(isAdmin)await renderAdminRequests();
+  const logPanel=document.getElementById("adminAccessLogPanel");
+  if(logPanel)logPanel.hidden=!isAdmin;
+  if(isAdmin){ await renderAdminRequests(); await renderAdminAccessLog(); }
   else adminDeleteGroups=new Set();
   if(!isAdmin&&document.querySelector(".view.active")?.id==="view-settings")showView("mychar");
   if(typeof renderTabs==="function")renderTabs();
   if(typeof renderGroupDeleteAction==="function")renderGroupDeleteAction();
   if(typeof renderMyChars==="function")renderMyChars();
+}
+
+// 접속 로그: 탭 방문을 서버에 기록. 같은 (그룹,탭) 조합이 60초 내에 반복되면 서버 부담을
+// 줄이려고 클라이언트에서 걸러낸다. 그룹이 아직 선택 안 됐으면 스킵.
+const ACCESS_LOG_DEDUPE_MS=60_000;
+const _accessLogLast={};
+function logAccess(view){
+  if(view!=="mychar"&&view!=="party")return;
+  const group=(typeof effectiveGroup==="function")?effectiveGroup():""; if(!group)return;
+  const now=Date.now(), key=view+"|"+group;
+  if(_accessLogLast[key] && now-_accessLogLast[key]<ACCESS_LOG_DEDUPE_MS)return;
+  _accessLogLast[key]=now;
+  fetch("/api/access-log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({group,view})}).catch(()=>{});
+}
+
+const ACCESS_LOG_LABEL={mychar:"🗂️ 캐릭",party:"🛡️ 파티",homework:"📅 숙제",settings:"⚙️ 설정"};
+async function renderAdminAccessLog(){
+  const box=document.getElementById("adminAccessLog"); if(!box)return;
+  try{
+    const data=await j("/api/admin/access-logs?limit=300");
+    const rows=data.entries||[];
+    if(!rows.length){ box.innerHTML=`<div class="mc-empty" style="padding:16px">아직 접속 기록이 없습니다.</div>`; return; }
+    box.innerHTML=rows.map(r=>{
+      const label=ACCESS_LOG_LABEL[r.view]||esc(r.view);
+      const when=(r.at||"").replace("T"," ").slice(0,19);
+      return `<div class="admin-log-row"><span class="grp">${esc(r.group)}</span><span class="tag ${esc(r.view)}">${label}</span><span class="when">${esc(when)}</span></div>`;
+    }).join("");
+  }catch(e){ box.innerHTML=`<div class="mc-empty" style="padding:16px">접속 로그를 불러오지 못했습니다.</div>`; }
 }
 function openAdminLogin(){
   document.getElementById("adminId").value="";
@@ -1164,6 +1207,7 @@ function showView(id){
     ptState.openId=null; ptState.focusDate=null;
     renderParty();
   }
+  logAccess(id);
 }
 function renderTabs(){
   const nav=document.getElementById("tabs");
@@ -1891,6 +1935,9 @@ function setCurrentGroup(name){
   name=(name||"").trim(); if(!name)return;
   try{localStorage.setItem(CUR_GROUP_KEY,name);}catch(e){}
   refreshIdentityViews();
+  // 그룹이 정해진 직후 현재 활성 뷰를 접속 로그에 기록(최초 진입 사용자 포함).
+  const active=document.querySelector(".view.active")?.id?.replace(/^view-/,"")||"mychar";
+  if(typeof logAccess==="function")logAccess(active);
 }
 function setGroupSwitchOpen(open){
   const wrap=document.getElementById("mcGroupSwitchWrap");
@@ -2211,6 +2258,8 @@ function initAdmin(){
   on("adminLoginSubmit","click",adminLogin);
   on("adminPassword","keydown",e=>{if(e.key==="Enter")adminLogin();});
   document.getElementById("adminLoginModal").addEventListener("click",e=>{if(e.target.id==="adminLoginModal")closeAdminLogin();});
+  const refreshBtn=document.getElementById("adminAccessLogRefresh");
+  if(refreshBtn)refreshBtn.onclick=renderAdminAccessLog;
 }
 
 async function charSearch(){
@@ -3014,6 +3063,11 @@ boot();
   }
   await refreshAdminState();
   if(needsIdentity()) openIdentModal();   // 최초 진입/시크릿: 본인 이름 먼저 선택
+  else{
+    // 그룹이 이미 정해진 재방문 사용자: 초기 활성 뷰(mychar 기본)를 접속 로그에 기록.
+    const initial=document.querySelector(".view.active")?.id?.replace(/^view-/,"")||"mychar";
+    logAccess(initial);
+  }
 })();
 </script>
 </body>
