@@ -3402,7 +3402,7 @@ async function renderPartyDetail(root){
   const doneBtn=document.getElementById("ptComplete");
   if(doneBtn)doneBtn.onclick=async()=>{
     if(confirm("이 파티를 완료 처리할까요? 이후엔 읽기 전용이 되며 목록의 '완료된 파티'로 이동합니다.")
-       && await ptCompleteParty(p.id)){ ptState.openId=null; ptState.historyOpen=true; renderParty(); }
+       && await ptCompleteParty(p.id)){ ptState.openId=null; renderParty(); }
   };
   const restoreBtn=document.getElementById("ptRestore");
   if(restoreBtn)restoreBtn.onclick=async()=>{
