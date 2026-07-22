@@ -799,7 +799,8 @@
   .pt-tm-chip.dragging{opacity:.35;cursor:grabbing}
   .pt-tm-chip img{width:24px;height:24px;border-radius:5px;object-fit:contain;background:#0e151d;border:1px solid var(--line);flex-shrink:0}
   .pt-tm-chip .tc-b{flex:1;min-width:0}
-  .pt-tm-chip .tc-b .nm{font-weight:800;font-size:12px;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pt-tm-chip .tc-b .nm{font-weight:800;font-size:12px;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+  .pt-tm-chip .tc-b .nm .cp{flex-shrink:0;font-weight:900;font-size:10.5px;padding:1px 6px;border-radius:20px;color:var(--gold);background:rgba(143,240,208,.1);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent)}
   .pt-tm-chip .tc-b .sub{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pt-tm-chip.role-tank{--r:#8ff0d0}
   .pt-tm-chip.role-heal{--r:#ffd28a}
@@ -3102,7 +3103,7 @@ function ptTeamHtml(p, date){
     const r=ptRoleOf(c), cp=ptCp(c.cp);
     return `<div class="pt-tm-chip role-${r}" draggable="true" data-team-drag="${esc(c.key)}" title="${esc(c.name)} · ${esc(c.className||'')} · 전투력 ${cp??'–'}">
       <img src="${esc(c.img||'')}" ${oe}>
-      <div class="tc-b"><div class="nm">${esc(c.name)}</div><div class="sub">${esc(c._group)} · ${cp??'–'}</div></div>
+      <div class="tc-b"><div class="nm">${esc(c.name)} <span class="cp">${cp??'–'}</span></div><div class="sub">${esc(c._group)}</div></div>
     </div>`;
   };
   // 같은 포지션(role) 안에서는 전투력 내림차순으로 정렬한다. cp 없는 캐릭은 뒤로 밀린다.
