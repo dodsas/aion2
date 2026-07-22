@@ -744,7 +744,7 @@
     <div class="mc-ident">
       <div class="mc-ident-cur">현재 그룹(나) <b id="mcCurName">—</b></div>
       <div class="mc-ident-sw">
-        <input id="mcGroupSwitch" placeholder="그룹 검색해서 '나'로 전환 (예: 보리)" autocomplete="off" spellcheck="false">
+        <input id="mcGroupSwitch" placeholder="그룹 검색해서 '나'로 전환 (예: 보리, 냐꾸)" autocomplete="off" spellcheck="false">
         <div id="mcGroupSwitchList" class="mc-switchlist"></div>
       </div>
     </div>
@@ -755,11 +755,6 @@
         <button class="btn" id="mcCbtn">검색</button>
       </div>
       <div id="mcClist" class="mc-clist"></div>
-    </div>
-    <!-- 새 그룹 만들기 -->
-    <div class="mc-addgroup">
-      <input id="mcGroupName" placeholder="새 그룹 이름 (예: 본계정, 부캐)">
-      <button class="hw-mini" id="mcGroupAdd">그룹 추가</button>
     </div>
   </div>
   <div id="mcBody" class="mc-body"></div>
@@ -806,7 +801,7 @@
   <div class="hw-modal">
     <h3 id="mcModalTitle">내 캐릭터로 등록</h3>
     <label>그룹 검색 후 선택 (없으면 새 그룹으로 등록)</label>
-    <input id="mcModalSearch" placeholder="그룹 이름 검색 (예: '보' → 보리 · 보리뚜 · 보리그룹)" autocomplete="off" spellcheck="false">
+    <input id="mcModalSearch" placeholder="그룹 이름 검색 (예: 보리, 냐꾸)" autocomplete="off" spellcheck="false">
     <div id="mcModalGroups" class="mc-glist"></div>
     <div class="hw-modal-actions">
       <button class="hw-mini" id="mcModalCancel">취소</button>
@@ -819,7 +814,7 @@
   <div class="hw-modal">
     <h3>본인 이름을 선택하거나 입력하세요</h3>
     <label>이름(그룹)을 검색해 선택하거나, 없으면 새 이름으로 시작합니다.</label>
-    <input id="identSearch" placeholder="이름 검색 (예: 보리) 또는 새 이름 입력" autocomplete="off" spellcheck="false">
+    <input id="identSearch" placeholder="이름 검색 (예: 보리, 냐꾸) 또는 새 이름 입력" autocomplete="off" spellcheck="false">
     <div id="identList" class="mc-glist"></div>
   </div>
 </div>
@@ -1765,11 +1760,6 @@ async function mcCharSearch(){
   });
 }
 function mcHas(sid,cid){const k=mcKey(sid,cid);return mcChars().some(c=>c.key===k);}
-function mcAddGroup(name){
-  name=(name||"").trim(); if(!name){alert("그룹 이름을 입력하세요.");return;}
-  const g=mcGroupList(); if(!g.includes(name)){g.push(name);setMcGroupList(g);}
-  setCurrentGroup(name);   // 새로 만든 그룹을 바로 '나'로
-}
 function mcRemoveGroup(name){
   if(!confirm(`'${name}' 그룹과 그 안의 캐릭터 등록을 모두 삭제할까요?`))return;
   setMcGroupList(mcGroupList().filter(n=>n!==name));
@@ -1905,9 +1895,6 @@ function initMyChars(){
   // 그룹 검색 → '나' 전환
   on("mcGroupSwitch","input",e=>renderGroupSwitch(e.target.value));
   on("mcGroupSwitch","keydown",e=>{if(e.key==="Enter"){const f=document.querySelector("#mcGroupSwitchList .mc-swrow"); if(f)f.click();}});
-  // 새 그룹 만들기
-  on("mcGroupAdd","click",()=>{const i=document.getElementById("mcGroupName");mcAddGroup(i.value);i.value="";});
-  on("mcGroupName","keydown",e=>{if(e.key==="Enter"){mcAddGroup(e.target.value);e.target.value="";}});
   // 등록 모달(그룹 검색→선택)
   on("mcModalCancel","click",closeRegModal);
   on("mcModalSearch","input",e=>renderRegGroups(e.target.value));
