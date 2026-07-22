@@ -415,7 +415,7 @@
   .hw-charge .desc{font-size:10.5px;color:var(--dim)}
   .hw-actions{display:flex;gap:7px;flex-wrap:wrap}
   .hw-chars{display:grid;gap:10px;margin:12px 0}
-  .hw-char{--c:var(--accent);display:grid;grid-template-columns:40px minmax(120px,1fr) minmax(150px,180px) 104px auto;gap:10px;align-items:center;
+  .hw-char{--c:var(--accent);display:grid;grid-template-columns:40px minmax(120px,1fr) minmax(180px,260px);gap:10px;align-items:center;
            background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--etched);border-radius:8px;padding:9px 11px;box-shadow:var(--shadow),var(--hl)}
   .hw-char.main{border-color:color-mix(in srgb,var(--gold) 42%,var(--line))}
   .hw-char .hw-ico{width:40px;height:40px;border-radius:8px;background:#0b1016;border:1px solid color-mix(in srgb,var(--c) 34%,var(--line));object-fit:cover}
@@ -425,7 +425,10 @@
   .hw-role.main{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,var(--line));background:color-mix(in srgb,var(--gold) 15%,transparent)}
   .hw-cp{font-size:11px;font-weight:900;color:var(--gold);white-space:nowrap}
   .hw-char input,.hw-char select,.hw-modal input{padding:8px 9px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);min-width:0}
+  .hw-dungeon-row{display:grid;grid-template-columns:minmax(0,1fr) calc(3em + 38px);gap:6px;min-width:0}
+  .hw-dungeon-row select{width:100%}
   .hw-sanct{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding-top:8px;margin-top:2px;border-top:1px dashed var(--etched);font-size:12px;color:var(--dim)}
+  .hw-sanct .hw-manual{padding:5px 7px;font-size:10px}
   .hw-sanct .cap{font-weight:800;color:var(--txt)}
   .hw-sanct label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--txt)}
   .hw-sanct input{padding:0;min-width:0;width:15px;height:15px;accent-color:var(--gold)}
@@ -545,6 +548,8 @@
     header{padding:0 14px;gap:10px}
     header h1 small{display:none}
     .admin-trigger{top:10px;right:14px}
+    /* iOS·카카오 웹뷰는 16px 미만 입력창에 포커스하면 화면을 자동 확대한다. */
+    input,select,textarea{font-size:16px!important}
     #tabs{width:100%;height:40px}
     .tab{flex:1;justify-content:center}
     .split{flex-direction:column}
@@ -568,7 +573,7 @@
     .mc-preset{min-width:0;width:100%}
     .mc-top{grid-template-columns:1fr;padding:14px 14px 2px}
     .hw-char{grid-template-columns:40px 1fr;gap:8px}
-    .hw-char select,.hw-char [data-hw-manual]{grid-column:1/-1}
+    .hw-char .hw-dungeon-row,.hw-char .hw-sanct{grid-column:1/-1}
     /* 숙제 결과표는 핵심 정보만 남겨 가로 스크롤 없이 본다. */
     .hw-table{table-layout:fixed;font-size:11px}
     .hw-table th,.hw-table td{padding:8px 5px;white-space:normal;overflow-wrap:anywhere}
@@ -576,16 +581,20 @@
     .hw-table th:nth-child(5),.hw-table td:nth-child(5),
     .hw-table th:nth-child(6),.hw-table td:nth-child(6),
     .hw-table th:nth-child(7),.hw-table td:nth-child(7),
+    .hw-table th:nth-child(8),.hw-table td:nth-child(8),
     .hw-table th:nth-child(10),.hw-table td:nth-child(10),
     .hw-table th:nth-child(12),.hw-table td:nth-child(12){display:none}
-    .hw-table th:nth-child(1){width:17%}
-    .hw-table th:nth-child(3){width:15%}
-    .hw-table th:nth-child(4){width:12%}
-    .hw-table th:nth-child(8){width:14%}
-    .hw-table th:nth-child(9){width:16%}
-    .hw-table th:nth-child(11){width:26%}
+    .hw-table th:nth-child(1){width:19%}
+    .hw-table th:nth-child(3){width:17%}
+    .hw-table th:nth-child(4){width:14%}
+    .hw-table th:nth-child(9){width:20%}
+    .hw-table th:nth-child(11){width:30%}
+    .hw-kpi{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .hw-k{padding:10px}
+    .hw-k .v{font-size:19px}
+    .hw-kpi .hw-k:last-child{grid-column:1/-1}
     /* 숙제 화면에서는 운영자 설정 안내만 간결하게 숨긴다. */
-    .hw-operator-summary{display:none}
+    .hw-operator-summary,.hw-auto-summary,.hw-target-summary{display:none}
     .mc-grid{grid-template-columns:1fr}
     .mc-body{padding:14px}
   }
@@ -691,7 +700,7 @@
   .pt-wd.today{color:var(--gold);border:1px solid var(--gold);border-radius:5px;background:color-mix(in srgb,var(--gold) 10%,transparent)}
   .pt-wd.wd0,.pt-cell.wd0 .pt-cell-d{color:var(--danger)}   /* 일요일 강조 */
   .pt-wd.wd6,.pt-cell.wd6 .pt-cell-d{color:var(--teal)}     /* 토요일 강조 */
-  .pt-cell{position:relative;min-height:88px;border-radius:8px;border:1px solid var(--line);padding:5px 6px;cursor:pointer;
+  .pt-cell{position:relative;display:flex;flex-direction:column;min-height:88px;border-radius:8px;border:1px solid var(--line);padding:5px 6px;cursor:pointer;
            background:linear-gradient(180deg,var(--slot-hi),var(--slot));transition:border-color .1s,background .1s}
   .pt-cell.empty{background:none;border-color:transparent;cursor:default}
   .pt-cell:not(.empty):hover{border-color:var(--etched)}
@@ -702,7 +711,7 @@
   .pt-cell-av{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin:7px 0 0;align-items:center}
   .pt-cell-av img{width:18px;height:18px;border-radius:4px;object-fit:contain;background:#0e151d;border:1px solid var(--line)}
   .pt-cell-av span{font-size:10px;color:var(--dim);font-weight:700}
-  .pt-attend{display:flex;align-items:center;justify-content:center;gap:4px;width:max-content;margin:8px auto 0;padding:4px 8px;border:1px solid var(--etched);border-radius:5px;background:#16232d;color:var(--dim);font:800 11px/1 inherit;font-family:inherit;cursor:pointer}
+  .pt-attend{display:flex;align-items:center;justify-content:center;gap:4px;width:max-content;margin:auto auto 0;padding:4px 8px;border:1px solid var(--etched);border-radius:5px;background:#16232d;color:var(--dim);font:800 11px/1 inherit;font-family:inherit;cursor:pointer}
   .pt-attend input{width:14px;height:14px;margin:0;accent-color:var(--gold)}
   .pt-attend.on{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,#102019)}
 
@@ -822,9 +831,9 @@
         </div>
       </div>
       <div class="hw-grid">
-        <div class="hw-box"><label>자동 충전</label><div class="hw-info"><b>3시간마다 15</b><span>하루 120 · 주간 840 고정</span></div></div>
+        <div class="hw-box hw-auto-summary"><label>자동 충전</label><div class="hw-info"><b>3시간마다 15</b><span>하루 120 · 주간 840 고정</span></div></div>
         <div class="hw-box hw-operator-summary"><label>운영자 설정</label><div class="hw-info"><b>전역 이벤트 · 새싹 보너스</b><span>⚙️ 설정 탭에서 입력</span></div></div>
-        <div class="hw-box"><label>대상 그룹</label><div class="hw-info"><b id="hwGroupName">현재 그룹</b><span>🗂️ 내 캐릭터 탭에서 선택한 그룹으로 자동 구성</span></div>
+        <div class="hw-box hw-target-summary"><label>대상 그룹</label><div class="hw-info"><b id="hwGroupName">현재 그룹</b><span>🗂️ 내 캐릭터 탭에서 선택한 그룹으로 자동 구성</span></div>
         <div class="hw-role-note">본캐(전투력 최고): 전역 이벤트 + 새싹 + 주간 구매 40×40<br>부캐: 주간 구매 8×40</div></div>
       </div>
       <div id="hwCharacters" class="hw-chars"></div>
@@ -1228,10 +1237,12 @@ function renderHwCharacters(chars){
       <div class="hw-nm"><b>${esc(c.name||'')}</b>
         <span class="hw-role ${c.role}">${c.role==='main'?'👑 본캐':'부캐'}</span>
         <span class="hw-cp" title="전투력">⚔️ ${cpShort(c.cp)??'–'}</span></div>
-      <select data-hw="dungeon" title="던전">${dungeonOptions(c.dungeon||"fallen_deva")}</select>
-      <select data-hw="mode" title="난이도">${modeOptions(c.dungeon||"fallen_deva",c.mode||"hard")}</select>
-      <button class="hw-mini" data-hw-manual title="${esc(manualTip)}">${manual?"수기*":"수기"}</button>
+      <div class="hw-dungeon-row">
+        <select data-hw="dungeon" title="던전">${dungeonOptions(c.dungeon||"fallen_deva")}</select>
+        <select data-hw="mode" title="난이도">${modeOptions(c.dungeon||"fallen_deva",c.mode||"hard")}</select>
+      </div>
       <div class="hw-sanct">
+        <button class="hw-mini hw-manual" data-hw-manual title="${esc(manualTip)}">${manual?"수기*":"수기"}</button>
         <span class="cap">성역</span>
         ${HW_SANCTUARIES.map(s=>`<label><input type="checkbox" data-sanct="${s.key}" ${c.sanctuaries?.[s.key]?'checked':''}>${s.label}</label>`).join("")}
         <span class="cut">
@@ -2528,7 +2539,7 @@ function ptExpectedStart(p){
   const date=Object.keys(count).sort((a,b)=>count[b]-count[a]||a.localeCompare(b))[0];
   return `${date?ptMd(date)+" ":""}${ptTime(p.time)} 시작 (예상)`;
 }
-function ptShareTitle(p){return `${ptType(p.type).label} (${ptMd(p.start)} ~ ${ptMd(p.end)}) ${p.runs}판 모집`;}
+function ptShareTitle(p){return `${ptType(p.type).label} ${ptTime(p.time)} 시작 ${p.runs}판 모집`;}
 function ptShareUrl(p){const u=new URL(PARTY_SHARE_BASE);u.searchParams.set("party",p.id);return u.toString();}
 async function ptShareParty(p){
   const title=ptShareTitle(p), url=ptShareUrl(p);
@@ -2660,15 +2671,20 @@ async function ptClickDate(date){          // 현재 내 신청 그룹의 참석
   const i=mine.dates.indexOf(date);
   if(i>=0)mine.dates.splice(i,1); else mine.dates.push(date);
   await PartyStore.upsert(p);
-  ptState.focusDate=date; renderParty();
+  ptState.focusDate=date; ptUpdateAttendanceUI(p,date);
 }
-function ptFocusDate(date){ptState.focusDate=date;renderParty();}
+async function ptFocusDate(date){
+  const p=await PartyStore.get(ptState.openId); if(!p)return;
+  ptState.focusDate=date;
+  document.querySelectorAll("#partyRoot .pt-cell[data-date]").forEach(cell=>cell.classList.toggle("foc",cell.dataset.date===date));
+  ptRenderDayRoster(p);
+}
 async function ptUnmark(date){             // 날짜별 현황에서 내 그룹의 참석만 취소
   const p=await PartyStore.get(ptState.openId); if(!p||!date)return;
   const mine=p.applicants.find(e=>e.group===effectiveGroup());
   if(!mine)return;
   mine.dates=ptDates(mine).filter(d=>d!==date);
-  await PartyStore.upsert(p); renderParty();
+  await PartyStore.upsert(p); ptUpdateAttendanceUI(p,date);
 }
 
 // ── 렌더 ─────────────────────────────────────────────
@@ -2698,6 +2714,9 @@ function ptGroupCard(e){
     <div class="pt-gc-mem">${e.chars.map(c=>ptMemberChip(e.group,c,manageable)).join("")}</div>
   </div>`;
 }
+function ptAttendanceAvatars(att){
+  return `${att.slice(0,6).map(g=>`<img src="${g.chars[0]?.img||''}" ${oe} title="${esc(g.group)}">`).join("")}${att.length>6?`<span>+${att.length-6}</span>`:""}`;
+}
 function ptCalendarHtml(p){
   const rows=ptCalRows(p.start,p.end);
   const mine=ptDates(p.applicants.find(e=>e.group===effectiveGroup()));
@@ -2717,13 +2736,37 @@ function ptCalendarHtml(p){
       h+=`<div class="pt-cell wd${dw}${mineOn?' mine':''}${foc?' foc':''}" data-date="${ymd}">
         <div class="pt-cell-d">${ptMd(ymd)}</div>
         ${att.length?`<div class="pt-cell-n">${att.length}명</div>`:''}
-        <div class="pt-cell-av">${att.slice(0,6).map(g=>`<img src="${g.chars[0]?.img||''}" ${oe} title="${esc(g.group)}">`).join("")}${att.length>6?`<span>+${att.length-6}</span>`:''}</div>
+        <div class="pt-cell-av">${ptAttendanceAvatars(att)}</div>
         ${attendBtn}
       </div>`;
     }
     h+=`</div>`;
   });
   return h+`</div>`;
+}
+function ptRenderDayRoster(p){
+  const box=document.getElementById("ptDayRoster"); if(!box)return;
+  box.innerHTML=ptDayRosterHtml(p);
+  box.querySelectorAll("[data-unmark]").forEach(b=>b.onclick=()=>ptUnmark(b.dataset.unmark));
+}
+function ptUpdateAttendanceUI(p,date){
+  const cell=document.querySelector(`#partyRoot .pt-cell[data-date="${CSS.escape(date)}"]`);
+  if(cell){
+    const mine=ptDates(p.applicants.find(e=>e.group===effectiveGroup())).includes(date);
+    const att=p.applicants.filter(e=>ptDates(e).includes(date));
+    cell.classList.toggle("mine",mine);
+    cell.classList.toggle("foc",ptState.focusDate===date);
+    const check=cell.querySelector("[data-attend-date]");
+    if(check){check.checked=mine;check.closest(".pt-attend")?.classList.toggle("on",mine);}
+    let count=cell.querySelector(".pt-cell-n");
+    if(att.length){
+      if(!count){count=el("div","pt-cell-n");cell.querySelector(".pt-cell-d")?.after(count);}
+      count.textContent=`${att.length}명`;
+    }else count?.remove();
+    const avatars=cell.querySelector(".pt-cell-av"); if(avatars)avatars.innerHTML=ptAttendanceAvatars(att);
+  }
+  document.querySelectorAll("#partyRoot .pt-cell[data-date]").forEach(c=>c.classList.toggle("foc",c.dataset.date===ptState.focusDate));
+  ptRenderDayRoster(p);
 }
 function ptDayRosterHtml(p){
   const d=ptState.focusDate;
@@ -2794,7 +2837,7 @@ async function renderPartyDetail(root){
   html+=`<div class="pt-main">`;
   html+=`<div class="pt-sech">참석 달력 <span>날짜를 클릭해 내 그룹의 참석일을 직접 선택하세요</span><b class="pt-starttime">${ptTime(p.time)} 시작</b></div>`;
   html+=ptCalendarHtml(p);
-  html+=ptDayRosterHtml(p);
+  html+=`<div id="ptDayRoster">${ptDayRosterHtml(p)}</div>`;
   html+=`</div></div>`;
   root.innerHTML=html;
 
