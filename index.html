@@ -815,7 +815,8 @@
   .pt-tm-chip.dragging{opacity:.35;cursor:grabbing}
   .pt-tm-chip img{width:24px;height:24px;border-radius:5px;object-fit:contain;background:#0e151d;border:1px solid var(--line);flex-shrink:0}
   .pt-tm-chip .tc-b{flex:1;min-width:0}
-  .pt-tm-chip .tc-b .nm{font-weight:800;font-size:12px;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+  .pt-tm-chip .tc-b .nm{font-weight:800;font-size:12px;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px;min-width:0}
+  .pt-tm-chip .tc-b .nm .cls{color:var(--dim);font-weight:700;font-size:10.5px;letter-spacing:-.2px;flex-shrink:0}
   .pt-tm-chip .tc-b .nm .cp{flex-shrink:0;font-weight:900;font-size:10.5px;padding:1px 6px;border-radius:20px;color:var(--gold);background:rgba(143,240,208,.1);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent)}
   .pt-tm-chip .tc-b .sub{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pt-tm-chip.role-tank{--r:#8ff0d0}
@@ -3161,9 +3162,12 @@ function ptTeamHtml(p, date){
 
   const chip=c=>{
     const r=ptRoleOf(c), cp=ptCp(c.cp);
-    return `<div class="pt-tm-chip role-${r}" draggable="true" data-team-drag="${esc(c.key)}" title="${esc(c.name)} · ${esc(c.className||'')} · 전투력 ${cp??'–'}">
+    // className 은 신청 시 없이 담긴 옛 데이터가 있어 mcChars 캐시에서 폴백 조회.
+    const cls=c.className||mcChars().find(x=>x.key===c.key)?.className||"";
+    const nameLbl=cls?`${esc(c.name)}<span class="cls">[${esc(cls)}]</span>`:esc(c.name);
+    return `<div class="pt-tm-chip role-${r}" draggable="true" data-team-drag="${esc(c.key)}" title="${esc(c.name)} · ${esc(cls)} · 전투력 ${cp??'–'}">
       <img src="${esc(c.img||'')}" ${oe}>
-      <div class="tc-b"><div class="nm">${esc(c.name)} <span class="cp">${cp??'–'}</span></div><div class="sub">${esc(c._group)}</div></div>
+      <div class="tc-b"><div class="nm">${nameLbl} <span class="cp">${cp??'–'}</span></div><div class="sub">${esc(c._group)}</div></div>
     </div>`;
   };
   // 같은 포지션(role) 안에서는 전투력 내림차순으로 정렬한다. cp 없는 캐릭은 뒤로 밀린다.
