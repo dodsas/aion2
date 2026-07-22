@@ -619,6 +619,18 @@ class Handler(BaseHTTPRequestHandler):
         self._send(code, json.dumps(obj, ensure_ascii=False).encode("utf-8"),
                    cache="no-store", headers=headers)
 
+    def _is_secure(self):
+        # Render 등 리버스 프록시가 X-Forwarded-Proto 로 원 클라이언트의 스킴을 알려준다.
+        # 이 값이 https 이면 iOS Safari/ITP 정책상 세션 쿠키에 Secure 플래그가 있어야 저장된다.
+        return (self.headers.get("X-Forwarded-Proto", "").lower() == "https"
+                or self.headers.get("X-Forwarded-Ssl", "").lower() == "on")
+
+    def _admin_cookie(self, token: str, ttl: int) -> str:
+        parts = [f"aion2_admin_session={token}", "Path=/", "HttpOnly", "SameSite=Lax", f"Max-Age={ttl}"]
+        if self._is_secure():
+            parts.append("Secure")
+        return "; ".join(parts)
+
     def _admin_session(self):
         cookies = self.headers.get("Cookie", "")
         token = next((p.strip()[len("aion2_admin_session="):] for p in cookies.split(";")
@@ -713,7 +725,7 @@ class Handler(BaseHTTPRequestHandler):
                 token = secrets.token_urlsafe(32)
                 with ADMIN_SESSION_LOCK:
                     ADMIN_SESSIONS[token] = time.time() + ADMIN_SESSION_TTL
-                self._json({"ok": True}, headers={"Set-Cookie": f"aion2_admin_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={ADMIN_SESSION_TTL}"})
+                self._json({"ok": True}, headers={"Set-Cookie": self._admin_cookie(token, ADMIN_SESSION_TTL)})
             except Exception as e:
                 self._json({"error": str(e)}, 500)
             return
@@ -723,7 +735,7 @@ class Handler(BaseHTTPRequestHandler):
                           if p.strip().startswith("aion2_admin_session=")), "")
             with ADMIN_SESSION_LOCK:
                 ADMIN_SESSIONS.pop(token, None)
-            self._json({"ok": True}, headers={"Set-Cookie": "aion2_admin_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"})
+            self._json({"ok": True}, headers={"Set-Cookie": self._admin_cookie("", 0)})
             return
         if parsed.path == "/api/delete-requests":
             try:
