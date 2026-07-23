@@ -34,7 +34,7 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote, urlencode
 
 import crawl_craft as ccf  # 공유 스키마 상수(PRICE_OVERRIDES_DDL, V_*_SQL)
-from store import Store, load_dotenv  # 상태 저장소(Turso 또는 로컬 SQLite 자동 선택)
+from store import Store, TursoBackend, load_dotenv, read_env  # 상태 저장소(Turso/로컬 자동)
 
 load_dotenv()  # .env → os.environ (로컬 개발용; 없으면 무시)
 
@@ -46,6 +46,12 @@ INDEX = BASE_DIR / "index.html"
 # 상태 데이터(캐릭터 캐시 · 내 캐릭터 · 파티 모집 · 숙제 등) 저장소.
 # TURSO_* 환경변수가 있으면 Turso, 없으면 로컬 app_store.db 로 폴백한다.
 STORE = Store()
+
+# 로컬(개발) 모드 = Turso 미설정 → 로컬 SQLite 사용. 이 경우:
+#   1) 관리자 인증을 자동 통과시켜 관리자 설정을 항상 볼 수 있게 하고,
+#   2) 설정의 '운영 데이터 가져오기'(.env.real 의 운영 Turso → 로컬 복사)를 허용한다.
+# 운영(Render, Turso)에서는 종전대로 ID/비번 로그인이 필요하다.
+LOCAL_MODE = (STORE.kind == "local")
 
 # 관리자 인증은 환경변수에 둔 단일 계정 + HttpOnly 세션 쿠키로 처리한다.
 # 세션은 서버 메모리에만 유지되므로 서버 재시작 시 자연스럽게 만료된다.
@@ -589,6 +595,36 @@ def api_store_set(data):
     return {"ok": True, "k": k}
 
 
+def api_admin_import_prod():
+    """운영(.env.real) Turso DB 의 모든 상태 데이터를 로컬 저장소로 복사한다(테스트 편의).
+    안전상 로컬 모드에서만 동작하며, 운영 DB 는 읽기만 한다(쓰기 없음)."""
+    if not LOCAL_MODE:
+        return {"error": "로컬(개발) 모드에서만 사용할 수 있습니다."}
+    env = read_env(BASE_DIR / ".env.real")
+    url = env.get("TURSO_DATABASE_URL", "")
+    tok = env.get("TURSO_AUTH_TOKEN", "")
+    if not url or not tok:
+        return {"error": ".env.real 에 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 이 필요합니다."}
+    prod = TursoBackend(url, tok)
+    kv = prod.query("SELECT k, v FROM app_kv")
+    for r in kv:      # JSON 원문을 그대로 옮긴다(kv_set 재인코딩 회피)
+        STORE.backend.exec(
+            "INSERT INTO app_kv(k, v, updated_at) VALUES(?,?,?) "
+            "ON CONFLICT(k) DO UPDATE SET v=excluded.v, updated_at=excluded.updated_at",
+            (r["k"], r["v"], _now_kst()))
+    try:
+        cc = prod.query("SELECT k, data, hash FROM char_cache")
+    except Exception:
+        cc = []
+    for r in cc:
+        STORE.backend.exec(
+            "INSERT INTO char_cache(k, data, hash, updated_at) VALUES(?,?,?,?) "
+            "ON CONFLICT(k) DO UPDATE SET data=excluded.data, hash=excluded.hash, "
+            "updated_at=excluded.updated_at",
+            (r["k"], r["data"], r["hash"], _now_kst()))
+    return {"ok": True, "kv": len(kv), "char_cache": len(cc)}
+
+
 ROUTES = {
     "/api/meta": api_meta,
     "/api/search": api_search,
@@ -654,6 +690,8 @@ class Handler(BaseHTTPRequestHandler):
                      if p.strip().startswith("aion2_admin_session=")), "")
 
     def _admin_session(self):
+        if LOCAL_MODE:      # 로컬 실행은 항상 관리자
+            return True
         token = self._admin_token_from_request()
         if not token:
             return False
@@ -695,7 +733,9 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/admin/session":
-            self._json({"authenticated": self._admin_session(), "enabled": bool(ADMIN_ID and ADMIN_PASSWORD)})
+            self._json({"authenticated": self._admin_session(),
+                        "enabled": bool(ADMIN_ID and ADMIN_PASSWORD) or LOCAL_MODE,
+                        "local": LOCAL_MODE})
             return
         if path == "/api/admin/delete-requests":
             if self._require_admin():
@@ -774,6 +814,14 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 self._json(api_admin_delete_action(self._read_json()))
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
+        if parsed.path == "/api/admin/import-prod":
+            if not self._require_admin():
+                return
+            try:
+                self._json(api_admin_import_prod())
             except Exception as e:
                 self._json({"error": str(e)}, 500)
             return

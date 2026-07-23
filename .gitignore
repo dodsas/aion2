@@ -30,3 +30,6 @@ app_store.db
 
 # 크롤 원본 스냅샷 (crawl_craft.py 로 재생성 가능 · 디버그용)
 raw/
+
+# 파티 복구 백업(로컬 보관용)
+party_backup_*.json

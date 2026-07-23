@@ -201,13 +201,21 @@ class Store:
             (k, data_json_str, h, _now()))
 
 
-def load_dotenv(path: Path = BASE_DIR / ".env"):
-    """의존성 없이 .env 를 os.environ 에 로드(로컬 개발용). 이미 있는 값은 덮지 않음."""
+def read_env(path: Path) -> dict:
+    """의존성 없이 env 파일을 dict 로 파싱(주석·따옴표 제거). os.environ 은 건드리지 않음."""
+    d: dict = {}
     if not path.exists():
-        return
+        return d
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         k, v = line.split("=", 1)
-        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+        d[k.strip()] = v.strip().strip('"').strip("'")
+    return d
+
+
+def load_dotenv(path: Path = BASE_DIR / ".env"):
+    """.env 를 os.environ 에 로드(로컬 개발용). 이미 있는 값은 덮지 않음."""
+    for k, v in read_env(path).items():
+        os.environ.setdefault(k, v)
