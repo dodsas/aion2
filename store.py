@@ -30,13 +30,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-LOCAL_DB = BASE_DIR / "app_store.db"
+# 로컬 폴백 DB 경로. 환경변수 APP_STORE_DB 로 덮어쓸 수 있다(테스트 격리·배치 분리용).
+LOCAL_DB = os.environ.get("APP_STORE_DB") or str(BASE_DIR / "app_store.db")
 
 DDL = (
     "CREATE TABLE IF NOT EXISTS app_kv ("
     " k TEXT PRIMARY KEY, v TEXT NOT NULL, updated_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS char_cache ("
     " k TEXT PRIMARY KEY, data TEXT NOT NULL, hash TEXT NOT NULL, updated_at TEXT NOT NULL)",
+    # 직업 통계(aion2tool 크롤). 배치로 스냅샷을 쌓는다: (captured_at,job,category) 단위 JSON.
+    "CREATE TABLE IF NOT EXISTS job_stats ("
+    " id INTEGER PRIMARY KEY,"
+    " captured_at TEXT NOT NULL,"      # 크롤 시각(KST ISO)
+    " job TEXT NOT NULL,"              # 직업명(검성…) 또는 'ALL'
+    " category TEXT NOT NULL,"         # population_share|cp_distribution|class_trend|population_trend|overview|arcana
+    " source_updated TEXT,"            # 원본(API) last_update
+    " data TEXT NOT NULL)",            # 정리된 JSON 페이로드
+    "CREATE INDEX IF NOT EXISTS ix_job_stats_cap ON job_stats(captured_at)",
 )
 
 
@@ -199,6 +209,46 @@ class Store:
             "ON CONFLICT(k) DO UPDATE SET data=excluded.data, hash=excluded.hash, "
             "updated_at=excluded.updated_at",
             (k, data_json_str, h, _now()))
+
+    # 직업 통계(job_stats) — 배치 스냅샷 저장/조회
+    def job_stats_write(self, captured_at, rows):
+        """한 배치의 여러 (job, category) 행을 동일 captured_at 으로 적재.
+        rows: [{job, category, source_updated, data(dict)}...]"""
+        for r in rows:
+            self.backend.exec(
+                "INSERT INTO job_stats(captured_at, job, category, source_updated, data) "
+                "VALUES(?,?,?,?,?)",
+                (captured_at, r["job"], r["category"], r.get("source_updated"),
+                 json.dumps(r["data"], ensure_ascii=False)))
+
+    def job_stats_captures(self, limit=30):
+        """최근 크롤 시각 목록(최신순)."""
+        return [x["captured_at"] for x in self.backend.query(
+            "SELECT DISTINCT captured_at FROM job_stats ORDER BY captured_at DESC LIMIT ?",
+            (limit,))]
+
+    def job_stats_latest(self, category=None, job=None):
+        """가장 최근 스냅샷의 행들(파싱된 data 포함). category/job 로 필터 가능."""
+        caps = self.job_stats_captures(1)
+        if not caps:
+            return []
+        sql = "SELECT captured_at, job, category, source_updated, data FROM job_stats WHERE captured_at=?"
+        args = [caps[0]]
+        if category:
+            sql += " AND category=?"; args.append(category)
+        if job:
+            sql += " AND job=?"; args.append(job)
+        rows = self.backend.query(sql, tuple(args))
+        for r in rows:
+            r["data"] = json.loads(r["data"])
+        return rows
+
+    def job_stats_prune(self, keep=30):
+        """최근 keep 개 스냅샷만 남기고 오래된 것 삭제(배치 누적 방지)."""
+        caps = self.job_stats_captures(keep + 50)
+        if len(caps) > keep:
+            cutoff = caps[keep - 1]
+            self.backend.exec("DELETE FROM job_stats WHERE captured_at < ?", (cutoff,))
 
 
 def read_env(path: Path) -> dict:

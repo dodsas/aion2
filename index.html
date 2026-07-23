@@ -92,6 +92,41 @@
   /* 내 캐릭터 카드 클릭 → 캐릭터 상세만 전체폭으로(검색·목록 숨김) */
   #view-char.detail-only .search,#view-char.detail-only #cbtn{display:none}
   #view-char.detail-only #clist{display:none}
+  /* 캐릭터 비교(통계 vs 나) */
+  .cmp-wrap{max-width:980px}
+  .cmp-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .cmp-head h2{margin:0;font-size:18px;letter-spacing:-.3px}
+  .cmp-head h2 span{color:var(--dim);font-size:13px;font-weight:600}
+  .cmp-sub{color:var(--dim);font-size:12px}
+  .cmp-sec{margin-bottom:22px}
+  .cmp-sec-h{font-size:14px;font-weight:900;color:var(--gold);margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .cmp-sec-h span{color:var(--dim);font-size:11.5px;font-weight:600;margin-left:8px}
+  .cmp-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.2fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .cmp-col-h{background:#0f1720;padding:7px 12px;font-size:11px;font-weight:800;color:var(--dim);letter-spacing:.3px}
+  .cmp-r{display:contents}
+  .cmp-r>div{background:var(--slot);padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:12.5px;min-width:0}
+  .cmp-sk img{width:24px;height:24px;border-radius:6px;object-fit:contain;background:#0e151d;border:1px solid var(--line);flex-shrink:0}
+  .cmp-sk span{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* 채용률 셀은 %(위)·평균Lv(아래) 두 줄 */
+  .cmp-grid .cmp-stat{flex-direction:column;align-items:flex-start;gap:1px;justify-content:center}
+  /* 나 셀: 스킬·패시브는 한 줄(줄바꿈 금지), 스티그마만 me-2l 로 두 줄 */
+  .cmp-me{white-space:nowrap}
+  .cmp-me .me-2l{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+  .cmp-stat b{color:var(--gold);font-weight:900;font-variant-numeric:tabular-nums}
+  .cmp-stat span{color:var(--dim);font-size:11px}
+  .cmp-me .me-eq{font-size:11px;color:var(--dim)}
+  .cmp-me i{font-style:normal;color:var(--danger);font-weight:800}
+  .cmp-r.miss>div{background:color-mix(in srgb,var(--danger) 15%,var(--slot))}
+  .cmp-r.miss .cmp-me{color:var(--danger);font-weight:900}
+  .cmp-r.warn>div{background:color-mix(in srgb,#ffd24a 11%,var(--slot))}
+  .cmp-r.on .cmp-me{color:var(--g2);font-weight:700}
+  .cmp-r.dim>div{opacity:.5}
+  .cmp-foot{color:var(--dim);font-size:11px;margin-top:6px;line-height:1.6}
+  .cmp-btn{border-color:color-mix(in srgb,var(--teal) 50%,var(--line))!important;color:var(--teal)!important}
+  @media (max-width:820px){
+    .cmp-grid{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,1fr)}
+    .cmp-r>div{padding:7px 8px;font-size:11.5px} .cmp-sk img{width:20px;height:20px}
+  }
 
   /* 검색/필터 */
   .search{flex:1;min-width:220px;position:relative}
@@ -498,10 +533,16 @@
   .mc-card .mc-cp{display:inline-block;margin-left:7px;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:900;vertical-align:middle;white-space:nowrap;
                   background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line))}
   .mc-card .sub{color:var(--dim);font-size:11.5px;margin-top:2px}
-  .mc-card .mc-del{position:absolute;top:6px;right:7px;padding:4px 7px;line-height:1;text-align:center;border-radius:5px;
-                   background:rgba(0,0,0,.35);color:var(--dim);border:1px solid var(--line);font:800 10px/1 inherit;font-family:inherit;opacity:.8;transition:opacity .12s}
-  .mc-card:hover .mc-del{opacity:1}
+  .mc-card .mc-body-c{min-width:0}
+  /* 제거·비교를 우측 세로 액션 스택으로 → 어떤 폭에서도 겹치지 않는다 */
+  .mc-card .mc-actions{margin-left:auto;align-self:center;display:flex;flex-direction:column;gap:6px;align-items:stretch;flex-shrink:0}
+  .mc-card .mc-del{padding:5px 8px;line-height:1;text-align:center;border-radius:6px;
+                   background:rgba(0,0,0,.35);color:var(--dim);border:1px solid var(--line);font:800 10px/1 inherit;font-family:inherit;cursor:pointer}
   .mc-card .mc-del:hover{color:var(--danger);border-color:var(--danger)}
+  .mc-card .mc-cmp{padding:6px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;text-align:center;
+                   font:800 11px/1 inherit;font-family:inherit;color:var(--teal);
+                   background:linear-gradient(180deg,#152530,#0f1b23);border:1px solid color-mix(in srgb,var(--teal) 45%,var(--etched))}
+  .mc-card .mc-cmp:hover{border-color:var(--teal);background:color-mix(in srgb,var(--teal) 15%,#0f1b23)}
   .mc-empty{color:var(--dim);padding:40px 10px;text-align:center;line-height:1.8}
   #identSearch{width:100%;padding:9px 11px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);margin-bottom:10px}
   #identSearch:focus{border-color:var(--gold);outline:none}
@@ -1236,7 +1277,7 @@ async function refreshAdminState(){
 // 서버 부담을 줄이려고 클라이언트에서 걸러낸다. 그룹이 아직 선택 안 됐으면 스킵.
 // detail 을 넘기면 그 값이 dedupe 키에 포함돼 파티별로 별개 이벤트가 된다.
 const ACCESS_LOG_DEDUPE_MS=60_000;
-const ACCESS_LOG_ALLOWED=new Set(["mychar","party","party_detail","homework"]);
+const ACCESS_LOG_ALLOWED=new Set(["mychar","party","party_detail","homework","char_detail","char_compare"]);
 const _accessLogLast={};
 function logAccess(view,detail){
   if(!ACCESS_LOG_ALLOWED.has(view))return;
@@ -1248,7 +1289,7 @@ function logAccess(view,detail){
   fetch("/api/access-log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).catch(()=>{});
 }
 
-const ACCESS_LOG_LABEL={mychar:"🗂️ 캐릭",party:"🛡️ 파티",party_detail:"🎯 파티 상세",homework:"📅 숙제",settings:"⚙️ 설정"};
+const ACCESS_LOG_LABEL={mychar:"🗂️ 캐릭",party:"🛡️ 파티",party_detail:"🎯 파티 상세",homework:"📅 숙제",settings:"⚙️ 설정",char_detail:"🔎 캐릭터 상세",char_compare:"⚖️ 비교"};
 async function renderAdminAccessLog(){
   const box=document.getElementById("adminAccessLog"); if(!box)return;
   try{
@@ -2330,7 +2371,22 @@ function refreshRegButtons(){
 function openMyCharDetail(c){
   document.getElementById("view-char")?.classList.add("detail-only");
   showView("char");
+  logAccess("char_detail", c.name+(c.className?" · "+c.className:""));
   openChar(c.serverId,c.characterId);
+}
+// 카드의 '비교' 버튼 → 상세 화면을 거치지 않고(깜빡임 방지) 데이터만 로드해 바로 비교로.
+async function openMyCharCompare(c){
+  document.getElementById("view-char")?.classList.add("detail-only");
+  showView("char");
+  logAccess("char_compare", c.name+(c.className?" · "+c.className:""));
+  const D=document.getElementById("cdetail");
+  if(D) D.innerHTML='<div class="empty">불러오는 중… <br><span class="muted">스킬·스티그마를 통계와 비교합니다</span></div>';
+  let d=null;                                   // 캐시 우선, 없으면 최신 조회 (상세는 렌더하지 않음)
+  try{ const r=await j(`/api/char/cached?${charQS(c.serverId,c.characterId)}`); if(r&&r.data)d=r.data; }catch(e){}
+  if(!d){ try{ const r=await j(`/api/char/detail?${charQS(c.serverId,c.characterId)}`); if(r&&r.data)d=r.data; }catch(e){} }
+  if(!d){ if(D)D.innerHTML='<div class="empty">불러오기 실패</div>'; return; }
+  d.__serverId=c.serverId; d.__characterId=c.characterId; lastChar=d;
+  renderCompare(d);
 }
 function renderMyChars(){
   const box=document.getElementById("mcBody"); if(!box)return;
@@ -2358,18 +2414,23 @@ function renderMyChars(){
     gchars.forEach(c=>{
       const card=el("div","mc-card"+(c.key===mainKey?" main":""));
       card.style.setProperty("--c",c.race===1?"#8ff0d0":"#ffadc0");
-      card.innerHTML=`<button class="mc-del" data-del="${esc(c.key)}" title="캐릭터 제거">제거</button>
-        ${c.key===mainKey?'<span class="mc-crown" title="본캐 (전투력 최고)">👑</span>':''}
+      card.innerHTML=`${c.key===mainKey?'<span class="mc-crown" title="본캐 (전투력 최고)">👑</span>':''}
         <img class="ico" src="${c.img||''}" ${oe}>
-        <div><div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span></div>
-        <div class="sub">Lv.${c.level??'?'} · ${esc(c.serverName||'')} · ${c.race===1?'천족':'마족'}</div></div>`;
-      card.onclick=(e)=>{ if(e.target.closest("[data-del]"))return; openMyCharDetail(c); };  // 클릭 = 상세 보기
+        <div class="mc-body-c"><div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span></div>
+        <div class="sub">Lv.${c.level??'?'} · ${esc(c.serverName||'')} · ${c.race===1?'천족':'마족'}</div></div>
+        <div class="mc-actions">
+          <button class="mc-cmp" data-cmp="${esc(c.key)}" title="통계와 스킬·스티그마 비교">⚖️ 비교</button>
+          <button class="mc-del" data-del="${esc(c.key)}" title="캐릭터 제거">제거</button>
+        </div>`;
+      card.onclick=(e)=>{ if(e.target.closest("[data-del]")||e.target.closest("[data-cmp]"))return; openMyCharDetail(c); };  // 클릭 = 상세 보기
       grid.appendChild(card);
     });
     g.appendChild(grid);
     box.appendChild(g);
   });
   box.querySelectorAll("[data-del]").forEach(b=>b.onclick=e=>{e.stopPropagation();mcRemoveChar(b.dataset.del);});
+  box.querySelectorAll("[data-cmp]").forEach(b=>b.onclick=e=>{e.stopPropagation();
+    const c=mcChars().find(x=>x.key===b.dataset.cmp); if(c)openMyCharCompare(c);});
   mcBackfillMissing();
 }
 function initMyChars(){
@@ -2558,6 +2619,56 @@ async function openChar(serverId,characterId){
   if(curOpenKey!==key) return;                         // 다른 캐릭 보는 중이면 갱신 안 함
   if(!shown||r.hash!==shownHash){ lastChar=fresh; renderChar(fresh); }  // 값이 바뀌었을 때만 갱신
 }
+// 통계(크롤) vs 나 — 스킬·스티그마 채용률 비교 페이지. 캐릭터 상세의 '비교하기'로 진입.
+async function renderCompare(d){
+  const p=(d.info||{}).profile||{}, cls=p.className;
+  const D=document.getElementById("cdetail"); hideTip();
+  D.innerHTML=`<div class="cmp-wrap"><div class="cmp-head">
+    <button class="hw-mini" id="cmpBack">← 상세로</button>
+    <h2>⚖️ ${esc(p.characterName||'')} <span>vs ${esc(cls||'')} 통계</span></h2>
+    <span class="cmp-sub">통계 = 이 직업 <b>상위 200명 랭커</b> 중 보유 비율(채용률)·평균 레벨 · 출처 aion2tool</span></div>
+    <div class="cmp-body"><div class="empty">통계를 불러오는 중…</div></div></div>`;
+  document.getElementById("cmpBack").onclick=()=>renderChar(d);
+  let base=null, cap=null;
+  try{ const r=await j(`/api/jobstats?category=skills&job=${encodeURIComponent(cls||"")}`);
+       if(r.rows&&r.rows.length){ base=r.rows[0].data; cap=r.captured_at; } }catch(e){}
+  const body=D.querySelector(".cmp-body");
+  if(!base){ body.innerHTML=`<div class="empty">'${esc(cls||"이 직업")}' 통계 데이터가 아직 없습니다.<br><span class="muted">서버에서 <code>python3 crawl_jobstats.py</code> 로 수집 후 다시 시도하세요.</span></div>`; return; }
+  // 내 스킬 맵(이름→상태): category Active/Passive/Dp → active/passive/stigma 와 대응
+  const sl=(((d.equipment||{}).skill)||{}).skillList||[];
+  const mine={}; sl.forEach(s=>{ mine[s.name]={lvl:s.skillLevel,equip:s.equip,acq:s.acquired}; });
+  const SEC=[["active","🗡️ 스킬"],["passive","🛡️ 패시브"],["stigma","✴️ 스티그마"]];
+  let html="";
+  SEC.forEach(([key,label])=>{
+    const list=(base[key]||[]).slice().sort((a,b)=>parseFloat(b.pick_rate)-parseFloat(a.pick_rate));
+    if(!list.length)return;
+    const core=list.filter(x=>parseFloat(x.pick_rate)>=30);
+    const have=core.filter(x=>mine[x.name]&&mine[x.name].acq).length;
+    html+=`<div class="cmp-sec"><div class="cmp-sec-h">${label}<span>표본 ${base.total_rankers||"-"}명 · 핵심(30%+) 커버리지 ${have}/${core.length}</span></div>
+      <div class="cmp-grid"><div class="cmp-col-h">스킬</div><div class="cmp-col-h">채용률</div><div class="cmp-col-h">나</div>`;
+    list.forEach(x=>{
+      const pr=parseFloat(x.pick_rate)||0, av=+x.avg_level||0, m=mine[x.name];
+      const imp=pr>=30;                          // 핵심 스킬(채용률 30%+)만 보강 경고 표시
+      const has=m&&m.acq, lvl=has?m.lvl:0, equipped=has&&m.equip;
+      const under=imp&&has&&(av-lvl)>=2, lvGap=under?` · <i>평균 -${(av-lvl).toFixed(0)}</i>`:"";
+      let st="", me;
+      // Lv.0(미보유·레벨0): '장착' 표시와 동일하게 두 줄 + 회색(me-eq), 카테고리 무관 동일
+      if(lvl===0){ me=`<div class="me-2l"><span>Lv.0</span><span class="me-eq">미장착</span></div>`; }
+      else if(key==="stigma"){                   // 보유 스티그마: 장착 여부를 둘째 줄로
+        const eqText=equipped?"장착":(imp?"<i>미장착</i>":"미장착");
+        st=(under||(imp&&!equipped))?"warn":"on";
+        me=`<div class="me-2l"><span>Lv.${lvl}${lvGap}</span><span class="me-eq">${eqText}</span></div>`;
+      }else{ st=under?"warn":"on"; me=`Lv.${lvl}${lvGap}`; }   // 스킬·패시브: 레벨만(한 줄)
+      html+=`<div class="cmp-r ${st}">
+        <div class="cmp-sk"><img src="${x.icon_url||''}" ${oe}><span>${esc(x.name)}</span></div>
+        <div class="cmp-stat"><b>${pr.toFixed(1)}%</b> <span>평균 Lv.${av.toFixed(1)}</span></div>
+        <div class="cmp-me">${me}</div></div>`;
+    });
+    html+=`</div></div>`;
+  });
+  html+=`<div class="cmp-foot">통계 기준: aion2tool.com · 수집 ${esc((cap||"").replace("T"," ").slice(0,16))} · ❗=핵심인데 미보유 · <i style="color:var(--danger)">빨강</i>/노랑=보강 필요</div>`;
+  body.innerHTML=html;
+}
 function renderChar(d){
   const info=d.info||{}, eq=d.equipment||{}, p=info.profile||{};
   const D=document.getElementById("cdetail"); D.innerHTML=""; hideTip();
@@ -2576,9 +2687,14 @@ function renderChar(d){
       <div class="meta">${badge}Lv.${p.characterLevel||'?'} · <b style="color:var(--txt)">${p.className||''}</b> · ${p.genderName||''}<br>
         ${p.serverName||''} 서버 · ${p.regionName||''} 지역</div>
       ${p.titleName?`<div class="title-line">🏅 ${p.titleName}</div>`:''}
-      ${d.__serverId!=null?`<div class="badges"><button class="mc-reg" data-reg data-sid="${d.__serverId}" data-cid="${d.__characterId}">${regLabel(mcHas(d.__serverId,d.__characterId))}</button></div>`:''}
+      <div class="badges">
+        ${p.className?`<button class="mc-reg cmp-btn" id="cmpBtn">⚖️ 비교하기</button>`:''}
+        ${d.__serverId!=null?`<button class="mc-reg" data-reg data-sid="${d.__serverId}" data-cid="${d.__characterId}">${regLabel(mcHas(d.__serverId,d.__characterId))}</button>`:''}
+      </div>
     </div>`;
   D.appendChild(head);
+  const cmpBtn=head.querySelector("#cmpBtn");
+  if(cmpBtn) cmpBtn.onclick=()=>{ logAccess("char_compare",(p.characterName||"")+(p.className?" · "+p.className:"")); renderCompare(d); };
   const regBtn=head.querySelector("[data-reg]");
   if(regBtn) regBtn.onclick=()=>openRegModal({
     serverId:d.__serverId,characterId:d.__characterId,name:p.characterName,level:p.characterLevel,

@@ -509,7 +509,8 @@ def api_delete_request(data):
 # 저장은 app_kv[access_log] 에 JSON 배열로 넣고 최대 ACCESS_LOG_MAX 개까지 FIFO.
 ACCESS_LOG_MAX = 2000
 # party_detail: 목록에서 특정 파티를 열었을 때. detail 필드에 어느 파티인지 요약을 담는다.
-ALLOWED_ACCESS_VIEWS = {"mychar", "party", "party_detail", "homework", "settings"}
+ALLOWED_ACCESS_VIEWS = {"mychar", "party", "party_detail", "homework", "settings",
+                        "char_detail", "char_compare"}
 
 
 def get_access_log():
@@ -595,6 +596,19 @@ def api_store_set(data):
     return {"ok": True, "k": k}
 
 
+def api_jobstats(q):
+    """직업 통계(job_stats) 최신 스냅샷 조회. category/job 로 필터 가능.
+    데이터는 crawl_jobstats.py 배치가 적재한다."""
+    category = (q.get("category", [""])[0] or "").strip() or None
+    job = (q.get("job", [""])[0] or "").strip() or None
+    try:
+        rows = STORE.job_stats_latest(category, job)
+    except Exception:
+        rows = []
+    return {"captured_at": rows[0]["captured_at"] if rows else None,
+            "count": len(rows), "rows": rows}
+
+
 def api_admin_import_prod():
     """운영(.env.real) Turso DB 의 모든 상태 데이터를 로컬 저장소로 복사한다(테스트 편의).
     안전상 로컬 모드에서만 동작하며, 운영 DB 는 읽기만 한다(쓰기 없음)."""
@@ -639,6 +653,7 @@ NET_ROUTES = {
     "/api/char/cached": api_char_cached,
     "/api/char/item": api_char_item,
     "/api/store": api_store_get,
+    "/api/jobstats": api_jobstats,
     "/api/health": lambda q: {"ok": True, "store": STORE.kind},
 }
 
