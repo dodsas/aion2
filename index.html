@@ -2626,12 +2626,15 @@ async function renderCompare(d){
   D.innerHTML=`<div class="cmp-wrap"><div class="cmp-head">
     <button class="hw-mini" id="cmpBack">← 상세로</button>
     <h2>⚖️ ${esc(p.characterName||'')} <span>vs ${esc(cls||'')} 통계</span></h2>
-    <span class="cmp-sub">통계 = 이 직업 <b>상위 200명 랭커</b> 중 보유 비율(채용률)·평균 레벨 · 출처 aion2tool</span></div>
+    <span class="cmp-sub">통계 = 이 직업 <b>상위 200명 랭커</b> 중 보유 비율(채용률)·평균 레벨</span></div>
     <div class="cmp-body"><div class="empty">통계를 불러오는 중…</div></div></div>`;
   document.getElementById("cmpBack").onclick=()=>renderChar(d);
-  let base=null, cap=null;
-  try{ const r=await j(`/api/jobstats?category=skills&job=${encodeURIComponent(cls||"")}`);
-       if(r.rows&&r.rows.length){ base=r.rows[0].data; cap=r.captured_at; } }catch(e){}
+  let base=null, baseOv=null, cap=null;
+  try{ const r=await j(`/api/jobstats?job=${encodeURIComponent(cls||"")}`);   // 스킬+개요(날개) 함께
+       cap=r.captured_at;
+       base=(r.rows||[]).find(x=>x.category==="skills")?.data||null;
+       baseOv=(r.rows||[]).find(x=>x.category==="overview")?.data||null;
+  }catch(e){}
   const body=D.querySelector(".cmp-body");
   if(!base){ body.innerHTML=`<div class="empty">'${esc(cls||"이 직업")}' 통계 데이터가 아직 없습니다.<br><span class="muted">서버에서 <code>python3 crawl_jobstats.py</code> 로 수집 후 다시 시도하세요.</span></div>`; return; }
   // 내 스킬 맵(이름→상태): category Active/Passive/Dp → active/passive/stigma 와 대응
@@ -2666,7 +2669,26 @@ async function renderCompare(d){
     });
     html+=`</div></div>`;
   });
-  html+=`<div class="cmp-foot">통계 기준: aion2tool.com · 수집 ${esc((cap||"").replace("T"," ").slice(0,16))} · ❗=핵심인데 미보유 · <i style="color:var(--danger)">빨강</i>/노랑=보강 필요</div>`;
+  // 🪽 날개: 통계 인기 날개 vs 내 착용 날개
+  const myWing=((((d.equipment||{}).petwing)||{}).wing||{}).name||"";
+  const wings=((baseOv&&baseOv.wings)||[]).slice().sort((a,b)=>(+b.pct)-(+a.pct));
+  if(wings.length){
+    const inList=wings.some(w=>w.name===myWing);
+    html+=`<div class="cmp-sec"><div class="cmp-sec-h">🪽 날개<span>표본 ${baseOv.wing_sample||"-"}명 · 내 날개 <b>${esc(myWing||"없음")}</b></span></div>
+      <div class="cmp-grid"><div class="cmp-col-h">날개</div><div class="cmp-col-h">채용률</div><div class="cmp-col-h">나</div>`;
+    wings.forEach(w=>{
+      const mineW=w.name===myWing;
+      html+=`<div class="cmp-r ${mineW?"on":""}">
+        <div class="cmp-sk"><img src="${w.icon_url||''}" ${oe}><span>${esc(w.name)}</span></div>
+        <div class="cmp-stat"><b>${(+w.pct).toFixed(1)}%</b> <span>${w.count}명</span></div>
+        <div class="cmp-me">${mineW?"✓ 착용":"–"}</div></div>`;
+    });
+    if(myWing&&!inList)
+      html+=`<div class="cmp-r on"><div class="cmp-sk"><span>${esc(myWing)}</span></div>
+        <div class="cmp-stat"><span>목록 외</span></div><div class="cmp-me">✓ 착용</div></div>`;
+    html+=`</div></div>`;
+  }
+  html+=`<div class="cmp-foot">통계 기준: aion2tool · 수집 ${esc((cap||"").replace("T"," ").slice(0,16))} · 노랑=보강 필요(레벨↓·미장착)</div>`;
   body.innerHTML=html;
 }
 function renderChar(d){
