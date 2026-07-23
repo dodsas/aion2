@@ -2679,7 +2679,13 @@ async function openChar(serverId,characterId){
   const fresh=r.data; fresh.__serverId=serverId; fresh.__characterId=characterId;
   charCache.set(key,fresh);                            // 이후 클릭은 즉시
   if(curOpenKey!==key) return;                         // 다른 캐릭 보는 중이면 갱신 안 함
-  if(!shown||r.hash!==shownHash){ lastChar=fresh; renderChar(fresh); }  // 값이 바뀌었을 때만 갱신
+  if(!shown){ lastChar=fresh; renderChar(fresh); }        // 최초 표시
+  else if(r.hash!==shownHash){                            // 값이 바뀐 경우에만 갱신하되
+    // 전체 재렌더로 스크롤이 최상단으로 튀지 않게, 현재 스크롤 위치를 저장→복원.
+    const sTop=D.scrollTop, wTop=window.scrollY||window.pageYOffset||0;
+    lastChar=fresh; renderChar(fresh);
+    D.scrollTop=sTop; if(wTop) window.scrollTo(0,wTop);
+  }
 }
 // 통계(크롤) vs 나 — 스킬·스티그마 채용률 비교 페이지. 캐릭터 상세의 '비교하기'로 진입.
 async function renderCompare(d){
