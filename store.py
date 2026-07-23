@@ -103,8 +103,9 @@ class TursoBackend:
         self.token = token
         self._ctx = ssl.create_default_context()
         self._ctx_unverified = ssl._create_unverified_context()
-        for ddl in DDL:
-            self.exec(ddl)
+        # DDL 은 생성자에서 실행하지 않는다(웹 기동 시 포트 바인딩 전 네트워크 블로킹 방지).
+        # 첫 쿼리 시 1회·단일 파이프라인으로 지연 실행한다.
+        self._ready = False
 
     @staticmethod
     def _enc(v):
@@ -161,13 +162,22 @@ class TursoBackend:
                 out.append(resp.get("result") or {})
         return out
 
+    def _ensure(self):
+        if self._ready:
+            return
+        # 모든 DDL 을 한 번의 파이프라인(단일 HTTP 왕복)으로 실행 → 지연·최소 비용.
+        self._pipeline([(ddl, ()) for ddl in DDL])
+        self._ready = True
+
     def query(self, sql, args=()):
+        self._ensure()
         result = self._pipeline([(sql, args)])[0]
         cols = [c.get("name") for c in result.get("cols", [])]
         return [{cols[i]: self._dec(cell) for i, cell in enumerate(row)}
                 for row in result.get("rows", [])]
 
     def exec(self, sql, args=()):
+        self._ensure()
         self._pipeline([(sql, args)])
 
 

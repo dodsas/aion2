@@ -522,7 +522,7 @@
   .mc-group-h .gcount{color:var(--dim);font-size:12px;font-weight:700}
   .mc-group-h .spacer{flex:1}
   .mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
-  .mc-card{--c:var(--accent);display:flex;gap:11px;padding:11px 12px;border:1px solid color-mix(in srgb,var(--c) 30%,var(--line));border-radius:9px;
+  .mc-card{--c:var(--accent);display:flex;gap:11px;padding:11px 12px;min-height:84px;border:1px solid color-mix(in srgb,var(--c) 30%,var(--line));border-radius:9px;
            cursor:pointer;align-items:center;position:relative;overflow:hidden;
            background:linear-gradient(135deg,color-mix(in srgb,var(--c) 11%,transparent),transparent 40%),linear-gradient(180deg,var(--slot-hi),var(--slot));
            box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 10px 24px -20px rgba(0,0,0,.9);transition:transform .12s ease,border-color .12s ease}
@@ -533,16 +533,16 @@
   .mc-card .mc-cp{display:inline-block;margin-left:7px;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:900;vertical-align:middle;white-space:nowrap;
                   background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line))}
   .mc-card .sub{color:var(--dim);font-size:11.5px;margin-top:2px}
-  .mc-card .mc-body-c{min-width:0}
-  /* 제거·비교를 우측 세로 액션 스택으로 → 어떤 폭에서도 겹치지 않는다 */
-  .mc-card .mc-actions{margin-left:auto;align-self:center;display:flex;flex-direction:column;gap:6px;align-items:stretch;flex-shrink:0}
-  .mc-card .mc-del{padding:5px 8px;line-height:1;text-align:center;border-radius:6px;
-                   background:rgba(0,0,0,.35);color:var(--dim);border:1px solid var(--line);font:800 10px/1 inherit;font-family:inherit;cursor:pointer}
-  .mc-card .mc-del:hover{color:var(--danger);border-color:var(--danger)}
-  .mc-card .mc-cmp{padding:6px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;text-align:center;
-                   font:800 11px/1 inherit;font-family:inherit;color:var(--teal);
-                   background:linear-gradient(180deg,#152530,#0f1b23);border:1px solid color-mix(in srgb,var(--teal) 45%,var(--etched))}
+  /* 모바일: 정보 우측 공간 확보(버튼 자리) */
+  .mc-card .mc-body-c{min-width:0;flex:1;padding-right:62px}
+  /* 비교=민트 아웃라인 / 제거=붉은색. 모바일은 우측 세로(절대배치→카드 높이에 영향 X) */
+  .mc-card .mc-actions{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px}
+  .mc-card .mc-cmp{padding:6px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;text-align:center;font:800 11px/1 inherit;font-family:inherit;
+                   color:var(--teal);background:linear-gradient(180deg,#152530,#0f1b23);border:1px solid color-mix(in srgb,var(--teal) 45%,var(--etched))}
   .mc-card .mc-cmp:hover{border-color:var(--teal);background:color-mix(in srgb,var(--teal) 15%,#0f1b23)}
+  .mc-card .mc-del{padding:6px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;text-align:center;font:800 11px/1 inherit;font-family:inherit;
+                   color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent);border:1px solid color-mix(in srgb,var(--danger) 50%,var(--line))}
+  .mc-card .mc-del:hover{background:color-mix(in srgb,var(--danger) 22%,transparent);border-color:var(--danger)}
   .mc-empty{color:var(--dim);padding:40px 10px;text-align:center;line-height:1.8}
   #identSearch{width:100%;padding:9px 11px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);margin-bottom:10px}
   #identSearch:focus{border-color:var(--gold);outline:none}
@@ -558,7 +558,7 @@
   .mc-reg{padding:6px 12px;background:linear-gradient(180deg,#1a2530,#111923);border:1px solid var(--etched);border-radius:7px;
           color:var(--gold);font:800 12px/1 inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
   .mc-reg:hover{border-color:var(--gold)}
-  .mc-reg.on{background:linear-gradient(180deg,#1e2f28,#12211b);border-color:var(--gold);color:var(--gold)}
+  .mc-reg.on{background:color-mix(in srgb,var(--danger) 12%,#12211b);border-color:color-mix(in srgb,var(--danger) 55%,var(--line));color:var(--danger)}
   .card .mc-reg-card{position:absolute;top:6px;right:7px;z-index:3;padding:3px 7px;font-size:11px}
 
   /* 내 캐릭터 탭 · 상단(신원/검색/그룹) */
@@ -602,6 +602,41 @@
   .mc-setcur.on{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 15%,transparent)}
   .mc-card.main{border-color:color-mix(in srgb,var(--gold) 50%,var(--line))}
   .mc-crown{position:absolute;top:5px;left:8px;font-size:13px;z-index:2}
+
+  /* 정보 라인(직업·전투력·지역·칭호): 기본 숨김(모바일 요약), PC 미디어쿼리에서 노출 */
+  .mc-card .mc-meta,.mc-card .mc-cpline,.mc-card .mc-region,.mc-card .mc-title{display:none}
+  .mc-card .mc-meta{color:var(--dim);font-size:12px;font-weight:600;margin-top:5px;line-height:1.5}
+  .mc-card .mc-meta .badge{font-size:10px;padding:1px 7px;margin-right:5px;vertical-align:1px}
+  .mc-card .mc-cpline{margin-top:5px;color:var(--dim)}
+  .mc-card .mc-cpline .l{font-size:11px;font-weight:700}
+  .mc-card .mc-cpline b{color:var(--gold);font-weight:900;font-size:17px;margin:0 8px 0 3px;font-variant-numeric:tabular-nums}
+  .mc-card .mc-cpline .ab{color:var(--teal);font-weight:700;font-size:12px}
+  .mc-card .mc-region{color:var(--dim);font-size:12px;margin-top:3px}
+  .mc-card .mc-title{color:var(--gold);font-size:12.5px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+  /* ── PC 전용(≥821px): 캐릭터 카드·얼굴 크게 + 정보 여유, 등록 영역 축소 ── */
+  /* (모바일 ≤820px 은 위 기본 스타일 그대로 유지) */
+  @media (min-width:821px){
+    /* 등록 영역: 반쪽 박스 대신, 그룹 영역을 넓히고 등록 버튼을 우측 컴팩트하게 */
+    .mc-top{grid-template-columns:1fr auto;gap:14px}
+    .mc-top .mc-register-action{background:none;border:none;box-shadow:none;padding:0;justify-content:flex-end;align-items:start}
+    .mc-top .mc-register-action .btn{width:auto;min-height:0;padding:11px 20px;white-space:nowrap}
+    /* 카드: 한 줄에 3명 · 초상화 크게 (초상화 + 이름/직업/전투력·어비스/지역/칭호/버튼) */
+    .mc-grid{grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:16px}
+    .mc-card{gap:18px;padding:16px 18px;align-items:center}
+    .mc-card .ico{width:150px;height:150px;border-radius:13px;object-fit:cover;border:1px solid var(--gold);
+                  box-shadow:0 0 0 3px rgba(143,240,208,.12),0 14px 30px -14px #000,0 0 30px -22px var(--gold)}
+    .mc-card .nm{font-size:18px}
+    .mc-card .mc-cp{display:none}                 /* 전투력은 mc-cpline 으로 */
+    .mc-card .sub{display:none}                    /* 모바일 요약줄 숨김 */
+    .mc-card .mc-meta{display:block}
+    .mc-card .mc-cpline{display:block}
+    .mc-card .mc-region{display:block}
+    .mc-card .mc-title{display:block}
+    .mc-card .mc-body-c{padding-right:0}   /* PC: 우측 버튼 자리 불필요(버튼은 정보 아래) */
+    .mc-card .mc-actions{position:static;transform:none;flex-direction:row;gap:8px;margin-top:11px}
+    .mc-crown{font-size:14px;top:6px;left:9px}
+  }
 
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -1280,6 +1315,7 @@ const ACCESS_LOG_DEDUPE_MS=60_000;
 const ACCESS_LOG_ALLOWED=new Set(["mychar","party","party_detail","homework","char_detail","char_compare"]);
 const _accessLogLast={};
 function logAccess(view,detail){
+  if(typeof isAdmin!=="undefined" && isAdmin) return;   // 관리자(로그인/로컬) 활동은 이력에 남기지 않음
   if(!ACCESS_LOG_ALLOWED.has(view))return;
   const group=(typeof effectiveGroup==="function")?effectiveGroup():""; if(!group)return;
   const now=Date.now(), key=view+"|"+group+(detail?"|"+detail:"");
@@ -2270,11 +2306,13 @@ function mcRemoveChar(key){
   refreshIdentityViews(); refreshRegButtons();
 }
 // 등록된 캐릭터의 전투력·레벨 등을 상세 프로필로 최신화(변경 시에만 저장/재렌더)
-function mcSyncStats(sid,cid,p){
+function mcSyncStats(sid,cid,p,extra){
   if(!p)return; const k=mcKey(sid,cid); const arr=mcChars(); const c=arr.find(x=>x.key===k);
-  if(!c)return; let ch=false; const set=(f,v)=>{ if(v!=null&&c[f]!==v){c[f]=v;ch=true;} };
+  if(!c)return; let ch=false; const set=(f,v)=>{ if(v!=null&&v!==""&&c[f]!==v){c[f]=v;ch=true;} };
   set("cp",p.combatPower); set("level",p.characterLevel); set("name",p.characterName);
   set("serverName",p.serverName); set("race",p.raceId); set("img",p.profileImage); set("className",p.className);
+  set("title",p.titleName); set("genderName",p.genderName); set("regionName",p.regionName);  // 상세 메인 정보
+  if(extra){ set("abyssRank",extra.rank); set("abyssName",extra.name); }   // 어비스 순위
   if(ch){ setMcChars(arr); refreshIdentityViews(); }
 }
 function mcWithProfile(c,p){
@@ -2314,18 +2352,33 @@ async function refreshAllMyCharacters(){
 let mcBackfilling=false;
 function mcBackfillMissing(){
   if(mcBackfilling)return;
-  const missing=mcChars().filter(c=>c.cp==null);
+  // 전투력이 없거나(신규) 어비스 순위를 아직 안 채운(구 레코드) 캐릭터를 캐시에서 보충.
+  const missing=mcChars().filter(c=>c.cp==null || c.abyssRank===undefined);
   if(!missing.length)return;
   mcBackfilling=true;
   Promise.all(missing.map(c=>j(`/api/char/cached?${charQS(c.serverId,c.characterId)}`)
-    .then(r=>{const p=r&&r.data&&r.data.info&&r.data.info.profile; return p?{key:c.key,p}:null;})
-    .catch(()=>null)))
+    .then(r=>({key:c.key,info:(r&&r.data&&r.data.info)||null}))
+    .catch(()=>({key:c.key,info:null}))))
     .then(res=>{
       mcBackfilling=false;
       const arr=mcChars(); let ch=false;
-      res.filter(Boolean).forEach(({key,p})=>{const c=arr.find(x=>x.key===key);
-        if(c&&p.combatPower!=null&&c.cp!==p.combatPower){c.cp=p.combatPower; if(p.characterLevel!=null)c.level=p.characterLevel; if(p.className)c.className=p.className; ch=true;}});
-      if(ch){ setMcChars(arr); refreshIdentityViews(); }
+      res.forEach(({key,info})=>{const c=arr.find(x=>x.key===key); if(!c)return;
+        const p=info&&info.profile;
+        if(p){
+          if(p.combatPower!=null&&c.cp!==p.combatPower){c.cp=p.combatPower;ch=true;}
+          if(p.characterLevel!=null)c.level=p.characterLevel;
+          if(p.className)c.className=p.className;
+          if(p.titleName&&c.title!==p.titleName){c.title=p.titleName;ch=true;}
+          if(p.genderName)c.genderName=p.genderName;
+          if(p.regionName)c.regionName=p.regionName;
+        }
+        if(c.abyssRank===undefined){   // 없으면 null 로 확정해 재조회 방지
+          const rk=(info&&info.ranking&&info.ranking.rankingList)||[];
+          const ab=rk.find(r=>/어비스|아비스|abyss/i.test(r.rankingContentsName||""))||rk[0]||null;
+          c.abyssRank=ab?ab.rank:null; c.abyssName=ab?ab.rankingContentsName:null; ch=true;
+        }
+      });
+      if(ch){ setMcChars(arr); renderMyChars(); }
     });
 }
 
@@ -2359,7 +2412,7 @@ async function openRegModal(rec){
 }
 
 // 검색 결과 카드 / 상세 화면의 ⭐등록 버튼 상태를 현재 등록 여부에 맞춰 갱신
-function regLabel(on){return on?"✓ 등록됨":"⭐ 등록";}
+function regLabel(on){return on?"✕ 제거":"⭐ 등록";}
 function refreshRegButtons(){
   document.querySelectorAll("[data-reg]").forEach(b=>{
     const on=mcHas(+b.dataset.sid||b.dataset.sid, b.dataset.cid);
@@ -2414,13 +2467,22 @@ function renderMyChars(){
     gchars.forEach(c=>{
       const card=el("div","mc-card"+(c.key===mainKey?" main":""));
       card.style.setProperty("--c",c.race===1?"#8ff0d0":"#ffadc0");
+      const raceKo=c.race===1?'천족':'마족';
+      const metaBits=[`Lv.${c.level??'?'}`,esc(c.className||''),esc(c.genderName||'')].filter(Boolean).join(' · ');
+      const regionBits=[`${esc(c.serverName||'-')} 서버`,c.regionName?esc(c.regionName):''].filter(Boolean).join(' · ');
       card.innerHTML=`${c.key===mainKey?'<span class="mc-crown" title="본캐 (전투력 최고)">👑</span>':''}
         <img class="ico" src="${c.img||''}" ${oe}>
-        <div class="mc-body-c"><div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span></div>
-        <div class="sub">Lv.${c.level??'?'} · ${esc(c.serverName||'')} · ${c.race===1?'천족':'마족'}</div></div>
-        <div class="mc-actions">
-          <button class="mc-cmp" data-cmp="${esc(c.key)}" title="통계와 스킬·스티그마 비교">⚖️ 비교</button>
-          <button class="mc-del" data-del="${esc(c.key)}" title="캐릭터 제거">제거</button>
+        <div class="mc-body-c">
+          <div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span></div>
+          <div class="mc-meta"><span class="badge ${c.race===1?'elyos':'asmo'}">${raceKo}</span>${metaBits}</div>
+          <div class="mc-cpline"><span class="l">전투력</span> <b>${cpShort(c.cp)??'–'}</b>${c.abyssRank!=null?`<span class="ab">어비스 ${fmt(c.abyssRank)}위</span>`:''}</div>
+          <div class="mc-region">${regionBits}</div>
+          ${c.title?`<div class="mc-title">🏵️ ${esc(c.title)}</div>`:''}
+          <div class="sub">Lv.${c.level??'?'} · ${esc(c.serverName||'')} · ${raceKo}</div>
+          <div class="mc-actions">
+            <button class="mc-cmp" data-cmp="${esc(c.key)}" title="통계와 스킬·스티그마 비교">⚖️ 비교</button>
+            <button class="mc-del" data-del="${esc(c.key)}" title="캐릭터 제거">🗑 제거</button>
+          </div>
         </div>`;
       card.onclick=(e)=>{ if(e.target.closest("[data-del]")||e.target.closest("[data-cmp]"))return; openMyCharDetail(c); };  // 클릭 = 상세 보기
       grid.appendChild(card);
@@ -2721,7 +2783,7 @@ function renderChar(d){
   if(regBtn) regBtn.onclick=()=>openRegModal({
     serverId:d.__serverId,characterId:d.__characterId,name:p.characterName,level:p.characterLevel,
     serverName:p.serverName,race:p.raceId,img:p.profileImage,cp:p.combatPower});
-  if(d.__serverId!=null) mcSyncStats(d.__serverId,d.__characterId,p);   // 등록돼 있으면 전투력 등 최신화
+  if(d.__serverId!=null) mcSyncStats(d.__serverId,d.__characterId,p,abyss?{rank:abyss.rank,name:abyss.rankingContentsName}:null);   // 전투력·칭호·어비스 최신화
 
   // 장비 목록(진단·코덱스 공용) + 스탯 목록
   const items=(eq.equipment&&eq.equipment.equipmentList)||[];
