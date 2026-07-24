@@ -527,6 +527,12 @@
   .hw-mc-inputs input:focus,.hw-mc-inputs select:focus{border-color:var(--gold);outline:none}
   .hw-mc-chk{flex-direction:row!important;align-items:center;align-self:flex-end;gap:7px!important;font-size:13px!important;color:var(--txt)!important;cursor:pointer;padding:9px 0;user-select:none}
   .hw-mc-chk input{min-width:0!important;width:17px;height:17px;padding:0!important;accent-color:var(--gold);cursor:pointer}
+  .hw-mc-preset{flex:1 1 220px;align-self:stretch;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:8px 13px;border-radius:8px;background:color-mix(in srgb,var(--gold) 7%,#111923);border:1px dashed var(--etched)}
+  .hw-mc-preset .pk{font-size:10.5px;font-weight:800;color:var(--dim);letter-spacing:.3px}
+  .hw-mc-preset .pv{font-size:13px;font-weight:700;color:var(--txt)}
+  .hw-mc-preset .pv b{color:var(--gold)}
+  .hw-mc-preset .pv em{font-style:normal;color:var(--gold);font-weight:900}
+  .hw-mc-preset.off .pv{color:var(--dim);font-weight:600;font-size:12px}
   .hw-mc-out{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
   .hw-mc-hero{background:linear-gradient(180deg,#16232d,#0f151c);border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));border-radius:10px;padding:12px 18px;min-width:190px}
   .hw-mc-hero .lab{font-size:11px;color:var(--dim);font-weight:800;letter-spacing:.3px}
@@ -1222,6 +1228,13 @@
         </div>
         <div id="adminAccessLog" class="admin-access-log"></div>
       </div>
+      <div id="adminCrawlPanel" hidden>
+        <div class="hw-head" style="margin-top:24px">
+          <div><h2>직업 통계 크롤링</h2><p>aion2tool 직업별 통계(스킬·스티그마 채용률·전투력 분포 등)를 수집해 저장합니다. 서버가 켜져 있으면 <b>매일 자동</b>으로도 실행됩니다.</p></div>
+          <div style="margin-left:auto"><button class="hw-mini" id="adminCrawlRun" type="button">통계 크롤링 하기</button></div>
+        </div>
+        <div class="hw-note" id="adminCrawlStatus" style="margin:6px 0 0">…</div>
+      </div>
       <div id="adminImportPanel" hidden>
         <div class="hw-head" style="margin-top:24px">
           <div><h2>운영 데이터 가져오기</h2><p>운영(<code>.env.real</code>) DB의 모든 데이터(캐릭터·그룹·파티·숙제·캐시)를 로컬로 복사해 테스트에 사용합니다. <b>로컬의 현재 데이터는 덮어써집니다.</b> 로컬 실행 시에만 표시됩니다.</p></div>
@@ -1326,7 +1339,9 @@ async function refreshAdminState(){
   if(logPanel)logPanel.hidden=!isAdmin;
   const importPanel=document.getElementById("adminImportPanel");
   if(importPanel)importPanel.hidden=!isLocalMode;   // 운영 데이터 가져오기는 로컬에서만
-  if(isAdmin){ await renderAdminRequests(); await renderAdminAccessLog(); }
+  const crawlPanel=document.getElementById("adminCrawlPanel");
+  if(crawlPanel)crawlPanel.hidden=!isAdmin;
+  if(isAdmin){ await renderAdminRequests(); await renderAdminAccessLog(); await refreshCrawlStatus(); }
   else adminDeleteGroups=new Set();
   if(!isAdmin&&document.querySelector(".view.active")?.id==="view-settings")showView("mychar");
   if(typeof renderTabs==="function")renderTabs();
@@ -1641,8 +1656,11 @@ function hwNextReset(now){
   let add=(3-d.getDay()+7)%7; if(add===0)add=7;
   d.setDate(d.getDate()+add); return d;
 }
-function hwmDungeon(st){return HOMEWORK_DUNGEONS[st.dungeon]||HOMEWORK_DUNGEONS.fallen_deva;}
-function hwmMode(st){const d=hwmDungeon(st); return (st.mode&&d.modes[st.mode])?st.mode:"hard";}
+// 던전·난이도는 선택 캐릭터의 숙제 설정(하단 캐릭터 카드에서 지정)에서 읽는다.
+function hwmCharCfg(st){const key=st.sel; return (key&&hwSettings()[key])||{};}
+function hwmDungeonKey(st){const s=hwmCharCfg(st); return HOMEWORK_DUNGEONS[s.dungeon]?s.dungeon:"fallen_deva";}
+function hwmDungeon(st){return HOMEWORK_DUNGEONS[hwmDungeonKey(st)];}
+function hwmMode(st){const d=hwmDungeon(st), s=hwmCharCfg(st); return (s.mode&&d.modes[s.mode])?s.mode:"hard";}
 function hwManualResultHtml(){
   const st=hwmGet(), d=hwmDungeon(st), mode=hwmMode(st);
   const base=d.modes[mode].cost, cost=base*2;            // 패스 구매 시 한판당 오드 2배 소모
@@ -1660,7 +1678,7 @@ function hwManualResultHtml(){
   const mm=(reset.getMonth()+1)+"/"+reset.getDate();
   return `<div class="hw-mc-out">
     <div class="hw-mc-hero"><div class="lab">하루 권장 판수</div><div class="num">${perDay}<small>판/일</small></div>
-      <div class="sub">리셋(${mm} 수) 까지 <b>${days}일</b> · 총 <b>${fmt(runs)}판</b> 가능 (${d.modes[mode].name} 1판 <b>${base}×2</b>)</div></div>
+      <div class="sub">리셋(${mm} 수) 까지 <b>${days}일</b> · 총 <b>${fmt(runs)}판</b> 가능</div></div>
     <div class="hw-mc-break">
       <div><span>현재 오드</span><b>${fmt(od)}</b></div>
       <div><span>자동충전</span><b class="plus">+${fmt(auto)}</b></div>
@@ -1673,6 +1691,10 @@ function renderHwManual(){
   const st=hwmGet(), chars=hwGroupChars();
   if(st.sel&&!chars.some(c=>c.key===st.sel)){st.sel=null;hwmSet(st);}
   const d=hwmDungeon(st), mode=hwmMode(st), selKey=st.sel||"_", od=+((st.od||{})[selKey])||0;
+  const base=d.modes[mode].cost;
+  const preset=st.sel
+    ? `<div class="hw-mc-preset"><span class="pk">적용 설정</span><span class="pv"><b>${esc(d.name)}</b> · ${esc(d.modes[mode].name)} · 1판 <em>${base}×2</em></span></div>`
+    : `<div class="hw-mc-preset off"><span class="pk">적용 설정</span><span class="pv">캐릭터를 선택하면 설정된 던전·난이도가 적용됩니다</span></div>`;
   let html=`<div class="hw-manual-h">🧮 수기 계산 <span>현재 남은 오드로 <b>다음 수요일 리셋(=화요일까지)</b> 하루 몇 판 돌아야 하는지</span></div>
     <div class="hw-mc-chars">`;
   if(!chars.length) html+=`<div class="hw-mc-empty">현재 그룹에 등록된 캐릭터가 없습니다. 🗂️ 캐릭 탭에서 그룹을 선택/등록하세요.</div>`;
@@ -1681,17 +1703,14 @@ function renderHwManual(){
   html+=`</div>
     <div class="hw-mc-inputs">
       <label>현재 남은 오드<input id="hwmOd" type="number" min="0" value="${od}"></label>
-      <label>던전<select id="hwmDungeon">${Object.entries(HOMEWORK_DUNGEONS).map(([k,dd])=>`<option value="${k}"${k===st.dungeon?' selected':''}>${dd.name}</option>`).join("")}</select></label>
-      <label>난이도<select id="hwmMode">${Object.entries(d.modes).map(([k,m])=>`<option value="${k}"${k===mode?' selected':''}>${m.name} (1판 ${m.cost}×2)</option>`).join("")}</select></label>
       <label class="hw-mc-chk"><input type="checkbox" id="hwmEv"${st.evOn!==false?' checked':''}> 전역 이벤트 포함</label>
+      ${preset}
     </div>
     <div id="hwmResult">${hwManualResultHtml()}</div>`;
   box.innerHTML=html;
   box.querySelectorAll("[data-sel]").forEach(b=>b.onclick=()=>{const s=hwmGet(); s.sel=(s.sel===b.dataset.sel?null:b.dataset.sel); hwmSet(s); renderHwManual();});
   const upd=()=>{document.getElementById("hwmResult").innerHTML=hwManualResultHtml();};
   document.getElementById("hwmOd").oninput=e=>{const s=hwmGet(); (s.od||(s.od={}))[s.sel||"_"]=+e.target.value||0; hwmSet(s); upd();};
-  document.getElementById("hwmDungeon").onchange=e=>{const s=hwmGet(); s.dungeon=e.target.value; s.mode=null; hwmSet(s); renderHwManual();};
-  document.getElementById("hwmMode").onchange=e=>{const s=hwmGet(); s.mode=e.target.value; hwmSet(s); upd();};
   document.getElementById("hwmEv").onchange=e=>{const s=hwmGet(); s.evOn=e.target.checked; hwmSet(s); upd();};
 }
 function initHomework(){
@@ -2636,6 +2655,36 @@ function initAdmin(){
   if(refreshBtn)refreshBtn.onclick=renderAdminAccessLog;
   const importBtn=document.getElementById("adminImportProd");
   if(importBtn)importBtn.onclick=importProdData;
+  const crawlBtn=document.getElementById("adminCrawlRun");
+  if(crawlBtn)crawlBtn.onclick=runJobstatsCrawl;
+}
+
+// 직업 통계 크롤 상태 표시(최근 결과 + 다음 자동 실행 시각). 진행 중이면 폴링.
+let crawlPollTimer=null;
+function fmtDateTime(s){ if(!s)return "–"; return String(s).replace("T"," ").replace(/(\+09:00|Z)$/,"").slice(0,16); }
+async function refreshCrawlStatus(){
+  const box=document.getElementById("adminCrawlStatus"), btn=document.getElementById("adminCrawlRun");
+  if(!box)return;
+  let s; try{ s=await j("/api/admin/crawl-status"); }catch(e){ box.textContent="상태를 불러오지 못했습니다."; return; }
+  const parts=[];
+  if(s.running){ parts.push("⏳ <b>크롤링 진행 중…</b>"); }
+  else if(s.last_ok===true){ parts.push(`✅ 최근 수집 <b>${fmtDateTime(s.captured_at||s.last_finished)}</b> · 직업 ${s.jobs}종 · ${s.rows}행${s.last_trigger==="cron"?" (자동)":""}`); }
+  else if(s.last_ok===false){ parts.push(`⚠️ 최근 실패: ${esc(s.last_error||"")}`); }
+  else { parts.push("아직 수집 이력이 없습니다."); }
+  if(s.cron) parts.push(`⏰ 자동 실행: 매일 ${s.cron} · 다음 ${fmtDateTime(s.next_run)}`);
+  box.innerHTML=parts.join(" &nbsp;·&nbsp; ");
+  if(btn)btn.disabled=!!s.running;
+  clearTimeout(crawlPollTimer);
+  if(s.running) crawlPollTimer=setTimeout(refreshCrawlStatus,3000);   // 진행 중엔 폴링
+}
+async function runJobstatsCrawl(){
+  const btn=document.getElementById("adminCrawlRun"), box=document.getElementById("adminCrawlStatus");
+  if(btn)btn.disabled=true; if(box)box.innerHTML="⏳ <b>크롤링 시작…</b>";
+  try{
+    const r=await postJSON("/api/admin/crawl-jobstats");
+    if(r.ok===false&&!r.running&&r.error) box.textContent="실패: "+r.error;
+  }catch(e){ if(box)box.textContent="실패: "+(e.message||e); if(btn)btn.disabled=false; return; }
+  setTimeout(refreshCrawlStatus,800);   // 서버가 백그라운드로 시작 → 상태 폴링
 }
 
 // 운영(.env.real) 데이터를 로컬 저장소로 복사한 뒤, 화면을 최신 데이터로 다시 로드한다.

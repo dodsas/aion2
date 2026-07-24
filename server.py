@@ -34,6 +34,7 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote, urlencode
 
 import crawl_craft as ccf  # 공유 스키마 상수(PRICE_OVERRIDES_DDL, V_*_SQL)
+import crawl_jobstats as cjs  # 직업 통계 수집 로직(collect) 재사용
 from store import Store, TursoBackend, load_dotenv, read_env  # 상태 저장소(Turso/로컬 자동)
 
 load_dotenv()  # .env → os.environ (로컬 개발용; 없으면 무시)
@@ -639,6 +640,91 @@ def api_admin_import_prod():
     return {"ok": True, "kv": len(kv), "char_cache": len(cc)}
 
 
+# ---------- 직업 통계 크롤 (수동 트리거 + 매일 예약) ----------
+# 서버 프로세스가 켜져 있으면 매일 JOBSTATS_CRON(기본 08:30 KST)에 자동 크롤한다.
+# 설정 화면의 '통계 크롤링 하기' 버튼으로 즉시 실행할 수도 있다.
+CRON_HHMM = os.environ.get("JOBSTATS_CRON", "08:30").strip()
+JOBSTATS_KEEP = int(os.environ.get("JOBSTATS_KEEP", "30"))  # 유지할 스냅샷 수
+_CRAWL_LOCK = threading.Lock()
+_CRAWL_STATE = {"running": False, "last_started": None, "last_finished": None,
+                "last_ok": None, "last_error": None, "jobs": 0, "rows": 0,
+                "captured_at": None, "last_trigger": None}
+
+
+def _parse_hhmm(s):
+    try:
+        h, m = s.split(":")
+        h, m = int(h), int(m)
+        return (h, m) if 0 <= h < 24 and 0 <= m < 60 else None
+    except Exception:
+        return None
+
+
+def _next_cron_dt(now=None):
+    hm = _parse_hhmm(CRON_HHMM)
+    if not hm:
+        return None
+    now = now or datetime.now(KST)
+    nxt = now.replace(hour=hm[0], minute=hm[1], second=0, microsecond=0)
+    if nxt <= now:
+        nxt += timedelta(days=1)
+    return nxt
+
+
+def _run_jobstats_crawl(trigger="manual"):
+    """job_stats 스냅샷 1회 수집·적재. 동시 실행은 락으로 1건만 허용."""
+    if not _CRAWL_LOCK.acquire(blocking=False):
+        return {"ok": False, "error": "이미 크롤링이 진행 중입니다."}
+    try:
+        _CRAWL_STATE.update(running=True, last_started=_now_kst(),
+                            last_error=None, last_trigger=trigger)
+        captured_at = _now_kst()
+        job_names, rows = cjs.collect()
+        STORE.job_stats_write(captured_at, rows)
+        if JOBSTATS_KEEP:
+            STORE.job_stats_prune(JOBSTATS_KEEP)
+        _CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=True,
+                            jobs=len(job_names), rows=len(rows), captured_at=captured_at)
+        print(f"[{captured_at}] job_stats 크롤 완료({trigger}): 직업 {len(job_names)} · 행 {len(rows)}")
+        return {"ok": True, "captured_at": captured_at,
+                "jobs": len(job_names), "rows": len(rows)}
+    except Exception as e:
+        _CRAWL_STATE.update(running=False, last_finished=_now_kst(),
+                            last_ok=False, last_error=str(e))
+        print(f"job_stats 크롤 실패({trigger}): {e}")
+        return {"ok": False, "error": str(e)}
+    finally:
+        _CRAWL_LOCK.release()
+
+
+def _jobstats_scheduler():
+    """매일 CRON_HHMM(KST)에 크롤을 실행하는 데몬 루프."""
+    while True:
+        nxt = _next_cron_dt()
+        if not nxt:
+            return
+        wait = (nxt - datetime.now(KST)).total_seconds()
+        if wait > 0:
+            time.sleep(wait)
+        _run_jobstats_crawl("cron")
+        time.sleep(60)  # 실행 직후 재트리거 방지(다음 계산이 익일로 넘어가도록)
+
+
+def api_admin_crawl_start():
+    """수동 크롤 시작(백그라운드). 이미 진행 중이면 상태만 알린다."""
+    if _CRAWL_STATE["running"]:
+        return {"ok": False, "running": True, "error": "이미 크롤링이 진행 중입니다."}
+    threading.Thread(target=_run_jobstats_crawl, args=("manual",), daemon=True).start()
+    return {"ok": True, "started": True}
+
+
+def api_admin_crawl_status():
+    """크롤 진행/최근 결과 + 다음 예약 시각."""
+    dt = _next_cron_dt()
+    return {**_CRAWL_STATE, "cron": CRON_HHMM or None,
+            "next_run": dt.isoformat(timespec="minutes") if dt else None}
+
+
 ROUTES = {
     "/api/meta": api_meta,
     "/api/search": api_search,
@@ -760,6 +846,10 @@ class Handler(BaseHTTPRequestHandler):
             if self._require_admin():
                 self._json(api_admin_access_logs(parse_qs(parsed.query)))
             return
+        if path == "/api/admin/crawl-status":
+            if self._require_admin():
+                self._json(api_admin_crawl_status())
+            return
 
         if path in NET_ROUTES:
             try:
@@ -840,6 +930,14 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"error": str(e)}, 500)
             return
+        if parsed.path == "/api/admin/crawl-jobstats":
+            if not self._require_admin():
+                return
+            try:
+                self._json(api_admin_crawl_start())
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
         if parsed.path == "/api/set_price":
             try:
                 data = self._read_json()
@@ -872,6 +970,10 @@ def main():
     if not DB_PATH.exists():
         raise SystemExit("aion2_craft.db 없음 — 먼저 crawl_craft.py 실행")
     ensure_schema()
+    # 직업 통계 자동 크롤 예약(서버가 켜져 있으면 매일 지정 시각에 실행).
+    if CRON_HHMM and not os.environ.get("DISABLE_JOBSTATS_CRON"):
+        threading.Thread(target=_jobstats_scheduler, daemon=True).start()
+        print(f"직업 통계 자동 크롤 예약: 매일 {CRON_HHMM} KST (다음: {_next_cron_dt()})")
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"아이온2 제작 뷰어: http://{args.host}:{args.port}  "
           f"(저장소: {STORE.kind}, Ctrl+C 종료)")
