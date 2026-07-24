@@ -509,6 +509,37 @@
   .hw-table td.good{color:var(--gold);font-weight:900}
   .hw-note{color:var(--dim);font-size:11.5px;line-height:1.7;margin-top:12px}
 
+  /* 숙제 · 수기 계산 카드 */
+  .hw-manual{background:linear-gradient(180deg,#17222d,#101720);border:1px solid color-mix(in srgb,var(--gold) 26%,var(--line));border-radius:10px;padding:14px 15px;margin:14px 0;box-shadow:var(--shadow),var(--hl)}
+  .hw-manual-h{font-size:14px;font-weight:900;color:var(--gold);letter-spacing:-.2px}
+  .hw-manual-h span{color:var(--dim);font-size:11.5px;font-weight:600;margin-left:6px}
+  .hw-manual-h span b{color:var(--txt)}
+  .hw-mc-chars{display:flex;flex-wrap:wrap;gap:8px;margin:11px 0}
+  .hw-mc-empty{color:var(--dim);font-size:12px;padding:8px 2px}
+  .hw-mc-char{--c:var(--accent);display:flex;align-items:center;gap:7px;padding:5px 11px 5px 5px;border-radius:20px;cursor:pointer;
+              background:linear-gradient(180deg,#1a2530,#111923);border:1px solid var(--etched);color:var(--txt);font:800 12px/1 inherit;font-family:inherit}
+  .hw-mc-char img{width:26px;height:26px;border-radius:50%;object-fit:contain;background:#0e151d;border:1px solid color-mix(in srgb,var(--c) 40%,var(--line))}
+  .hw-mc-char:hover{border-color:color-mix(in srgb,var(--c) 60%,var(--line))}
+  .hw-mc-char.on{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+  .hw-mc-inputs{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+  .hw-mc-inputs label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:800;color:var(--dim)}
+  .hw-mc-inputs input,.hw-mc-inputs select{padding:9px 11px;border-radius:7px;background:#111923;color:var(--txt);border:1px solid var(--etched);font-family:inherit;font-size:14px;min-width:150px}
+  .hw-mc-inputs input:focus,.hw-mc-inputs select:focus{border-color:var(--gold);outline:none}
+  .hw-mc-chk{flex-direction:row!important;align-items:center;align-self:flex-end;gap:7px!important;font-size:13px!important;color:var(--txt)!important;cursor:pointer;padding:9px 0;user-select:none}
+  .hw-mc-chk input{min-width:0!important;width:17px;height:17px;padding:0!important;accent-color:var(--gold);cursor:pointer}
+  .hw-mc-out{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  .hw-mc-hero{background:linear-gradient(180deg,#16232d,#0f151c);border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));border-radius:10px;padding:12px 18px;min-width:190px}
+  .hw-mc-hero .lab{font-size:11px;color:var(--dim);font-weight:800;letter-spacing:.3px}
+  .hw-mc-hero .num{font-size:40px;font-weight:900;color:var(--gold);line-height:1.05;font-variant-numeric:tabular-nums}
+  .hw-mc-hero .num small{font-size:14px;color:var(--dim);font-weight:700;margin-left:4px}
+  .hw-mc-hero .sub{font-size:12px;color:var(--dim);margin-top:4px} .hw-mc-hero .sub b{color:var(--txt)}
+  .hw-mc-break{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px 16px;flex:1;min-width:220px}
+  .hw-mc-break>div{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--line2)}
+  .hw-mc-break span{color:var(--dim)} .hw-mc-break b{font-variant-numeric:tabular-nums}
+  .hw-mc-break b.plus{color:var(--g2)}
+  .hw-mc-break .tot{grid-column:1/-1;border-bottom:none;border-top:1px solid var(--line);margin-top:2px;padding-top:6px}
+  .hw-mc-break .tot b{color:var(--gold);font-weight:900;font-size:14px}
+
   /* 내 캐릭터 탭 */
   .mc-preset{flex:1;min-width:280px;background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--line);border-radius:8px;padding:10px;box-shadow:var(--shadow),var(--hl)}
   .mc-preset .top{display:grid;grid-template-columns:1fr auto;gap:7px}
@@ -1021,12 +1052,7 @@
           <p>자동 충전, 이벤트 수급, 새싹 보너스, 주간 구매량을 합산해 주간 소모 판수와 예상 수익을 계산합니다. 던전은 2배 보상 기준입니다.</p>
         </div>
       </div>
-      <div class="hw-grid">
-        <div class="hw-box hw-auto-summary"><label>자동 충전</label><div class="hw-info"><b>3시간마다 15</b><span>하루 120 · 주간 840 고정</span></div></div>
-        <div class="hw-box hw-operator-summary"><label>운영자 설정</label><div class="hw-info"><b>전역 이벤트 · 새싹 보너스</b><span>⚙️ 설정 탭에서 입력</span></div></div>
-        <div class="hw-box hw-target-summary"><label>대상 그룹</label><div class="hw-info"><b id="hwGroupName">현재 그룹</b><span>🗂️ 내 캐릭터 탭에서 선택한 그룹으로 자동 구성</span></div>
-        <div class="hw-role-note">본캐(전투력 최고): 전역 이벤트 + 새싹 + 주간 구매 40×40<br>부캐: 주간 구매 8×40</div></div>
-      </div>
+      <div id="hwManual" class="hw-manual"></div>
       <div id="hwCharacters" class="hw-chars"></div>
       <div id="hwResult"></div>
     </div>
@@ -1420,6 +1446,8 @@ function showView(id){
     ptState.openId=null; ptState.focusDate=null;
     renderParty();
   }
+  // 숙제 탭 진입 시 현재 그룹·설정·수기계산을 최신으로 다시 그린다.
+  if(id==="homework" && typeof renderHomework==="function") renderHomework();
   // 현재 탭을 URL 해시에 반영(링크 공유 시 해당 탭으로 바로 접속). replaceState 라 hashchange 미발생.
   const want="#"+id;
   if(location.hash!==want) history.replaceState(null,"",location.pathname+location.search+want);
@@ -1597,6 +1625,74 @@ function renderHomework(redrawCharacters=true){
     <tbody>${rows.map(r=>`<tr><td>${esc(r.char.name||'')}</td><td>${r.role.label}</td><td>${r.dungeon}</td><td>${r.name}</td><td class="num">${fmt(Math.floor(r.weeklyEnergy))}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmtFull(r.reward)}</td>
       <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}${r.sanctProfit?` <span class="raid">(${fmtFull(r.sanctProfit)})</span>`:''}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
   <div class="hw-note">현재 던전 수익 정보는 타락한 데바의 성 기준입니다. 본캐는 전역 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(루드라·침식·무스펠)은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 레이드 수익(루드라 ${fmtFull(HW_SANCTUARIES[0].profit)} · 침식 ${fmtFull(HW_SANCTUARIES[1].profit)} · 무스펠 ${fmtFull(HW_SANCTUARIES[2].profit)} 키나)은 던전 수익과 별도로 예상 수익에 합산되며 괄호로 따로 표기합니다.</div>`;
+  renderHwManual();
+}
+
+// ── 숙제 · 수기 계산 ────────────────────────────────────────────
+// 캐릭터 선택 + 현재 남은 오드 → 오늘부터 '다음 수요일 리셋(=화요일까지)' 하루 몇 판?
+// 가용 오드 = 현재 + (검색시각~리셋까지 자동충전) + (남은 일수 × 전역 이벤트) + 새싹.
+// 저장은 기기별(localStorage). 캐릭터별로 입력한 오드를 기억한다.
+const HWM_KEY="aion2_hwmanual";
+function hwmGet(){try{const v=JSON.parse(localStorage.getItem(HWM_KEY)||"{}");if(!v.od||typeof v.od!=="object")v.od={};return v;}catch(e){return {od:{}};}}
+function hwmSet(v){try{localStorage.setItem(HWM_KEY,JSON.stringify(v));}catch(e){}}
+// 다음 수요일 00:00(주간 리셋). 오늘이 수요일이면 +7.
+function hwNextReset(now){
+  const d=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  let add=(3-d.getDay()+7)%7; if(add===0)add=7;
+  d.setDate(d.getDate()+add); return d;
+}
+function hwmDungeon(st){return HOMEWORK_DUNGEONS[st.dungeon]||HOMEWORK_DUNGEONS.fallen_deva;}
+function hwmMode(st){const d=hwmDungeon(st); return (st.mode&&d.modes[st.mode])?st.mode:"hard";}
+function hwManualResultHtml(){
+  const st=hwmGet(), d=hwmDungeon(st), mode=hwmMode(st);
+  const base=d.modes[mode].cost, cost=base*2;            // 패스 구매 시 한판당 오드 2배 소모
+  const now=new Date(), reset=hwNextReset(now);
+  const days=Math.round((reset-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5);  // 오늘~화요일 일수
+  const hours=(reset-now)/36e5;
+  const auto=Math.floor(hours/3)*15;                     // 검색시각부터 리셋까지 자동충전(3h당 15)
+  const evOn=st.evOn!==false;                            // 전역 이벤트 포함 여부(기본 포함)
+  const c=opCfg(), dailyEvent=(+c.event40||0)*40+(+c.event10||0)*10;
+  const events=evOn?dailyEvent*days:0;
+  const od=+((st.od||{})[st.sel||"_"])||0;
+  const total=od+auto+events;                            // 새싹 제외
+  const runs=Math.floor(total/cost);
+  const perDay=days>0?Math.ceil(runs/days):runs;
+  const mm=(reset.getMonth()+1)+"/"+reset.getDate();
+  return `<div class="hw-mc-out">
+    <div class="hw-mc-hero"><div class="lab">하루 권장 판수</div><div class="num">${perDay}<small>판/일</small></div>
+      <div class="sub">리셋(${mm} 수) 까지 <b>${days}일</b> · 총 <b>${fmt(runs)}판</b> 가능 (${d.modes[mode].name} 1판 <b>${base}×2</b>)</div></div>
+    <div class="hw-mc-break">
+      <div><span>현재 오드</span><b>${fmt(od)}</b></div>
+      <div><span>자동충전</span><b class="plus">+${fmt(auto)}</b></div>
+      ${evOn?`<div><span>전역 이벤트 ×${days}일</span><b class="plus">+${fmt(events)}</b></div>`:`<div><span>전역 이벤트</span><b class="off">제외</b></div>`}
+      <div class="tot"><span>가용 총 오드</span><b>${fmt(total)}</b></div>
+    </div></div>`;
+}
+function renderHwManual(){
+  const box=document.getElementById("hwManual"); if(!box)return;
+  const st=hwmGet(), chars=hwGroupChars();
+  if(st.sel&&!chars.some(c=>c.key===st.sel)){st.sel=null;hwmSet(st);}
+  const d=hwmDungeon(st), mode=hwmMode(st), selKey=st.sel||"_", od=+((st.od||{})[selKey])||0;
+  let html=`<div class="hw-manual-h">🧮 수기 계산 <span>현재 남은 오드로 <b>다음 수요일 리셋(=화요일까지)</b> 하루 몇 판 돌아야 하는지</span></div>
+    <div class="hw-mc-chars">`;
+  if(!chars.length) html+=`<div class="hw-mc-empty">현재 그룹에 등록된 캐릭터가 없습니다. 🗂️ 캐릭 탭에서 그룹을 선택/등록하세요.</div>`;
+  else chars.forEach(c=>{ html+=`<button type="button" class="hw-mc-char${c.key===st.sel?' on':''}" data-sel="${esc(c.key)}" style="--c:${c.race===1?'#8ff0d0':'#ffadc0'}">
+      <img src="${c.img||''}" ${oe}><span class="nm">${esc(c.name)}</span></button>`; });
+  html+=`</div>
+    <div class="hw-mc-inputs">
+      <label>현재 남은 오드<input id="hwmOd" type="number" min="0" value="${od}"></label>
+      <label>던전<select id="hwmDungeon">${Object.entries(HOMEWORK_DUNGEONS).map(([k,dd])=>`<option value="${k}"${k===st.dungeon?' selected':''}>${dd.name}</option>`).join("")}</select></label>
+      <label>난이도<select id="hwmMode">${Object.entries(d.modes).map(([k,m])=>`<option value="${k}"${k===mode?' selected':''}>${m.name} (1판 ${m.cost}×2)</option>`).join("")}</select></label>
+      <label class="hw-mc-chk"><input type="checkbox" id="hwmEv"${st.evOn!==false?' checked':''}> 전역 이벤트 포함</label>
+    </div>
+    <div id="hwmResult">${hwManualResultHtml()}</div>`;
+  box.innerHTML=html;
+  box.querySelectorAll("[data-sel]").forEach(b=>b.onclick=()=>{const s=hwmGet(); s.sel=(s.sel===b.dataset.sel?null:b.dataset.sel); hwmSet(s); renderHwManual();});
+  const upd=()=>{document.getElementById("hwmResult").innerHTML=hwManualResultHtml();};
+  document.getElementById("hwmOd").oninput=e=>{const s=hwmGet(); (s.od||(s.od={}))[s.sel||"_"]=+e.target.value||0; hwmSet(s); upd();};
+  document.getElementById("hwmDungeon").onchange=e=>{const s=hwmGet(); s.dungeon=e.target.value; s.mode=null; hwmSet(s); renderHwManual();};
+  document.getElementById("hwmMode").onchange=e=>{const s=hwmGet(); s.mode=e.target.value; hwmSet(s); upd();};
+  document.getElementById("hwmEv").onchange=e=>{const s=hwmGet(); s.evOn=e.target.checked; hwmSet(s); upd();};
 }
 function initHomework(){
   document.getElementById("hwCharacters")?.addEventListener("change",e=>{
