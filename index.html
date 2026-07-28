@@ -3222,10 +3222,14 @@ function ptCanComplete(p){
   if(p?.creatorGroup===me) return true;
   return !!(p?.applicants||[]).some(e=>e.group===me);
 }
-function ptExpectedStart(p){
+function ptExpectedDate(p){
   const count={};
   (p.applicants||[]).forEach(e=>ptDates(e).forEach(d=>{count[d]=(count[d]||0)+1;}));
-  const date=Object.keys(count).sort((a,b)=>count[b]-count[a]||a.localeCompare(b))[0];
+  // 최다 투표일이 같으면 더 빠른 날짜를 우선한다. 아직 투표가 없으면 모집 시작일을 예상일로 사용한다.
+  return Object.keys(count).sort((a,b)=>count[b]-count[a]||a.localeCompare(b))[0]||p.start;
+}
+function ptExpectedStart(p){
+  const date=ptExpectedDate(p);
   return `${date?ptMd(date)+" ":""}${ptTime(p.time)} 시작 (예상)`;
 }
 function ptShareTitle(p){return `${ptType(p.type).label} ${ptTime(p.time)} 시작 ${p.runs}판 모집`;}
@@ -3508,8 +3512,11 @@ function ptCalendarHtml(p){
   const rows=ptCalRows(p.start,p.end);
   const mine=ptDates(p.applicants.find(e=>e.group===effectiveGroup()));
   let h=`<div class="pt-cal"><div class="pt-cal-row">`;
-  const todayDw=new Date().getDay();
-  PT_COLS.forEach(dw=>{h+=`<div class="pt-wd wd${dw}${dw===todayDw?' today':''}">${PT_WD[dw]}</div>`;});
+  const today=new Date(), todayYmd=ptYmd(today);
+  // 다음 주(또는 과거) 모집에는 오늘이 포함되지 않으므로 요일 헤더를 오늘처럼 강조하지 않는다.
+  const hasToday=todayYmd>=p.start&&todayYmd<=p.end;
+  const todayDw=today.getDay();
+  PT_COLS.forEach(dw=>{h+=`<div class="pt-wd wd${dw}${hasToday&&dw===todayDw?' today':''}">${PT_WD[dw]}</div>`;});
   h+=`</div>`;
   Object.keys(rows).map(Number).sort((x,y)=>x-y).forEach(wi=>{
     h+=`<div class="pt-cal-row">`;
@@ -3753,7 +3760,12 @@ async function renderPartyList(root){
     html+=`<div class="pt-empty big">아직 모집이 없습니다.<br><b>파티 모집하기</b>로 루드라·침식·무스펠 파티를 열어보세요.</div>`;
   }else{
     if(active.length){
-      html+=`<div class="pt-list">${active.slice().reverse().map(p=>card(p)).join("")}</div>`;
+      // 실제 투표가 있으면 최다 투표일, 없으면 모집 시작일 기준으로 빠른 일정부터 노출한다.
+      const sorted=active.slice().sort((a,b)=>
+        ptExpectedDate(a).localeCompare(ptExpectedDate(b)) ||
+        ptTime(a.time).localeCompare(ptTime(b.time)) ||
+        (a.createdAt||"").localeCompare(b.createdAt||""));
+      html+=`<div class="pt-list">${sorted.map(p=>card(p)).join("")}</div>`;
     }else{
       html+=`<div class="pt-empty">진행 중인 파티가 없습니다.</div>`;
     }
