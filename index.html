@@ -469,6 +469,8 @@
   .hw-charge .name{font-size:12px;font-weight:800;color:var(--txt)}
   .hw-charge .desc{font-size:10.5px;color:var(--dim)}
   .hw-actions{display:flex;gap:7px;flex-wrap:wrap}
+  /* 크롤러 실행 버튼과 진행·완료 상태는 항상 분리된 줄로 표시한다. */
+  #adminCrawlPanel [data-crawl-status]{flex-basis:100%;margin-top:1px}
   .hw-chars{display:grid;gap:10px;margin:12px 0}
   .hw-char{--c:var(--accent);display:grid;grid-template-columns:40px minmax(120px,1fr) minmax(180px,260px);column-gap:10px;row-gap:0;align-items:center;
            background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--etched);border-radius:8px;padding:11px 11px 0;box-shadow:var(--shadow),var(--hl)}
@@ -1242,13 +1244,13 @@
       </div>
       <div id="adminCrawlPanel" hidden>
         <div class="hw-head" style="margin-top:24px">
-          <div><h2>데이터 크롤링 · 동기화</h2><p>수집 대상별로 실행합니다. 한 번에 하나만 실행할 수 있으며, 작업 상태와 최근 결과는 아래에서 확인합니다.</p></div>
+          <div><h2>데이터 크롤링 · 동기화</h2><p>수집 대상별로 독립 실행합니다. 각 작업의 진행·완료 상태를 아래에서 확인할 수 있습니다.</p></div>
         </div>
         <div class="hw-grid">
-          <div class="hw-box"><label>직업 통계</label><div class="desc">스킬·스티그마·전투력 등 aion2tool 직업 통계입니다. 매일 자동 수집됩니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="jobstats" id="adminCrawlJobstats" type="button">직업 통계 수집</button></div></div>
-          <div class="hw-box"><label>아르카나 옵션</label><div class="desc">직업별 성배·종·거울 등 공개된 아르카나 옵션 풀을 최신화합니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="arcana" id="adminCrawlArcana" type="button">아르카나 옵션 수집</button></div></div>
-          <div class="hw-box"><label>제작 레시피 · 시세</label><div class="desc">제작 공식과 시세를 갱신하고, 현재 스냅샷을 Turso 백업에도 동기화합니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="craft" id="adminCrawlCraft" type="button">제작 데이터 갱신</button></div></div>
-          <div class="hw-box"><label>제작 스냅샷 복원</label><div class="desc">Turso에 보관된 제작 데이터 백업을 서버 캐시에 다시 내려받습니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="restore" id="adminCraftRestore" type="button">백업에서 복원</button></div></div>
+          <div class="hw-box"><label>직업 통계</label><div class="desc">스킬·스티그마·전투력 등 aion2tool 직업 통계입니다. 매일 자동 수집됩니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="jobstats" id="adminCrawlJobstats" type="button">직업 통계 수집</button><span class="hw-note" data-crawl-status="jobstats" aria-live="polite">대기 중</span></div></div>
+          <div class="hw-box"><label>아르카나 옵션</label><div class="desc">직업별 성배·종·거울 등 공개된 아르카나 옵션 풀을 최신화합니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="arcana" id="adminCrawlArcana" type="button">아르카나 옵션 수집</button><span class="hw-note" data-crawl-status="arcana" aria-live="polite">대기 중</span></div></div>
+          <div class="hw-box"><label>제작 레시피 · 시세</label><div class="desc">제작 공식과 시세를 갱신하고, 현재 스냅샷을 Turso 백업에도 동기화합니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="craft" id="adminCrawlCraft" type="button">제작 데이터 갱신</button><span class="hw-note" data-crawl-status="craft" aria-live="polite">대기 중</span></div></div>
+          <div class="hw-box"><label>제작 스냅샷 복원</label><div class="desc">Turso에 보관된 제작 데이터 백업을 서버 캐시에 다시 내려받습니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="restore" id="adminCraftRestore" type="button">백업에서 복원</button><span class="hw-note" data-crawl-status="restore" aria-live="polite">대기 중</span></div></div>
         </div>
         <div class="hw-note" id="adminCrawlStatus" style="margin:6px 0 0">…</div>
       </div>
@@ -1331,7 +1333,11 @@ async function sbLoad(){
 async function postJSON(path,data={}){
   const r=await fetch(path,{method:"POST",credentials:"same-origin",
     headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify(data)});
-  const out=await r.json().catch(()=>({error:"서버 응답을 읽지 못했습니다."}));
+  const body=await r.text();
+  let out; try{out=JSON.parse(body);}catch(e){
+    const detail=body.replace(/\s+/g," ").trim().slice(0,140);
+    out={error:`서버 응답 오류 (${r.status})${detail?`: ${detail}`:""}`};
+  }
   if(!r.ok||out.error)throw new Error(out.error||"요청 처리에 실패했습니다.");
   return out;
 }
@@ -2682,12 +2688,37 @@ function initAdmin(){
 
 // 데이터 크롤링 상태 표시. 실행 중이면 폴링한다.
 let crawlPollTimer=null;
+let crawlPendingKind=null;
 function fmtDateTime(s){ if(!s)return "–"; return String(s).replace("T"," ").replace(/(\+09:00|Z)$/,"").slice(0,16); }
 function crawlStatusLine(name,s,detail=""){
   if(s?.running)return `⏳ <b>${name} 진행 중…</b>`;
   if(s?.last_ok===true)return `✅ ${name} <b>${fmtDateTime(s.captured_at||s.last_finished)}</b>${detail}`;
   if(s?.last_ok===false)return `⚠️ ${name} 실패: ${esc(s.last_error||"")}`;
   return `· ${name}: 아직 실행 이력이 없습니다.`;
+}
+function crawlElapsed(s){
+  if(!s?.last_started)return "";
+  const seconds=Math.max(0,Math.floor((Date.now()-new Date(s.last_started).getTime())/1000));
+  return seconds<60?` (${seconds}초 경과)`: ` (${Math.floor(seconds/60)}분 경과)`;
+}
+function setCrawlCardStatus(kind,state){
+  const box=document.querySelector(`[data-crawl-status="${kind}"]`);
+  const btn=document.querySelector(`[data-crawl="${kind}"]`);
+  if(!box||!btn)return;
+  const defaultText={jobstats:"직업 통계 수집",arcana:"아르카나 옵션 수집",craft:"제작 데이터 갱신",restore:"백업에서 복원"}[kind];
+  if(crawlPendingKind===kind||state?.running){
+    box.innerHTML=`⏳ <b>수집 진행 중…</b>${crawlElapsed(state)}`;
+    btn.textContent="수집 중…";
+  }else if(state?.last_ok===true){
+    box.innerHTML=`✅ 완료 · ${fmtDateTime(state.captured_at||state.last_finished)}`;
+    btn.textContent=defaultText;
+  }else if(state?.last_ok===false){
+    box.innerHTML=`⚠️ 실패 · ${esc(state.last_error||"다시 시도하세요.")}`;
+    btn.textContent=defaultText;
+  }else{
+    box.textContent="대기 중";
+    btn.textContent=defaultText;
+  }
 }
 async function refreshCrawlStatus(){
   const box=document.getElementById("adminCrawlStatus");
@@ -2699,19 +2730,45 @@ async function refreshCrawlStatus(){
   const schedule=job.cron?` · 자동 실행: 매일 ${job.cron} · 다음 ${fmtDateTime(job.next_run)}`:"";
   box.innerHTML=[crawlStatusLine("직업 통계",job,jobDetail)+schedule,crawlStatusLine("아르카나 옵션",arcana,arcana.rows?` · ${arcana.rows}행`:""),crawlStatusLine("제작 데이터",craft,craftDetail)].join("<br>");
   const running=!!(job.running||arcana.running||craft.running);
-  document.querySelectorAll("#adminCrawlPanel [data-crawl]").forEach(btn=>btn.disabled=running);
+  if(!running)crawlPendingKind=null;
+  setCrawlCardStatus("jobstats",job);
+  setCrawlCardStatus("arcana",arcana);
+  setCrawlCardStatus("craft",craft);
+  setCrawlCardStatus("restore",craft);
+  const states={jobstats:job,arcana,craft,restore:craft};
+  document.querySelectorAll("#adminCrawlPanel [data-crawl]").forEach(btn=>btn.disabled=!!states[btn.dataset.crawl]?.running);
   clearTimeout(crawlPollTimer);
   if(running) crawlPollTimer=setTimeout(refreshCrawlStatus,3000);
 }
 async function runAdminCrawl(kind){
   const endpoints={jobstats:"/api/admin/crawl-jobstats",arcana:"/api/admin/crawl-arcana",craft:"/api/admin/crawl-craft",restore:"/api/admin/restore-craft-snapshot"};
   const box=document.getElementById("adminCrawlStatus");
-  document.querySelectorAll("#adminCrawlPanel [data-crawl]").forEach(btn=>btn.disabled=true);
+  crawlPendingKind=kind;
+  document.querySelector(`[data-crawl="${kind}"]`)?.setAttribute("disabled","");
+  setCrawlCardStatus(kind,{running:true});
   if(box)box.innerHTML="⏳ <b>작업 시작…</b>";
   try{
     const r=await postJSON(endpoints[kind]);
-    if(r.ok===false&&!r.running&&r.error) box.textContent="실패: "+r.error;
-  }catch(e){ if(box)box.textContent="실패: "+(e.message||e); await refreshCrawlStatus(); return; }
+    if(r.running){
+      crawlPendingKind=null;
+      if(box)box.innerHTML="⏳ <b>이미 진행 중인 작업 상태를 확인합니다…</b>";
+      setTimeout(refreshCrawlStatus,200);
+      return;
+    }
+    if(r.ok===false&&r.error){
+      crawlPendingKind=null;
+      if(box)box.textContent="실패: "+r.error;
+      setCrawlCardStatus(kind,{last_ok:false,last_error:r.error});
+      document.querySelector(`[data-crawl="${kind}"]`)?.removeAttribute("disabled");
+      return;
+    }
+  }catch(e){
+    crawlPendingKind=null;
+    if(box)box.textContent="실패: "+(e.message||e);
+    setCrawlCardStatus(kind,{last_ok:false,last_error:e.message||e});
+    document.querySelector(`[data-crawl="${kind}"]`)?.removeAttribute("disabled");
+    return;
+  }
   setTimeout(refreshCrawlStatus,800);
 }
 

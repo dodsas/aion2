@@ -655,7 +655,10 @@ def api_admin_import_prod():
 # 설정 화면의 '통계 크롤링 하기' 버튼으로 즉시 실행할 수도 있다.
 CRON_HHMM = os.environ.get("JOBSTATS_CRON", "08:30").strip()
 JOBSTATS_KEEP = int(os.environ.get("JOBSTATS_KEEP", "30"))  # 유지할 스냅샷 수
-_CRAWL_LOCK = threading.Lock()
+_CRAWL_START_LOCK = threading.Lock()
+_JOBSTATS_CRAWL_LOCK = threading.Lock()
+_ARCANA_CRAWL_LOCK = threading.Lock()
+_CRAFT_CRAWL_LOCK = threading.Lock()
 _CRAWL_STATE = {"running": False, "last_started": None, "last_finished": None,
                 "last_ok": None, "last_error": None, "jobs": 0, "rows": 0,
                 "captured_at": None, "last_trigger": None}
@@ -663,6 +666,9 @@ _ARCANA_CRAWL_STATE = {"running": False, "last_started": None, "last_finished": 
                        "last_ok": None, "last_error": None, "rows": 0}
 _CRAFT_CRAWL_STATE = {"running": False, "last_started": None, "last_finished": None,
                       "last_ok": None, "last_error": None, "message": None}
+# 네트워크 수집이 예외 없이 멈춘 경우에도 관리자 화면이 영구히 '진행 중'에 머물지 않게 한다.
+# 제작 전체 수집은 비교적 오래 걸릴 수 있어 별도 여유 시간을 둔다.
+CRAWL_TIMEOUT_SECONDS = {"jobstats": 600, "arcana": 180, "craft": 1200}
 
 
 def _parse_hhmm(s):
@@ -685,9 +691,29 @@ def _next_cron_dt(now=None):
     return nxt
 
 
+def _finish_stale_crawls():
+    """응답 없는 백그라운드 수집을 실패 완료로 닫는다."""
+    now = datetime.now(KST)
+    for name, state in (("jobstats", _CRAWL_STATE), ("arcana", _ARCANA_CRAWL_STATE),
+                        ("craft", _CRAFT_CRAWL_STATE)):
+        if not state.get("running") or not state.get("last_started"):
+            continue
+        try:
+            started = datetime.fromisoformat(state["last_started"])
+            elapsed = (now - started.astimezone(KST)).total_seconds()
+        except Exception:
+            continue
+        limit = CRAWL_TIMEOUT_SECONDS[name]
+        if elapsed > limit:
+            state.update(running=False, last_finished=_now_kst(), last_ok=False,
+                         last_error=f"{limit // 60}분 안에 완료 신호를 받지 못했습니다. 다시 시도하세요.")
+
+
 def _run_jobstats_crawl(trigger="manual"):
     """job_stats 스냅샷 1회 수집·적재. 동시 실행은 락으로 1건만 허용."""
-    if not _CRAWL_LOCK.acquire(blocking=False):
+    if not _JOBSTATS_CRAWL_LOCK.acquire(blocking=False):
+        _CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=False,
+                            last_error="다른 크롤링이 진행 중입니다.")
         return {"ok": False, "error": "이미 크롤링이 진행 중입니다."}
     try:
         _CRAWL_STATE.update(running=True, last_started=_now_kst(),
@@ -708,12 +734,14 @@ def _run_jobstats_crawl(trigger="manual"):
         print(f"job_stats 크롤 실패({trigger}): {e}")
         return {"ok": False, "error": str(e)}
     finally:
-        _CRAWL_LOCK.release()
+        _JOBSTATS_CRAWL_LOCK.release()
 
 
 def _run_arcana_options_crawl():
     """아르카나 옵션 풀만 빠르게 재수집한다."""
-    if not _CRAWL_LOCK.acquire(blocking=False):
+    if not _ARCANA_CRAWL_LOCK.acquire(blocking=False):
+        _ARCANA_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=False,
+                                   last_error="다른 크롤링이 진행 중입니다.")
         return {"ok": False, "error": "다른 크롤링이 진행 중입니다."}
     try:
         _ARCANA_CRAWL_STATE.update(running=True, last_started=_now_kst(), last_error=None)
@@ -728,12 +756,14 @@ def _run_arcana_options_crawl():
                                   last_error=str(e))
         return {"ok": False, "error": str(e)}
     finally:
-        _CRAWL_LOCK.release()
+        _ARCANA_CRAWL_LOCK.release()
 
 
 def _run_craft_refresh(mode="crawl"):
     """제작 스냅샷 갱신 또는 Turso 백업 복원을 백그라운드에서 실행한다."""
-    if not _CRAWL_LOCK.acquire(blocking=False):
+    if not _CRAFT_CRAWL_LOCK.acquire(blocking=False):
+        _CRAFT_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=False,
+                                  last_error="다른 크롤링이 진행 중입니다.")
         return {"ok": False, "error": "다른 크롤링이 진행 중입니다."}
     try:
         _CRAFT_CRAWL_STATE.update(running=True, last_started=_now_kst(), last_error=None, message=None)
@@ -754,7 +784,7 @@ def _run_craft_refresh(mode="crawl"):
                                   last_error=str(e))
         return {"ok": False, "error": str(e)}
     finally:
-        _CRAWL_LOCK.release()
+        _CRAFT_CRAWL_LOCK.release()
 
 
 def _jobstats_scheduler():
@@ -776,18 +806,30 @@ def api_admin_crawl_start(kind="jobstats"):
              "craft": _CRAFT_CRAWL_STATE, "restore": _CRAFT_CRAWL_STATE}.get(kind)
     if not state:
         return {"ok": False, "error": "unknown crawl kind"}
-    if state["running"] or _CRAWL_STATE["running"] or _ARCANA_CRAWL_STATE["running"] or _CRAFT_CRAWL_STATE["running"]:
-        return {"ok": False, "running": True, "error": "이미 크롤링이 진행 중입니다."}
     target = {"jobstats": lambda: _run_jobstats_crawl("manual"),
               "arcana": _run_arcana_options_crawl,
               "craft": lambda: _run_craft_refresh("crawl"),
               "restore": lambda: _run_craft_refresh("restore")}[kind]
-    threading.Thread(target=target, daemon=True).start()
+    def background():
+        try:
+            target()
+        except BaseException as e:
+            # 수집 함수 내부에서 처리하지 못한 예외도 반드시 상태를 종료한다.
+            state.update(running=False, last_finished=_now_kst(), last_ok=False,
+                         last_error=f"수집 작업이 중단되었습니다: {e}")
+    # 서로 다른 수집은 독립 실행한다. 같은 수집을 빠르게 연속 클릭하는 경우만 막는다.
+    with _CRAWL_START_LOCK:
+        if state["running"]:
+            return {"ok": False, "running": True, "error": "같은 수집 작업이 이미 진행 중입니다."}
+        # 스레드가 실제 실행되기 전에도 즉시 진행 상태를 반환한다.
+        state.update(running=True, last_started=_now_kst(), last_error=None)
+        threading.Thread(target=background, daemon=True).start()
     return {"ok": True, "started": True, "kind": kind}
 
 
 def api_admin_crawl_status():
     """크롤 진행/최근 결과 + 다음 예약 시각."""
+    _finish_stale_crawls()
     dt = _next_cron_dt()
     return {"jobstats": {**_CRAWL_STATE, "cron": CRON_HHMM or None,
                            "next_run": dt.isoformat(timespec="minutes") if dt else None},
