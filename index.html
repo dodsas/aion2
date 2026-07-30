@@ -48,9 +48,12 @@
             color:#04110d;display:grid;place-items:center;font-size:15px;
             box-shadow:0 8px 22px -10px rgba(143,240,208,.9),inset 0 1px 0 rgba(255,255,255,.45)}
   header h1 small{color:var(--dim);font-weight:500;font-size:11px;margin-left:2px}
+  .tab-pager{display:flex;align-items:stretch;align-self:stretch}
   #tabs{display:flex;gap:2px;align-items:stretch;align-self:stretch}
+  .tab-page-btn{display:none}
   .tab{background:none;border:none;color:var(--dim);font:800 13px/1 inherit;font-family:inherit;
        padding:0 18px;cursor:pointer;border-bottom:2px solid transparent;display:flex;align-items:center;position:relative}
+  .tab-label-compact{display:none}
   .tab:hover{color:var(--txt);background:rgba(143,240,208,.035)}
   .tab.active{color:var(--gold);border-bottom-color:var(--gold)}
   .tab.active::before{content:"";position:absolute;left:10px;right:10px;bottom:5px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.55}
@@ -693,8 +696,14 @@
     input,select,textarea{font-size:16px!important}
     /* 숙제 카드의 던전 선택은 네이티브 선택창이라 2px 작게 표시해도 화면 확대 대상이 아니다. */
     .hw-dungeon-row select{font-size:14px!important}
-    #tabs{width:100%;height:40px}
-    .tab{flex:1;justify-content:center}
+    .tab-pager{width:100%;height:40px;align-self:auto}
+    #tabs{width:100%;height:40px;flex:1;overflow-x:auto;scroll-behavior:smooth;scroll-snap-type:x proximity;scrollbar-width:none}
+    #tabs::-webkit-scrollbar{display:none}
+    .tab{flex:0 0 25%;justify-content:center;scroll-snap-align:start;white-space:nowrap}
+    .tab-pager.can-scroll .tab-page-btn{display:grid;place-items:center;flex:0 0 30px;border:0;background:#121a23;color:var(--gold);font:900 18px/1 inherit;cursor:pointer}
+    .tab-pager.can-scroll .tab-page-btn:disabled{color:var(--line);cursor:default}
+    .tab-label-default{display:none}
+    .tab-label-compact{display:inline}
     /* 제작은 넓은 목록·상세 2단 화면을 전제로 하므로 PC에서만 탭을 노출한다. */
     .tab[data-view="craft"]{display:none}
     .split{flex-direction:column}
@@ -1042,7 +1051,11 @@
 <body>
 <header>
   <h1><span class="logo">⚔</span> 아이온2 도우미</h1>
-  <nav id="tabs"></nav>
+  <div class="tab-pager" id="tabPager">
+    <button class="tab-page-btn" id="tabPagePrev" type="button" aria-label="이전 탭 보기">‹</button>
+    <nav id="tabs" aria-label="주요 탭"></nav>
+    <button class="tab-page-btn" id="tabPageNext" type="button" aria-label="다음 탭 보기">›</button>
+  </div>
   <button class="hw-mini admin-trigger" id="adminTrigger" type="button">관리자</button>
 </header>
 
@@ -1510,7 +1523,7 @@ const TABS=[
   {id:"mychar", label:"🗂️ 캐릭"},
   // {id:"char",  label:"🧝 캐릭터"},   // 기능 유지, 탭만 숨김 (검색은 내 캐릭터 탭으로 이관)
   {id:"party", label:"🛡️ 파티"},
-  {id:"arcana", label:"🔮 아르카나"},
+  {id:"arcana", label:"🔮 아르카나", compactLabel:"🔮 카드"},
   {id:"craft", label:"⚒️ 제작"},
   {id:"homework", label:"📅 숙제"},
   // {id:"screen", label:"📱 화면공유"},   // 기능 유지, 탭만 숨김
@@ -1549,11 +1562,36 @@ function renderTabs(){
   nav.innerHTML="";
   const active=document.querySelector(".view.active")?.id?.replace("view-","")||"mychar";
   TABS.filter(t=>!["settings","craft"].includes(t.id)||isAdmin).forEach(t=>{
-    const b=el("button","tab"+(t.id===active?" active":"")); b.dataset.view=t.id; b.textContent=t.label;
+    const b=el("button","tab"+(t.id===active?" active":"")); b.dataset.view=t.id;
+    if(t.compactLabel){
+      const normal=el("span","tab-label-default"); normal.textContent=t.label;
+      const compact=el("span","tab-label-compact"); compact.textContent=t.compactLabel;
+      b.append(normal,compact);
+    }else b.textContent=t.label;
     b.onclick=()=>showView(t.id);
     nav.appendChild(b);
   });
+  requestAnimationFrame(syncTabPager);
 }
+function syncTabPager(){
+  const pager=document.getElementById("tabPager"),nav=document.getElementById("tabs");
+  const prev=document.getElementById("tabPagePrev"),next=document.getElementById("tabPageNext");
+  if(!pager||!nav||!prev||!next)return;
+  const mobile=matchMedia("(max-width:760px)").matches;
+  const canScroll=mobile&&nav.scrollWidth>nav.clientWidth+2;
+  pager.classList.toggle("can-scroll",canScroll);
+  prev.disabled=!canScroll||nav.scrollLeft<=1;
+  next.disabled=!canScroll||nav.scrollLeft+nav.clientWidth>=nav.scrollWidth-1;
+}
+function moveTabPage(direction){
+  const nav=document.getElementById("tabs"); if(!nav)return;
+  nav.scrollBy({left:direction*nav.clientWidth,behavior:"smooth"});
+  setTimeout(syncTabPager,250);
+}
+document.getElementById("tabPagePrev").onclick=()=>moveTabPage(-1);
+document.getElementById("tabPageNext").onclick=()=>moveTabPage(1);
+document.getElementById("tabs").addEventListener("scroll",()=>requestAnimationFrame(syncTabPager),{passive:true});
+window.addEventListener("resize",syncTabPager);
 
 // ── 아르카나 제작 계획 ─────────────────────────────────────────────
 // 현재 장착한 아르카나는 참조하지 않는다. 새로 제작할 카드에 붙일 옵션만 기록한다.
