@@ -455,6 +455,16 @@
   .hw-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:16px}
   .hw-head h2{margin:0;font-size:22px;letter-spacing:-.4px}
   .hw-head p{margin:4px 0 0;color:var(--dim);font-size:12.5px}
+  .hw-view-tabs{display:flex;gap:6px;margin:-2px 0 14px}
+  .hw-view-tab{padding:8px 12px;border:1px solid var(--etched);border-radius:7px;background:#111923;color:var(--dim);font:800 12px/1 inherit;font-family:inherit;cursor:pointer}
+  .hw-view-tab.on{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 55%,var(--line));background:color-mix(in srgb,var(--gold) 10%,#111923)}
+  .hw-dungeon-catalog{display:grid;gap:10px}
+  .hw-dungeon-catalog-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:2px 0 3px}
+  .hw-dungeon-catalog-head h3{margin:0;font-size:16px}.hw-dungeon-catalog-head p{margin:0;color:var(--dim);font-size:11px;text-align:right}
+  .hw-dungeon-card{overflow:hidden;border:1px solid var(--etched);border-radius:9px;background:linear-gradient(180deg,#17222d,#101720);box-shadow:var(--shadow),var(--hl)}
+  .hw-dungeon-card h4{margin:0;padding:11px 13px;font-size:14px;border-bottom:1px solid var(--line)}
+  .hw-dungeon-card table{width:100%;border-collapse:collapse;font-size:12px}.hw-dungeon-card th,.hw-dungeon-card td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line)}
+  .hw-dungeon-card tr:last-child td{border-bottom:0}.hw-dungeon-card th{color:var(--dim);font-size:10.5px;font-weight:800}.hw-dungeon-card th:first-child,.hw-dungeon-card td:first-child{text-align:left}.hw-dungeon-card td.kina{color:var(--gold);font-weight:900}
   .hw-preset{min-width:360px;background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--line);border-radius:8px;padding:10px;box-shadow:var(--shadow),var(--hl)}
   .hw-preset .top{display:grid;grid-template-columns:1fr auto;gap:7px;margin-bottom:7px}
   .hw-preset .bottom{display:grid;grid-template-columns:1fr auto auto;gap:7px}
@@ -486,6 +496,7 @@
   .hw-role{font-size:11px;font-weight:800;padding:1px 8px;border-radius:20px;border:1px solid var(--line);color:var(--dim)}
   .hw-role.main{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,var(--line));background:color-mix(in srgb,var(--gold) 15%,transparent)}
   .hw-cp{font-size:11px;font-weight:900;color:var(--gold);white-space:nowrap}
+  .hw-rec-cp{font-size:10.5px;font-weight:800;color:var(--dim);white-space:nowrap}
   .hw-char input,.hw-char select,.hw-modal input{padding:8px 9px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);min-width:0}
   .hw-dungeon-row{display:grid;grid-template-columns:minmax(0,1fr) calc(3em + 38px);gap:6px;min-width:0}
   .hw-dungeon-row select{width:100%;font-size:11px}
@@ -753,6 +764,8 @@
     .hw-kpi{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
     .hw-k{padding:10px}
     .hw-k .v{font-size:19px}
+    .hw-dungeon-catalog-head{align-items:flex-start;flex-direction:column}.hw-dungeon-catalog-head p{text-align:left}
+    .hw-dungeon-card table{font-size:11px}.hw-dungeon-card th,.hw-dungeon-card td{padding:8px 6px}.hw-dungeon-card th:nth-child(2),.hw-dungeon-card td:nth-child(2){display:none}
     .hw-kpi .hw-k:last-child{grid-column:1/-1}
     /* 숙제 화면에서는 운영자 설정 안내만 간결하게 숨긴다. */
     .hw-operator-summary,.hw-auto-summary,.hw-target-summary{display:none}
@@ -1115,12 +1128,19 @@
       <div class="hw-head">
         <div>
           <h2>오드 에너지 숙제 계산기</h2>
-          <p>자동 충전, 이벤트 수급, 새싹 보너스, 주간 구매량을 합산해 주간 소모 판수와 예상 수익을 계산합니다. 던전은 2배 보상 기준입니다.</p>
+          <p>자동 충전, 이벤트 수급, 새싹 보너스, 주간 구매량을 합산해 주간 소모 판수와 예상 수익을 계산합니다.</p>
         </div>
       </div>
-      <div id="hwManual" class="hw-manual"></div>
-      <div id="hwCharacters" class="hw-chars"></div>
-      <div id="hwResult"></div>
+      <div class="hw-view-tabs" role="tablist" aria-label="숙제 보기">
+        <button class="hw-view-tab on" type="button" data-hw-view="calculator">숙제 계산</button>
+        <button class="hw-view-tab" type="button" data-hw-view="dungeons">던전</button>
+      </div>
+      <div id="hwCalculatorView">
+        <div id="hwManual" class="hw-manual"></div>
+        <div id="hwCharacters" class="hw-chars"></div>
+        <div id="hwResult"></div>
+      </div>
+      <div id="hwDungeonView" hidden></div>
     </div>
   </div>
 </section>
@@ -1725,15 +1745,29 @@ function renderArcana(){
   root.querySelectorAll("[data-arc-remove]").forEach(e=>e.onclick=()=>{const all=arcanaPlans(),cur=all[c.key]||{},type=e.dataset.arcRemove;cur[type]=(cur[type]||[]).filter((_,i)=>i!==+e.dataset.arcIndex);all[c.key]=cur;saveArcanaPlans(all);renderArcana();});
 }
 
-const HOMEWORK_DUNGEONS={
-  fallen_deva:{
-    name:"타락한 데바의 성",
-    modes:{
-      normal:{name:"보통",cost:40,rewards:[335,335,335]},
-      hard:{name:"어려움",cost:60,rewards:[600,600,600]},
-    },
-  },
+// 서버 DB(/api/dungeons)의 던전 기준표. variants/modes 구조라 단일 난이도와 보통·어려움
+// 던전을 같은 선택 UI에서 처리한다. 통신 실패 시에도 계산이 가능하도록 기본값을 둔다.
+let HOMEWORK_DUNGEONS={
+  fallen_deva:{name:"타락한 데바의 성",modes:{hard:{name:"어려움",level:50,itemLevel:4500,recommendedCp:600000,cost:120,reward:3600000},normal:{name:"보통",level:50,itemLevel:3800,recommendedCp:450000,cost:80,reward:2010000}}},
+  blue_breath:{name:"푸른 숨의 섬",modes:{hard:{name:"어려움",level:45,itemLevel:3500,recommendedCp:450000,cost:80,reward:2010000},normal:{name:"보통",level:45,itemLevel:3000,recommendedCp:300000,cost:80,reward:1620000}}},
+  illusion_corridor:{name:"환영의 회랑",modes:{hard:{name:"어려움",level:45,itemLevel:3500,recommendedCp:450000,cost:80,reward:2010000},normal:{name:"보통",level:45,itemLevel:3000,recommendedCp:300000,cost:80,reward:1620000}}},
+  cradle_of_nothing:{name:"무의 요람",modes:{hard:{name:"어려움",level:45,itemLevel:3000,recommendedCp:300000,cost:80,reward:1620000},normal:{name:"보통",level:45,itemLevel:2800,recommendedCp:200000,cost:80,reward:1200000}}},
+  dramata:{name:"드라마타",modes:{hard:{name:"어려움",level:45,itemLevel:3000,recommendedCp:300000,cost:80,reward:1620000},normal:{name:"보통",level:45,itemLevel:2800,recommendedCp:200000,cost:80,reward:1200000}}},
+  abyssal_horn_cavern:{name:"초월 심연의 뿔 암굴",modes:{stage4:{name:"4단",level:50,itemLevel:4800,recommendedCp:700000,cost:120,reward:4200000},stage3:{name:"3단",level:50,itemLevel:4500,recommendedCp:600000,cost:80,reward:2400000},stage2:{name:"2단",level:50,itemLevel:4100,recommendedCp:550000,cost:80,reward:2010000},stage1:{name:"1단",level:50,itemLevel:3800,recommendedCp:400000,cost:80,reward:1710000}}},
+  red_heart_mirror:{name:"초월 붉은 연심의 거울",modes:{stage4:{name:"4단",level:45,itemLevel:4000,recommendedCp:500000,cost:80,reward:2400000},stage3:{name:"3단",level:45,itemLevel:3800,recommendedCp:450000,cost:80,reward:2010000},stage2:{name:"2단",level:45,itemLevel:3500,recommendedCp:400000,cost:80,reward:1710000},stage1:{name:"1단",level:45,itemLevel:3200,recommendedCp:300000,cost:80,reward:1500000}}},
 };
+let hwDungeonCatalogMeta={updated_at:"2026-07-01",source:"https://www.inven.co.kr/board/aion2/6444/2064"};
+let hwDungeonCatalogLoad=null, hwActiveView="calculator";
+function applyDungeonCatalog(data){
+  if(!data||!Array.isArray(data.dungeons)||!data.dungeons.length)return;
+  const next={};
+  data.dungeons.forEach(d=>{const modes={};(d.variants||[]).forEach(v=>{if(v?.key)modes[v.key]={name:v.name||"기본",level:+v.level||0,itemLevel:+v.item_level||0,recommendedCp:+v.recommended_cp||0,cost:+v.ode||0,reward:+v.kina||0};});if(d?.key&&Object.keys(modes).length)next[d.key]={name:d.name||d.key,modes};});
+  if(Object.keys(next).length){HOMEWORK_DUNGEONS=next;hwDungeonCatalogMeta=data;}
+}
+async function loadDungeonCatalog(){
+  if(!hwDungeonCatalogLoad)hwDungeonCatalogLoad=j("/api/dungeons").then(data=>{applyDungeonCatalog(data);renderHomework();}).catch(()=>{});
+  return hwDungeonCatalogLoad;
+}
 const HW_CHARS_KEY="aion2_homework_chars";
 let hwManualTarget=null;
 const HW_ROLE={
@@ -1799,7 +1833,7 @@ function initSettings(){
 }
 function dungeonCalc(dungeonKey, modeKey, weeklyEnergy){
   const dungeon=HOMEWORK_DUNGEONS[dungeonKey]||HOMEWORK_DUNGEONS.fallen_deva;
-  const d=dungeon.modes[modeKey], cost=d.cost*2, reward=d.rewards.reduce((a,b)=>a+b,0)*2*1000;
+  const d=dungeon.modes[modeKey]||dungeon.modes[Object.keys(dungeon.modes)[0]], cost=d.cost, reward=d.reward;
   const runs=Math.floor(weeklyEnergy/cost);
   return {key:modeKey,dungeon:dungeon.name,name:d.name,cost,reward,runs,left:weeklyEnergy-runs*cost,profit:runs*reward,daily:runs/7};
 }
@@ -1816,9 +1850,19 @@ function calcChar(c, weeklyAuto, weeklyMainBonus){
 function dungeonOptions(selected){
   return Object.entries(HOMEWORK_DUNGEONS).map(([k,d])=>`<option value="${k}" ${k===selected?'selected':''}>${d.name}</option>`).join("");
 }
+function defaultDungeonMode(dungeonKey){const modes=(HOMEWORK_DUNGEONS[dungeonKey]||HOMEWORK_DUNGEONS.fallen_deva).modes;return modes.hard?"hard":Object.keys(modes)[0];}
 function modeOptions(dungeonKey, selected){
   const d=HOMEWORK_DUNGEONS[dungeonKey]||HOMEWORK_DUNGEONS.fallen_deva;
   return Object.entries(d.modes).map(([k,m])=>`<option value="${k}" ${k===selected?'selected':''}>${m.name}</option>`).join("");
+}
+function modeControl(c){
+  const dungeon=HOMEWORK_DUNGEONS[c.dungeon]||HOMEWORK_DUNGEONS.fallen_deva, modes=Object.entries(dungeon.modes);
+  if(modes.length===1)return `<span class="hw-mini" aria-label="난이도">${esc(modes[0][1].name)}</span>`;
+  return `<select data-hw="mode" title="난이도">${modeOptions(c.dungeon||"fallen_deva",c.mode||defaultDungeonMode(c.dungeon))}</select>`;
+}
+function hwRecommendedCp(c){
+  const dungeon=HOMEWORK_DUNGEONS[c.dungeon]||HOMEWORK_DUNGEONS.fallen_deva;
+  return (dungeon.modes[c.mode]||dungeon.modes[defaultDungeonMode(c.dungeon)])?.recommendedCp||0;
 }
 function renderHwCharacters(chars){
   const box=document.getElementById("hwCharacters");
@@ -1830,10 +1874,10 @@ function renderHwCharacters(chars){
       <img class="hw-ico" src="${c.img||''}" ${oe}>
       <div class="hw-nm"><b>${esc(c.name||'')}</b>
         <span class="hw-role ${c.role}">${c.role==='main'?'👑 본캐':'부캐'}</span>
-        <span class="hw-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span></div>
+        <span class="hw-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span><span class="hw-rec-cp">(권장 전투력: ${hwRecommendedCp(c)?cpShort(hwRecommendedCp(c)):"–"})</span></div>
       <div class="hw-dungeon-row">
         <select data-hw="dungeon" title="던전">${dungeonOptions(c.dungeon||"fallen_deva")}</select>
-        <select data-hw="mode" title="난이도">${modeOptions(c.dungeon||"fallen_deva",c.mode||"hard")}</select>
+        ${modeControl(c)}
       </div>
       <div class="hw-sanct">
         <button class="hw-mini hw-manual" data-hw-manual title="${esc(manualTip)}">${manual?"수기*":"수기"}</button>
@@ -1886,8 +1930,22 @@ function renderHomework(redrawCharacters=true){
   <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 수익(키나)</th><th>주간 판수</th><th>하루 판수</th><th>일간 부가수익(키나)</th><th>예상 수익(키나)</th><th>잔여</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td>${esc(r.char.name||'')}</td><td>${r.role.label}</td><td>${r.dungeon}</td><td>${r.name}</td><td class="num">${fmt(Math.floor(r.weeklyEnergy))}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmtFull(r.reward)}</td>
       <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
-  <div class="hw-note">현재 던전 수익 정보는 타락한 데바의 성 기준입니다. 본캐는 일일·주간 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(루드라·침식·무스펠)은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 레이드 수익(루드라 ${fmtFull(HW_SANCTUARIES[0].profit)} · 침식 ${fmtFull(HW_SANCTUARIES[1].profit)} · 무스펠 ${fmtFull(HW_SANCTUARIES[2].profit)} 키나)은 던전 수익과 별도로 예상 수익에 합산됩니다.</div>`;
+  <div class="hw-note">본캐는 일일·주간 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(루드라·침식·무스펠)은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 레이드 수익(루드라 ${fmtFull(HW_SANCTUARIES[0].profit)} · 침식 ${fmtFull(HW_SANCTUARIES[1].profit)} · 무스펠 ${fmtFull(HW_SANCTUARIES[2].profit)} 키나)은 던전 수익과 별도로 예상 수익에 합산됩니다.</div>`;
   renderHwManual();
+  if(hwActiveView==="dungeons")renderHwDungeonCatalog();
+}
+
+function renderHwDungeonCatalog(){
+  const root=document.getElementById("hwDungeonView"); if(!root)return;
+  const cards=Object.values(HOMEWORK_DUNGEONS).map(d=>`<article class="hw-dungeon-card"><h4>${esc(d.name)}</h4><table><thead><tr><th>난이도</th><th>입장 레벨</th><th>템 레벨</th><th>권장 전투력</th><th>오드</th><th>합산 키나</th></tr></thead><tbody>${Object.values(d.modes).map(m=>`<tr><td>${esc(m.name)}</td><td>Lv.${fmt(m.level||0)}</td><td>${fmt(m.itemLevel||0)}</td><td>${m.recommendedCp?fmt(m.recommendedCp):"–"}</td><td>${fmt(m.cost||0)}</td><td class="kina">${fmtFull(m.reward||0)}</td></tr>`).join("")}</tbody></table></article>`).join("");
+  root.innerHTML=`<div class="hw-dungeon-catalog"><div class="hw-dungeon-catalog-head"><div><h3>던전 기준표</h3><p>환영의 회랑 보통 이상 원정 및 초월 기준을 정리했습니다.</p></div><p>기준일 ${esc(hwDungeonCatalogMeta.updated_at||"–")} · <a href="https://www.inven.co.kr/board/aion2/6444/2064" target="_blank" rel="noreferrer">출처 보기</a><br>멤버십 2배 큐브 개봉 기준</p></div>${cards}</div>`;
+}
+function setHomeworkView(view){
+  hwActiveView=view==="dungeons"?"dungeons":"calculator";
+  document.getElementById("hwCalculatorView").hidden=hwActiveView!=="calculator";
+  document.getElementById("hwDungeonView").hidden=hwActiveView!=="dungeons";
+  document.querySelectorAll("[data-hw-view]").forEach(b=>b.classList.toggle("on",b.dataset.hwView===hwActiveView));
+  if(hwActiveView==="dungeons")renderHwDungeonCatalog();
 }
 
 // ── 숙제 · 수기 계산 ────────────────────────────────────────────
@@ -1907,10 +1965,10 @@ function hwNextReset(now){
 function hwmCharCfg(st){const key=st.sel; return (key&&hwSettings()[key])||{};}
 function hwmDungeonKey(st){const s=hwmCharCfg(st); return HOMEWORK_DUNGEONS[s.dungeon]?s.dungeon:"fallen_deva";}
 function hwmDungeon(st){return HOMEWORK_DUNGEONS[hwmDungeonKey(st)];}
-function hwmMode(st){const d=hwmDungeon(st), s=hwmCharCfg(st); return (s.mode&&d.modes[s.mode])?s.mode:"hard";}
+function hwmMode(st){const d=hwmDungeon(st), s=hwmCharCfg(st); return (s.mode&&d.modes[s.mode])?s.mode:defaultDungeonMode(hwmDungeonKey(st));}
 function hwManualResult(){
   const st=hwmGet(), d=hwmDungeon(st), mode=hwmMode(st);
-  const base=d.modes[mode].cost, cost=base*2;            // 패스 구매 시 한판당 오드 2배 소모
+  const cost=d.modes[mode].cost;
   const now=new Date(), reset=hwNextReset(now);
   const days=Math.round((reset-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5);  // 오늘~화요일 일수
   const hours=(reset-now)/36e5;
@@ -1963,6 +2021,7 @@ function renderHwManual(){
   document.getElementById("hwmOd").oninput=e=>{const s=hwmGet(); (s.od||(s.od={}))[s.sel||"_"]=+e.target.value||0; hwmSet(s); upd();};
 }
 function initHomework(){
+  document.querySelectorAll("[data-hw-view]").forEach(b=>b.addEventListener("click",()=>setHomeworkView(b.dataset.hwView)));
   document.getElementById("hwCharacters")?.addEventListener("change",e=>{
     const card=e.target.closest(".hw-char"); if(!card)return;
     const key=card.dataset.key;
@@ -1970,7 +2029,7 @@ function initHomework(){
       const c=hwGroupChars().find(x=>x.key===key); if(!c)return;
       updateHwSetting(key,{sanctuaries:{...(c.sanctuaries||{}),[e.target.dataset.sanct]:e.target.checked}});
     }
-    else if(e.target.dataset.hw==="dungeon") updateHwSetting(key,{dungeon:e.target.value,mode:"hard"});  // 던전 변경 → 난이도 기본 어려움
+    else if(e.target.dataset.hw==="dungeon") updateHwSetting(key,{dungeon:e.target.value,mode:defaultDungeonMode(e.target.value)});
     else if(e.target.dataset.hw==="mode") updateHwSetting(key,{mode:e.target.value});   // 난이도 변경 → DB 저장
   });
   document.getElementById("hwCharacters")?.addEventListener("click",e=>{
@@ -1980,6 +2039,7 @@ function initHomework(){
   document.getElementById("hwManualSave")?.addEventListener("click",saveHwManual);
   document.getElementById("hwManualModal")?.addEventListener("click",e=>{if(e.target.id==="hwManualModal")closeHwManual();});
   renderHomework();
+  loadDungeonCatalog();
 }
 
 function setOwn(code,val){
