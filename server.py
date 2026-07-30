@@ -44,6 +44,8 @@ load_dotenv()  # .env → os.environ (로컬 개발용; 없으면 무시)
 BASE_DIR = Path(__file__).resolve().parent
 IMG_DIR = BASE_DIR / "images"
 INDEX = BASE_DIR / "index.html"
+JOBSTATS_CACHE_DB = BASE_DIR / "cache" / "jobstats-runtime.sqlite3"
+JOBSTATS_CACHE_LOCK = threading.Lock()
 
 # 상태 데이터(캐릭터 캐시 · 내 캐릭터 · 파티 모집 · 숙제 등) 저장소.
 # TURSO_* 환경변수가 있으면 Turso, 없으면 로컬 app_store.db 로 폴백한다.
@@ -70,6 +72,49 @@ KST = timezone(timedelta(hours=9))
 
 def _now_kst() -> str:
     return datetime.now(KST).isoformat(timespec="seconds")
+
+
+def _jobstats_cache_get(key):
+    """Render 인스턴스 수명 동안 Turso 읽기를 줄이는 로컬 SQLite 캐시."""
+    try:
+        with JOBSTATS_CACHE_LOCK:
+            if not JOBSTATS_CACHE_DB.exists():
+                return None
+            con = sqlite3.connect(JOBSTATS_CACHE_DB)
+            try:
+                row = con.execute("SELECT payload FROM jobstats_cache WHERE k=?", (key,)).fetchone()
+                return json.loads(row[0]) if row else None
+            finally:
+                con.close()
+    except Exception:
+        return None
+
+
+def _jobstats_cache_put(key, rows):
+    try:
+        with JOBSTATS_CACHE_LOCK:
+            JOBSTATS_CACHE_DB.parent.mkdir(parents=True, exist_ok=True)
+            con = sqlite3.connect(JOBSTATS_CACHE_DB)
+            try:
+                con.execute("CREATE TABLE IF NOT EXISTS jobstats_cache (k TEXT PRIMARY KEY, payload TEXT NOT NULL)")
+                con.execute("INSERT INTO jobstats_cache(k,payload) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET payload=excluded.payload",
+                            (key, json.dumps(rows, ensure_ascii=False)))
+                con.commit()
+            finally:
+                con.close()
+    except Exception:
+        pass
+
+
+def _jobstats_cache_clear():
+    with JOBSTATS_CACHE_LOCK:
+        try:
+            if JOBSTATS_CACHE_DB.exists():
+                con = sqlite3.connect(JOBSTATS_CACHE_DB)
+                con.execute("DELETE FROM jobstats_cache")
+                con.commit(); con.close()
+        except Exception:
+            pass
 
 
 def db():
@@ -612,10 +657,14 @@ def api_jobstats(q):
     데이터는 crawl_jobstats.py 배치가 적재한다."""
     category = (q.get("category", [""])[0] or "").strip() or None
     job = (q.get("job", [""])[0] or "").strip() or None
-    try:
-        rows = STORE.job_stats_latest(category, job)
-    except Exception:
-        rows = []
+    key=f"{category or '*'}|{job or '*'}"
+    rows = _jobstats_cache_get(key)
+    if rows is None:
+        try:
+            rows = STORE.job_stats_latest(category, job)
+        except Exception:
+            rows = []
+        _jobstats_cache_put(key, rows)
     return {"captured_at": rows[0]["captured_at"] if rows else None,
             "count": len(rows), "rows": rows}
 
@@ -657,6 +706,7 @@ def api_admin_import_prod():
              (r["captured_at"], r["job"], r["category"], r["source_updated"], r["data"]))
             for r in job_stats
         ])
+    _jobstats_cache_clear()
     return {"ok": True, "kv": len(kv), "char_cache": len(cc), "job_stats": len(job_stats)}
 
 
@@ -731,6 +781,7 @@ def _run_jobstats_crawl(trigger="manual"):
         captured_at = _now_kst()
         job_names, rows = cjs.collect()
         STORE.job_stats_write(captured_at, rows)
+        _jobstats_cache_clear()
         if JOBSTATS_KEEP:
             STORE.job_stats_prune(JOBSTATS_KEEP)
         _CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=True,
@@ -758,6 +809,7 @@ def _run_arcana_options_crawl():
         captured_at = _now_kst()
         row = cjs.collect_arcana_options()
         STORE.job_stats_write(captured_at, [row])
+        _jobstats_cache_clear()
         _ARCANA_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=True,
                                   rows=1, captured_at=captured_at)
         return {"ok": True, "captured_at": captured_at}
