@@ -1411,7 +1411,7 @@ async function refreshAdminState(){
 // 서버 부담을 줄이려고 클라이언트에서 걸러낸다. 그룹이 아직 선택 안 됐으면 스킵.
 // detail 을 넘기면 그 값이 dedupe 키에 포함돼 파티별로 별개 이벤트가 된다.
 const ACCESS_LOG_DEDUPE_MS=60_000;
-const ACCESS_LOG_ALLOWED=new Set(["mychar","party","party_detail","homework","char_detail","char_compare"]);
+const ACCESS_LOG_ALLOWED=new Set(["mychar","party","party_detail","homework","arcana","arcana_detail","char_detail","char_compare"]);
 const _accessLogLast={};
 function logAccess(view,detail){
   if(typeof isAdmin!=="undefined" && isAdmin) return;   // 관리자(로그인/로컬) 활동은 이력에 남기지 않음
@@ -1424,7 +1424,7 @@ function logAccess(view,detail){
   fetch("/api/access-log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).catch(()=>{});
 }
 
-const ACCESS_LOG_LABEL={mychar:"🗂️ 캐릭",party:"🛡️ 파티",party_detail:"🎯 파티 상세",homework:"📅 숙제",settings:"⚙️ 설정",char_detail:"🔎 캐릭터 상세",char_compare:"⚖️ 비교"};
+const ACCESS_LOG_LABEL={mychar:"🗂️ 캐릭",party:"🛡️ 파티",party_detail:"🎯 파티 상세",homework:"📅 숙제",arcana:"🔮 아르카나",arcana_detail:"🔮 아르카나 상세",settings:"⚙️ 설정",char_detail:"🔎 캐릭터 상세",char_compare:"⚖️ 비교"};
 async function renderAdminAccessLog(){
   const box=document.getElementById("adminAccessLog"); if(!box)return;
   try{
@@ -1608,6 +1608,7 @@ function renderArcana(){
   if(!chars.length){root.innerHTML='<div class="arc-empty">먼저 <b>내 캐릭터</b> 탭에서 캐릭터를 등록하고 현재 그룹을 선택하세요.</div>';return;}
   if(!chars.some(c=>c.key===arcanaSelectedKey))arcanaSelectedKey=chars[0].key;
   const c=chars.find(x=>x.key===arcanaSelectedKey)||chars[0];
+  logAccess("arcana_detail",c.name+(c.className?" · "+c.className:""));
   root.innerHTML=`<div class="arc-head"><div><h2>🔮 아르카나 제작 계획</h2><p><b>${esc(c.name)}</b>의 현재 장착 아르카나는 제외합니다. 새로 제작할 카드의 스킬과 레벨만 기록하세요.</p></div><select class="arc-char-select" id="arcanaChar">${chars.map(x=>`<option value="${esc(x.key)}"${x.key===c.key?" selected":""}>${esc(x.name)} · ${esc(x.className||"직업 미상")}</option>`).join("")}</select></div><div class="arc-empty">${esc(c.className||"이 캐릭터의 직업")} 아르카나 선호도를 불러오는 중…</div>`;
   document.getElementById("arcanaChar").onchange=e=>{arcanaSelectedKey=e.target.value;renderArcana();};
   if(!Object.hasOwn(arcanaStatCache,c.className)){
