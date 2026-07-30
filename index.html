@@ -1414,7 +1414,8 @@ const ACCESS_LOG_DEDUPE_MS=60_000;
 const ACCESS_LOG_ALLOWED=new Set(["mychar","party","party_detail","homework","arcana","arcana_detail","char_detail","char_compare"]);
 const _accessLogLast={};
 function logAccess(view,detail){
-  if(typeof isAdmin!=="undefined" && isAdmin) return;   // 관리자(로그인/로컬) 활동은 이력에 남기지 않음
+  // 운영 관리 화면은 제외하되, 아르카나 열람은 로컬·관리자 검증에서도 이력을 남긴다.
+  if(typeof isAdmin!=="undefined" && isAdmin && !["arcana","arcana_detail"].includes(view)) return;
   if(!ACCESS_LOG_ALLOWED.has(view))return;
   const group=(typeof effectiveGroup==="function")?effectiveGroup():""; if(!group)return;
   const now=Date.now(), key=view+"|"+group+(detail?"|"+detail:"");

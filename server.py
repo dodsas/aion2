@@ -565,7 +565,7 @@ def api_delete_request(data):
 # 저장은 app_kv[access_log] 에 JSON 배열로 넣고 최대 ACCESS_LOG_MAX 개까지 FIFO.
 ACCESS_LOG_MAX = 2000
 # party_detail: 목록에서 특정 파티를 열었을 때. detail 필드에 어느 파티인지 요약을 담는다.
-ALLOWED_ACCESS_VIEWS = {"mychar", "party", "party_detail", "homework", "settings",
+ALLOWED_ACCESS_VIEWS = {"mychar", "party", "party_detail", "homework", "arcana", "arcana_detail", "settings",
                         "char_detail", "char_compare"}
 
 
