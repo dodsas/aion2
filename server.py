@@ -647,7 +647,17 @@ def api_admin_import_prod():
             "ON CONFLICT(k) DO UPDATE SET data=excluded.data, hash=excluded.hash, "
             "updated_at=excluded.updated_at",
             (r["k"], r["data"], r["hash"], _now_kst()))
-    return {"ok": True, "kv": len(kv), "char_cache": len(cc)}
+    # 직업 통계와 아르카나 옵션은 같은 job_stats 스냅샷 테이블에 저장된다.
+    # 운영 데이터와 동일하게 맞추기 위해 로컬의 이전 스냅샷을 통째로 교체한다.
+    job_stats = prod.query(
+        "SELECT captured_at, job, category, source_updated, data FROM job_stats ORDER BY id")
+    STORE.backend.exec_many(
+        [("DELETE FROM job_stats", ())] + [
+            ("INSERT INTO job_stats(captured_at, job, category, source_updated, data) VALUES(?,?,?,?,?)",
+             (r["captured_at"], r["job"], r["category"], r["source_updated"], r["data"]))
+            for r in job_stats
+        ])
+    return {"ok": True, "kv": len(kv), "char_cache": len(cc), "job_stats": len(job_stats)}
 
 
 # ---------- 직업 통계 크롤 (수동 트리거 + 매일 예약) ----------
@@ -1102,8 +1112,6 @@ def main():
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8770)))
     ap.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
     args = ap.parse_args()
-    if STORE.kind != "turso":
-        raise SystemExit("Turso 연결이 필요합니다. TURSO_DATABASE_URL/TURSO_AUTH_TOKEN을 설정하세요.")
     ensure_schema()
     # 직업 통계 자동 크롤 예약(서버가 켜져 있으면 매일 지정 시각에 실행).
     if CRON_HHMM and not os.environ.get("DISABLE_JOBSTATS_CRON"):

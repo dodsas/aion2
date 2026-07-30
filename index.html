@@ -758,6 +758,25 @@
     .mc-card .mc-actions{top:auto;bottom:12px;transform:none;justify-content:flex-start;gap:8px}
   }
 
+  /* 아르카나 제작 계획 */
+  .arc-root{max-width:1280px;margin:0 auto;padding:22px 18px 34px}
+  .arc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+  .arc-head h2{margin:0;font-size:22px}.arc-head p{margin:6px 0 0;color:var(--dim);font-size:12px;line-height:1.6}
+  .arc-char-select{min-width:180px;padding:8px 10px;border-radius:7px;background:#111923;color:var(--txt);border:1px solid var(--etched);font:inherit}
+  .arc-goal{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .arc-goal-card{padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:linear-gradient(180deg,#17222d,#101720)}
+  .arc-goal-card b{display:block;color:var(--gold);font-size:13px;margin-bottom:7px}.arc-goal-card p{margin:0;color:var(--dim);font-size:12px;line-height:1.55}
+  .arc-levels{margin:0 0 16px;padding:13px;border:1px solid color-mix(in srgb,var(--teal) 35%,var(--line));border-radius:9px;background:linear-gradient(180deg,#14212a,#101720)}.arc-levels>h3{margin:0 0 9px;font-size:14px;color:var(--teal)}.arc-level-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.arc-level-col{min-width:0}.arc-level-col h4{margin:0 0 6px;color:var(--gold);font-size:12px}.arc-level-row{display:grid;grid-template-columns:minmax(0,1fr) 118px 74px;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--line2);border-radius:6px;font-size:12px}.arc-level-row+.arc-level-row{margin-top:5px}.arc-level-row .lv{color:var(--dim);white-space:nowrap}.arc-level-row .lv b{color:var(--gold)}.arc-level-row .lv b.low{color:var(--danger)}.arc-level-row .lv b.neutral{color:var(--txt)}.arc-level-row .target{color:var(--teal);font-size:10.5px;white-space:nowrap}
+  .arc-chips{display:flex;flex-wrap:wrap;gap:5px}.arc-chip{padding:4px 7px;border-radius:5px;background:#152530;border:1px solid var(--etched);font-size:11px;font-weight:700}.arc-chip small{color:var(--gold);margin-left:3px}
+  .arc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.arc-card{min-width:0;padding:13px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,#17222d,#101720);box-shadow:var(--shadow)}
+  .arc-card-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line2);padding-bottom:8px;margin-bottom:9px}.arc-card-h b{font-size:16px;color:var(--gold)}.arc-card-h span{font-size:11px;color:var(--dim)}
+  .arc-card-level{display:flex;align-items:center;gap:4px}.arc-card-level button{width:20px;height:20px;padding:0;border:1px solid var(--etched);border-radius:4px;background:#111923;color:var(--txt);cursor:pointer}.arc-card-level strong{color:var(--gold);font-size:12px}
+  .arc-pref{margin:0 0 10px;color:var(--dim);font-size:11px;line-height:1.5}.arc-pref b{color:var(--teal)}
+  .arc-row{display:grid;grid-template-columns:minmax(0,1fr) 58px 25px;gap:6px;align-items:center;margin-top:6px}.arc-row input{width:100%;min-width:0;padding:7px;border-radius:6px;border:1px solid var(--etched);background:#111923;color:var(--txt);font:inherit;font-size:12px}.arc-row input{text-align:center}.arc-skill-picker{position:relative;min-width:0}.arc-skill-trigger{width:100%;min-height:31px;display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid var(--etched);border-radius:6px;background:#111923;color:var(--txt);font:inherit;font-size:12px;text-align:left;cursor:pointer}.arc-skill-trigger .ph{color:var(--dim)}.arc-skill-trigger img,.arc-skill-option img{width:20px;height:20px;object-fit:contain;flex:0 0 auto}.arc-skill-trigger span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.arc-skill-menu{position:absolute;z-index:20;top:calc(100% + 4px);left:0;right:0;max-height:220px;overflow:auto;padding:4px;border:1px solid var(--teal);border-radius:7px;background:#111923;box-shadow:0 14px 28px rgba(0,0,0,.45)}.arc-skill-menu[hidden]{display:none}.arc-skill-option{width:100%;display:flex;align-items:center;gap:7px;padding:6px;border:0;border-radius:5px;background:transparent;color:var(--txt);font:inherit;font-size:12px;text-align:left;cursor:pointer}.arc-skill-option:hover{background:color-mix(in srgb,var(--teal) 14%,transparent)}.arc-skill-option small{margin-left:auto;color:var(--gold);font-weight:800}.arc-skill-none{padding:8px;color:var(--dim);font-size:11px;text-align:center}.arc-remove{height:28px;padding:0;border:1px solid color-mix(in srgb,var(--danger) 45%,var(--line));border-radius:5px;background:color-mix(in srgb,var(--danger) 10%,transparent);color:var(--danger);cursor:pointer;font-size:17px;line-height:1}.arc-add{width:100%;margin-top:9px;padding:7px;border:1px dashed color-mix(in srgb,var(--teal) 50%,var(--line));border-radius:6px;background:transparent;color:var(--teal);font:700 12px/1 inherit;cursor:pointer}.arc-add:hover{background:color-mix(in srgb,var(--teal) 10%,transparent)}
+  .arc-empty{padding:54px 20px;text-align:center;color:var(--dim);line-height:1.8}.arc-note{margin:14px 0 0;color:var(--dim);font-size:11px;line-height:1.6}.arc-note b{color:var(--txt)}
+  @media (max-width:900px){.arc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:600px){.arc-root{padding:16px 14px 28px}.arc-head{flex-direction:column}.arc-char-select{width:100%}.arc-goal,.arc-grid,.arc-level-grid{grid-template-columns:1fr}}
+
   /* 화면공유 탭 */
   #view-screen .toolbar .search::before{content:"📡"}
   .screen-wrap{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -1151,6 +1170,10 @@
 <section class="view" id="view-party">
   <div id="partyRoot" class="pt-root"></div>
 </section>
+<!-- 아르카나 탭: 현재 장착분을 제외한 신규 제작 계획 -->
+<section class="view" id="view-arcana">
+  <div class="arc-root" id="arcanaRoot"></div>
+</section>
 <!-- 파티 모집 생성 모달 -->
 <div id="ptModal" class="hw-modal-back">
   <div class="hw-modal">
@@ -1268,7 +1291,7 @@
       </div>
       <div id="adminImportPanel" hidden>
         <div class="hw-head" style="margin-top:24px">
-          <div><h2>운영 데이터 가져오기</h2><p>운영(<code>.env.real</code>) DB의 모든 데이터(캐릭터·그룹·파티·숙제·캐시)를 로컬로 복사해 테스트에 사용합니다. <b>로컬의 현재 데이터는 덮어써집니다.</b> 로컬 실행 시에만 표시됩니다.</p></div>
+          <div><h2>운영 데이터 가져오기</h2><p>운영(<code>.env.real</code>) DB의 캐릭터·그룹·파티·숙제·캐시와 직업 통계·아르카나 옵션을 로컬로 복사해 테스트에 사용합니다. <b>로컬의 현재 데이터는 덮어써집니다.</b> 로컬 실행 시에만 표시됩니다.</p></div>
         </div>
         <div class="hw-actions"><button class="hw-mini" id="adminImportProd" type="button">운영 데이터 로컬로 가져오기</button><span id="adminImportStatus" class="hw-note" style="margin:0"></span></div>
       </div>
@@ -1312,10 +1335,10 @@ async function j(u){const r=await fetch(u,{credentials:"same-origin",headers:aut
 // 캐시(SB)에 채우고(sbLoad) 쓰기는 캐시 갱신 + 서버 저장(디바운스)로 처리한다(sbSave).
 // 서버 접속 실패 시 localStorage 로 폴백해 오프라인에서도 계속 동작한다.
 const SB={};
-const SB_KEYS=["mychars","mychar_groups","parties","homework_chars","op_cfg","own"];
+const SB_KEYS=["mychars","mychar_groups","parties","homework_chars","arcana_plans","op_cfg","own"];
 // 서버 키 → (구버전) localStorage 키. 기존 사용자의 로컬 데이터를 자동 이관하는 데도 쓴다.
 const SB_LEGACY={mychars:"aion2_mychars",mychar_groups:"aion2_mychar_groups",parties:"aion2_parties",
-  homework_chars:"aion2_homework_chars",op_cfg:"aion2_operator_cfg",own:"aion2_own"};
+  homework_chars:"aion2_homework_chars",arcana_plans:"aion2_arcana_plans",op_cfg:"aion2_operator_cfg",own:"aion2_own"};
 function sbLocal(k){try{const s=localStorage.getItem(SB_LEGACY[k]);return s?JSON.parse(s):null;}catch(e){return null;}}
 function sbGet(k,def){return SB[k]==null?def:SB[k];}
 let sbTimers={};
@@ -1378,7 +1401,7 @@ async function refreshAdminState(){
   if(crawlPanel)crawlPanel.hidden=!isAdmin;
   if(isAdmin){ await renderAdminRequests(); await renderAdminAccessLog(); await refreshCrawlStatus(); }
   else adminDeleteGroups=new Set();
-  if(!isAdmin&&document.querySelector(".view.active")?.id==="view-settings")showView("mychar");
+  if(!isAdmin&&["view-settings","view-craft"].includes(document.querySelector(".view.active")?.id))showView("mychar");
   if(typeof renderTabs==="function")renderTabs();
   if(typeof renderGroupDeleteAction==="function")renderGroupDeleteAction();
   if(typeof renderMyChars==="function")renderMyChars();
@@ -1482,13 +1505,14 @@ const TABS=[
   {id:"mychar", label:"🗂️ 캐릭"},
   // {id:"char",  label:"🧝 캐릭터"},   // 기능 유지, 탭만 숨김 (검색은 내 캐릭터 탭으로 이관)
   {id:"party", label:"🛡️ 파티"},
+  {id:"arcana", label:"🔮 아르카나"},
   {id:"craft", label:"⚒️ 제작"},
   {id:"homework", label:"📅 숙제"},
   // {id:"screen", label:"📱 화면공유"},   // 기능 유지, 탭만 숨김
   {id:"settings", label:"⚙️ 설정"},
 ];
 function showView(id){
-  if(id==="settings"&&!isAdmin)id="mychar";
+  if((id==="settings"||id==="craft")&&!isAdmin)id="mychar";
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+id));
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view===id));
   // 파티 탭 진입 시 항상 최상위(목록) 화면부터 노출한다.
@@ -1498,6 +1522,7 @@ function showView(id){
   }
   // 숙제 탭 진입 시 현재 그룹·설정·수기계산을 최신으로 다시 그린다.
   if(id==="homework" && typeof renderHomework==="function") renderHomework();
+  if(id==="arcana" && typeof renderArcana==="function") renderArcana();
   // 현재 탭을 URL 해시에 반영(링크 공유 시 해당 탭으로 바로 접속). replaceState 라 hashchange 미발생.
   const want="#"+id;
   if(location.hash!==want) history.replaceState(null,"",location.pathname+location.search+want);
@@ -1514,11 +1539,106 @@ function renderTabs(){
   const nav=document.getElementById("tabs");
   nav.innerHTML="";
   const active=document.querySelector(".view.active")?.id?.replace("view-","")||"mychar";
-  TABS.filter(t=>t.id!=="settings"||isAdmin).forEach(t=>{
+  TABS.filter(t=>!["settings","craft"].includes(t.id)||isAdmin).forEach(t=>{
     const b=el("button","tab"+(t.id===active?" active":"")); b.dataset.view=t.id; b.textContent=t.label;
     b.onclick=()=>showView(t.id);
     nav.appendChild(b);
   });
+}
+
+// ── 아르카나 제작 계획 ─────────────────────────────────────────────
+// 현재 장착한 아르카나는 참조하지 않는다. 새로 제작할 카드에 붙일 옵션만 기록한다.
+const ARCANA_TYPES=["성배","양피지","나침반","종","거울","천칭"];
+let arcanaSelectedKey="", arcanaStatCache={}, arcanaStatLoads={}, arcanaOpenPicker=null;
+let arcanaBaseSkillCache={}, arcanaBaseSkillLoads={}, arcanaSkillTargetCache={}, arcanaSkillTargetLoads={};
+function arcanaPlans(){return sbGet("arcana_plans",{})||{};}
+function saveArcanaPlans(v){sbSave("arcana_plans",v);}
+function arcanaChars(){const g=effectiveGroup();return g?mcChars().filter(c=>c.group===g):[];}
+async function loadArcanaStats(job){
+  if(Object.hasOwn(arcanaStatCache,job))return arcanaStatCache[job];
+  if(!arcanaStatLoads[job])arcanaStatLoads[job]=j(`/api/jobstats?category=arcana&job=${encodeURIComponent(job||"")}`)
+    .then(r=>arcanaStatCache[job]=(r.rows||[]).find(x=>x.category==="arcana")?.data?.arcana||null)
+    .catch(()=>arcanaStatCache[job]=null);
+  return arcanaStatLoads[job];
+}
+async function loadArcanaBaseSkills(c){
+  if(Object.hasOwn(arcanaBaseSkillCache,c.key))return arcanaBaseSkillCache[c.key];
+  if(!arcanaBaseSkillLoads[c.key])arcanaBaseSkillLoads[c.key]=j(`/api/char/cached?${charQS(c.serverId,c.characterId)}`)
+    .then(r=>{const eq=(((r||{}).data||{}).equipment)||{},list=(eq.skill||{}).skillList||[],items=(eq.equipment||{}).equipmentList||[];
+      const equipped={};items.filter(x=>/^Arcana/.test(x.slotPosName||"")).forEach(x=>((x.detail||{}).subSkills||[]).forEach(s=>equipped[s.name]=(equipped[s.name]||0)+(+s.level||0)));
+      return arcanaBaseSkillCache[c.key]={base:Object.fromEntries(list.map(s=>[s.name,+s.skillLevel||0])),equipped};})
+    .catch(()=>arcanaBaseSkillCache[c.key]={base:{},equipped:{}});
+  return arcanaBaseSkillLoads[c.key];
+}
+async function loadArcanaSkillTargets(job){
+  if(Object.hasOwn(arcanaSkillTargetCache,job))return arcanaSkillTargetCache[job];
+  if(!arcanaSkillTargetLoads[job])arcanaSkillTargetLoads[job]=j(`/api/jobstats?category=skills&job=${encodeURIComponent(job||"")}`)
+    .then(r=>{const data=(r.rows||[]).find(x=>x.category==="skills")?.data||{},out={};[...(data.active||[]),...(data.passive||[])].forEach(s=>out[s.name]=+s.avg_level||0);return arcanaSkillTargetCache[job]=out;})
+    .catch(()=>arcanaSkillTargetCache[job]={});
+  return arcanaSkillTargetLoads[job];
+}
+function arcanaRecommendations(data){
+  const seen=new Map();
+  ARCANA_TYPES.forEach(type=>(data?.[type]?.skills||[]).forEach(s=>{
+    const old=seen.get(s.name); if(!old||(+s.pick_rate||0)>(+old.pick_rate||0))seen.set(s.name,s);
+  }));
+  const all=[...seen.values()].sort((a,b)=>(+b.pick_rate||0)-(+a.pick_rate||0));
+  // 액티브 후보는 양피지·나침반에서 먼저 뽑고, 부족한 자리는 성배·천칭으로 보충한다.
+  const activeNames=new Set([...(data?.["양피지"]?.skills||[]),...(data?.["나침반"]?.skills||[])].map(s=>s.name));
+  const active=all.filter(s=>activeNames.has(s.name)).slice(0,7);
+  if(active.length<7)all.filter(s=>!active.some(x=>x.name===s.name)).slice(0,7-active.length).forEach(s=>active.push(s));
+  const passiveNames=new Set([...(data?.["종"]?.skills||[]),...(data?.["거울"]?.skills||[])].map(s=>s.name));
+  const passive=all.filter(s=>passiveNames.has(s.name)).slice(0,7);
+  return {active,passive};
+}
+function renderArcana(){
+  const root=document.getElementById("arcanaRoot"); if(!root)return;
+  const chars=arcanaChars();
+  if(!chars.length){root.innerHTML='<div class="arc-empty">먼저 <b>내 캐릭터</b> 탭에서 캐릭터를 등록하고 현재 그룹을 선택하세요.</div>';return;}
+  if(!chars.some(c=>c.key===arcanaSelectedKey))arcanaSelectedKey=chars[0].key;
+  const c=chars.find(x=>x.key===arcanaSelectedKey)||chars[0];
+  root.innerHTML=`<div class="arc-head"><div><h2>🔮 아르카나 제작 계획</h2><p><b>${esc(c.name)}</b>의 현재 장착 아르카나는 제외합니다. 새로 제작할 카드의 스킬과 레벨만 기록하세요.</p></div><select class="arc-char-select" id="arcanaChar">${chars.map(x=>`<option value="${esc(x.key)}"${x.key===c.key?" selected":""}>${esc(x.name)} · ${esc(x.className||"직업 미상")}</option>`).join("")}</select></div><div class="arc-empty">${esc(c.className||"이 캐릭터의 직업")} 아르카나 선호도를 불러오는 중…</div>`;
+  document.getElementById("arcanaChar").onchange=e=>{arcanaSelectedKey=e.target.value;renderArcana();};
+  if(!Object.hasOwn(arcanaStatCache,c.className)){
+    loadArcanaStats(c.className).then(()=>{if(document.querySelector("#view-arcana.active"))renderArcana();});
+    return;
+  }
+  const data=arcanaStatCache[c.className];
+  if(!data){root.querySelector(".arc-empty").innerHTML=`<b>${esc(c.className||"이 직업")}</b> 아르카나 통계가 없습니다.<br>관리자 설정에서 <b>아르카나 옵션 수집</b>을 실행한 뒤 다시 확인하세요.`;return;}
+  if(!Object.hasOwn(arcanaBaseSkillCache,c.key)){
+    loadArcanaBaseSkills(c).then(()=>{if(document.querySelector("#view-arcana.active"))renderArcana();});
+    return;
+  }
+  if(!Object.hasOwn(arcanaSkillTargetCache,c.className)){
+    loadArcanaSkillTargets(c.className).then(()=>{if(document.querySelector("#view-arcana.active"))renderArcana();});
+    return;
+  }
+  const plan=arcanaPlans()[c.key]||{};
+  const rec=arcanaRecommendations(data);
+  const skillLevels=arcanaBaseSkillCache[c.key],baseSkills=skillLevels.base,equippedSkills=skillLevels.equipped;
+  const skillTargets=arcanaSkillTargetCache[c.className];
+  const chips=list=>list.length?list.slice(0,5).map(s=>`<span class="arc-chip">${esc(s.name)} <small>현재 Lv.${baseSkills[s.name]||0} · ${(+s.pick_rate||0).toFixed(1)}%</small></span>`).join(""):'<span class="arc-chip">추천 데이터 없음</span>';
+  const added={}; ARCANA_TYPES.forEach(type=>(plan[type]||[]).forEach(p=>{if(p.skill)added[p.skill]=(added[p.skill]||0)+Math.max(1,Math.min(5,+p.level||1));}));
+  const levelRows=(list,isActive)=>list.map((s,i)=>{const current=baseSkills[s.name]||0,equipped=equippedSkills[s.name]||0,plus=added[s.name]||0,bare=Math.max(0,current-equipped),planned=bare+plus,rawTarget=Math.round(skillTargets[s.name]||0),over20=rawTarget>20,target=rawTarget?(over20?20:rawTarget===19?20:rawTarget):0,reached=target&&(over20?planned>=20:(target===16||target===20)?Math.abs(planned-target)<=1:planned>=target),low=isActive&&i<5&&target&&!reached,neutral=!isActive||(isActive&&i>=5&&!reached);return `<div class="arc-level-row"><span>${esc(s.name)}</span><span class="target">채용률 ${(+s.pick_rate||0).toFixed(1)}% · 목표 ${target||"–"}</span><span class="lv"><b class="${low?"low":neutral?"neutral":""}">Lv.${planned}${plus?`(+${plus})`:""}</b></span></div>`;}).join("");
+  const activeRows=levelRows(rec.active,true), passiveRows=levelRows(rec.passive,false);
+  let html=`<div class="arc-head"><div><h2>🔮 아르카나 제작 계획</h2><p><b>${esc(c.name)}</b> · ${esc(c.className||"직업 미상")} · 현재 장착 아르카나는 제외하고 신규 제작 계획만 반영합니다.</p></div><select class="arc-char-select" id="arcanaChar">${chars.map(x=>`<option value="${esc(x.key)}"${x.key===c.key?" selected":""}>${esc(x.name)} · ${esc(x.className||"직업 미상")}</option>`).join("")}</select></div><div class="arc-goal"><div class="arc-goal-card"><b>1순위 · 액티브 상위 5개 Lv.20</b><div class="arc-chips">${chips(rec.active)}</div><p>양피지·나침반 중심의 상위 채용 스킬을 우선 Lv.20 목표로 잡습니다.</p></div><div class="arc-goal-card"><b>2순위 · 남는 투자 패시브 집중</b><div class="arc-chips">${chips(rec.passive)}</div><p>액티브 5개 목표 후 종·거울의 상위 패시브에 레벨을 집중합니다.</p></div></div><section class="arc-levels"><h3>내 스킬 레벨 · 랭커 통계 상위 5개</h3><div class="arc-level-grid"><div class="arc-level-col"><h4>🗡️ 액티브 · 목표 Lv.20</h4>${activeRows}</div><div class="arc-level-col"><h4>🛡️ 패시브 · 남는 투자 집중</h4>${passiveRows}</div></div></section><div class="arc-grid">`;
+  ARCANA_TYPES.forEach(type=>{
+    const skills=(data[type]?.skills||[]).slice().sort((a,b)=>(+b.pick_rate||0)-(+a.pick_rate||0));
+    const picks=Array.isArray(plan[type])?plan[type]:[];
+    const cardLevel=Math.max(1,...picks.map(p=>Math.min(5,Math.max(1,+p.level||1))));
+    const pref=skills.slice(0,3).map(s=>`${esc(s.name)} ${(+s.pick_rate||0).toFixed(1)}%`).join(" · ")||"추천 데이터 없음";
+    const picker=(p,i)=>{const chosen=p.skill||"",skillLevel=Math.max(1,Math.min(5,+p.level||1)),used=new Set(picks.map(x=>x.skill).filter(Boolean)),cur=skills.find(s=>s.name===chosen),available=skills.filter(s=>s.name===chosen||!used.has(s.name)),open=arcanaOpenPicker?.type===type&&arcanaOpenPicker?.index===i;return `<div class="arc-skill-picker"><button class="arc-skill-trigger" data-arc-trigger="${type}" data-arc-index="${i}" type="button">${cur?`<img src="${esc(cur.icon_url||"")}" ${oe}><span>${esc(cur.name)} · Lv.${skillLevel}</span>`:'<span class="ph">스킬 선택 · Lv.1</span>'}</button><div class="arc-skill-menu" data-arc-menu="${type}" data-arc-index="${i}"${open?"":" hidden"}>${available.length?available.map(s=>`<button class="arc-skill-option" data-arc-option="${type}" data-arc-index="${i}" data-arc-value="${esc(s.name)}" type="button"><img src="${esc(s.icon_url||"")}" ${oe}><span>${esc(s.name)}</span><small>${(+s.pick_rate||0).toFixed(1)}%</small></button>`).join(""):'<div class="arc-skill-none">선택 가능한 스킬이 없습니다.</div>'}</div></div>`;};
+    html+=`<div class="arc-card"><div class="arc-card-h"><b>${type}</b><div class="arc-card-level"><strong>Lv.${cardLevel}</strong></div></div><p class="arc-pref"><b>선호</b> ${pref}</p><div data-arc-rows="${type}">${picks.map((p,i)=>`<div class="arc-row">${picker(p,i)}<span class="arc-card-level"><button data-arc-skill-level="${type}" data-arc-index="${i}" data-delta="-1" type="button">−</button><strong>Lv.${Math.max(1,Math.min(5,+p.level||1))}</strong><button data-arc-skill-level="${type}" data-arc-index="${i}" data-delta="1" type="button"${cardLevel>=5?" disabled":""}>+</button></span><button class="arc-remove" data-arc-remove="${type}" data-arc-index="${i}" title="삭제">×</button></div>`).join("")}</div>${picks.length<4?`<button class="arc-add" data-arc-add="${type}">+ 스킬 추가 (${picks.length}/4)</button>`:`<p class="arc-pref">스킬 추가 4/4 완료</p>`}</div>`;
+  });
+  root.innerHTML=html+`</div><p class="arc-note">추천은 직업별 상위 랭커의 아르카나 채용률입니다. <b>성배·천칭은 액티브/패시브 모두 가능</b>하며, 입력한 구성은 이 캐릭터의 신규 제작 계획으로 저장됩니다.</p>`;
+  root.querySelector(".arc-levels h3").textContent="내 스킬 레벨";
+  document.getElementById("arcanaChar").onchange=e=>{arcanaSelectedKey=e.target.value;renderArcana();};
+  const update=(type,index,field,value)=>{const all=arcanaPlans(), cur=all[c.key]||{}; const rows=Array.isArray(cur[type])?cur[type]:[]; if(!rows[index])return; rows[index][field]=field==="level"?Math.max(1,Math.min(5,+value||1)):value; cur[type]=rows; all[c.key]=cur; saveArcanaPlans(all);};
+  root.querySelectorAll("[data-arc-trigger]").forEach(e=>e.onclick=()=>{const m=root.querySelector(`[data-arc-menu="${e.dataset.arcTrigger}"][data-arc-index="${e.dataset.arcIndex}"]`);root.querySelectorAll("[data-arc-menu]").forEach(x=>{if(x!==m)x.hidden=true;});m.hidden=!m.hidden;});
+  root.querySelectorAll("[data-arc-option]").forEach(e=>e.onclick=()=>{arcanaOpenPicker=null;update(e.dataset.arcOption,+e.dataset.arcIndex,"skill",e.dataset.arcValue);renderArcana();});
+  root.querySelectorAll("[data-arc-skill-level]").forEach(e=>e.onclick=()=>{const all=arcanaPlans(),cur=all[c.key]||{},type=e.dataset.arcSkillLevel,rows=cur[type]||[],row=rows[+e.dataset.arcIndex],delta=+e.dataset.delta;if(!row||(delta>0&&Math.max(1,...rows.map(x=>+x.level||1))>=5))return;row.level=Math.max(1,Math.min(5,(+row.level||1)+delta));cur[type]=rows;all[c.key]=cur;saveArcanaPlans(all);renderArcana();});
+  root.querySelectorAll("[data-arc-add]").forEach(e=>e.onclick=()=>{const all=arcanaPlans(),cur=all[c.key]||{},type=e.dataset.arcAdd;const rows=cur[type]||[];if(rows.length>=4)return;cur[type]=[...rows,{skill:"",level:1}];all[c.key]=cur;arcanaOpenPicker={type,index:rows.length};saveArcanaPlans(all);renderArcana();});
+  root.querySelectorAll("[data-arc-remove]").forEach(e=>e.onclick=()=>{const all=arcanaPlans(),cur=all[c.key]||{},type=e.dataset.arcRemove;cur[type]=(cur[type]||[]).filter((_,i)=>i!==+e.dataset.arcIndex);all[c.key]=cur;saveArcanaPlans(all);renderArcana();});
 }
 
 const HOMEWORK_DUNGEONS={
@@ -2333,6 +2453,7 @@ function refreshIdentityViews(){
   renderGroupSwitch(document.getElementById("mcGroupSwitch")?.value||"");
   renderMyChars();
   if(document.getElementById("hwCharacters")) renderHomework();
+  if(document.querySelector("#view-arcana.active")) renderArcana();
 }
 function updateCurName(){
   const e=document.getElementById("mcCurName"); if(!e)return;
@@ -2786,13 +2907,13 @@ async function runAdminCrawl(kind){
 
 // 운영(.env.real) 데이터를 로컬 저장소로 복사한 뒤, 화면을 최신 데이터로 다시 로드한다.
 async function importProdData(){
-  if(!confirm("운영 데이터를 로컬로 가져옵니다.\n로컬의 현재 데이터(캐릭터·파티·숙제 등)는 덮어써집니다. 진행할까요?"))return;
+  if(!confirm("운영 데이터를 로컬로 가져옵니다.\n로컬의 현재 데이터(캐릭터·파티·숙제·직업 통계·아르카나 옵션 등)는 덮어써집니다. 진행할까요?"))return;
   const status=document.getElementById("adminImportStatus");
   const btn=document.getElementById("adminImportProd");
   if(btn)btn.disabled=true; if(status)status.textContent="가져오는 중…";
   try{
     const r=await postJSON("/api/admin/import-prod");
-    if(status)status.textContent=`완료: KV ${r.kv}건 · 캐릭터 캐시 ${r.char_cache}건. 새로고침합니다…`;
+    if(status)status.textContent=`완료: KV ${r.kv}건 · 캐릭터 캐시 ${r.char_cache}건 · 통계/아르카나 ${r.job_stats}건. 새로고침합니다…`;
     setTimeout(()=>location.reload(),700);
   }catch(e){
     if(status)status.textContent="실패: "+(e.message||e);
