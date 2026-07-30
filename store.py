@@ -49,6 +49,54 @@ DDL = (
     "CREATE INDEX IF NOT EXISTS ix_job_stats_cap ON job_stats(captured_at)",
 )
 
+# 제작 레시피·아이템·재료·시세도 상태 데이터와 같은 Turso에 둔다. Render의 로컬
+# 파일시스템은 영속적이지 않으므로, 이 스키마는 배포 환경에서 특히 중요하다.
+CRAFT_DDL = (
+    "CREATE TABLE IF NOT EXISTS recipes ("
+    " code INTEGER PRIMARY KEY, name TEXT NOT NULL, race INTEGER, race_text TEXT,"
+    " type INTEGER, type_text TEXT, class1 INTEGER, class1_text TEXT, class2 INTEGER,"
+    " class2_text TEXT, full_text TEXT, grade INTEGER, grade_text TEXT, mastery_grade INTEGER,"
+    " mastery_level INTEGER, cost_gold INTEGER, combo_probability REAL, product_code INTEGER,"
+    " combo_product_code INTEGER, sort_order INTEGER, raw_json TEXT)",
+    "CREATE TABLE IF NOT EXISTS materials ("
+    " recipe_code INTEGER NOT NULL, slot INTEGER NOT NULL, code INTEGER NOT NULL, name TEXT,"
+    " icon TEXT, grade INTEGER, enchant INTEGER, count INTEGER, PRIMARY KEY(recipe_code, slot))",
+    "CREATE TABLE IF NOT EXISTS items ("
+    " code INTEGER PRIMARY KEY, name TEXT, icon TEXT, grade INTEGER, image_file TEXT)",
+    "CREATE TABLE IF NOT EXISTS prices ("
+    " id INTEGER PRIMARY KEY, item_id_raw TEXT, item_code INTEGER, item_name TEXT, server_id TEXT,"
+    " market_type TEXT, race TEXT, price INTEGER, updated_at TEXT, source TEXT)",
+    "CREATE TABLE IF NOT EXISTS price_overrides ("
+    " item_code INTEGER PRIMARY KEY, price INTEGER NOT NULL, updated_at TEXT)",
+    "CREATE INDEX IF NOT EXISTS idx_mat_recipe ON materials(recipe_code)",
+    "CREATE INDEX IF NOT EXISTS idx_mat_code ON materials(code)",
+    "CREATE INDEX IF NOT EXISTS idx_rec_class ON recipes(class1, class2)",
+    "CREATE INDEX IF NOT EXISTS idx_rec_race ON recipes(race)",
+    "CREATE INDEX IF NOT EXISTS idx_price_code ON prices(item_code)",
+    "CREATE INDEX IF NOT EXISTS idx_price_name ON prices(item_name)",
+    "CREATE VIEW IF NOT EXISTS v_price_best AS "
+    "WITH ranked AS ("
+    " SELECT p.*, ROW_NUMBER() OVER (PARTITION BY item_code "
+    " ORDER BY (market_type='world') DESC, updated_at DESC) AS rn "
+    " FROM prices p WHERE item_code IS NOT NULL),"
+    " mbest AS (SELECT item_code, price AS best_price, market_type AS best_market, "
+    " server_id AS best_server, race AS best_race, updated_at AS best_updated FROM ranked WHERE rn=1) "
+    "SELECT COALESCE(o.item_code,m.item_code) AS item_code, COALESCE(o.price,m.best_price) AS best_price, "
+    " CASE WHEN o.item_code IS NOT NULL THEN 'override' ELSE m.best_market END AS best_market, "
+    " m.best_server AS best_server, m.best_race AS best_race, "
+    " COALESCE(o.updated_at,m.best_updated) AS best_updated, "
+    " CASE WHEN o.item_code IS NOT NULL THEN 1 ELSE 0 END AS is_override "
+    "FROM mbest m FULL OUTER JOIN price_overrides o ON o.item_code=m.item_code",
+    "CREATE VIEW IF NOT EXISTS v_recipe_cost AS "
+    "SELECT r.code, r.name, r.full_text, r.race_text, r.grade_text, "
+    " SUM(CASE WHEN m.name='키나(통합)' THEN m.count ELSE 0 END) AS kina_cost, "
+    " SUM(CASE WHEN m.name<>'키나(통합)' THEN m.count*COALESCE(b.best_price,0) ELSE 0 END) AS material_cost, "
+    " SUM(CASE WHEN m.name<>'키나(통합)' AND b.best_price IS NOT NULL THEN 1 ELSE 0 END) AS priced_materials, "
+    " SUM(CASE WHEN m.name<>'키나(통합)' THEN 1 ELSE 0 END) AS total_materials "
+    "FROM recipes r JOIN materials m ON m.recipe_code=r.code "
+    "LEFT JOIN v_price_best b ON b.item_code=m.code GROUP BY r.code",
+)
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -81,6 +129,16 @@ class LocalBackend:
         con = self._con()
         try:
             con.execute(sql, args)
+            con.commit()
+        finally:
+            con.close()
+
+    def exec_many(self, stmts):
+        """여러 SQL을 하나의 트랜잭션으로 실행한다."""
+        con = self._con()
+        try:
+            for sql, args in stmts:
+                con.execute(sql, args or ())
             con.commit()
         finally:
             con.close()
@@ -180,6 +238,11 @@ class TursoBackend:
         self._ensure()
         self._pipeline([(sql, args)])
 
+    def exec_many(self, stmts):
+        self._ensure()
+        if stmts:
+            self._pipeline(stmts)
+
 
 # ---------- 공통 저장소 ----------
 class Store:
@@ -194,6 +257,10 @@ class Store:
     @property
     def kind(self):
         return self.backend.kind
+
+    def ensure_craft_schema(self):
+        """제작 데이터 스키마와 대표가/재료비 뷰를 보장한다."""
+        self.backend.exec_many([(sql, ()) for sql in CRAFT_DDL])
 
     # 범용 KV(JSON)
     def kv_get(self, k):

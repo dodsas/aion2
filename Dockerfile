@@ -8,12 +8,11 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# 앱 전체 복사 — index.html·server.py·이미지·크래프트 DB 가 전부 리포에 포함돼 있다.
+# 앱 전체 복사 — index.html·server.py·이미지가 포함되며, 제작 데이터는 Turso에서 읽는다.
 # (불필요 항목은 .dockerignore 로 제외)
 COPY . /app
 
-# 비루트 사용자로 실행. server.py 가 기동 시 뷰 재생성/price_overrides 테이블 생성으로
-# DB 에 써야 하므로 /app 를 쓰기 가능하게 소유권을 넘긴다.
+# 비루트 사용자로 실행.
 RUN useradd -u 1000 -m -d /home/app app \
  && chown -R app:app /app
 USER app

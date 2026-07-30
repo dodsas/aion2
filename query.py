@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-아이온2 제작 DB 간단 조회 CLI.
+아이온2 제작 Turso DB 간단 조회 CLI.
 
 예:
   python3 query.py fields                     # 제작 분야/종류 목록
@@ -9,17 +9,29 @@
   python3 query.py recipe "빛나는 창룡왕의 대검"  # 이름으로도 가능
   python3 query.py cost "기룡왕의 대검"          # 재료비 추정 요약
 """
-import sqlite3
 import sys
-from pathlib import Path
+from store import Store, load_dotenv
 
-DB = Path(__file__).resolve().parent / "aion2_craft.db"
+
+class Result:
+    def __init__(self, rows): self.rows = rows
+    def fetchone(self): return self.rows[0] if self.rows else None
+    def fetchall(self): return self.rows
+    def __iter__(self): return iter(self.rows)
+
+
+class Connection:
+    def __init__(self, store): self.store = store
+    def execute(self, sql, args=()): return Result(self.store.backend.query(sql, args))
 
 
 def con():
-    c = sqlite3.connect(DB)
-    c.row_factory = sqlite3.Row
-    return c
+    load_dotenv()
+    store = Store()
+    if store.kind != "turso":
+        raise RuntimeError("Turso 연결 정보가 필요합니다.")
+    store.ensure_craft_schema()
+    return Connection(store)
 
 
 def fields():

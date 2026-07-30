@@ -19,6 +19,8 @@ logs/
 
 
 # SQLite 임시 파일 (WAL 모드)
+cache/
+*.db
 *.db-shm
 *.db-wal
 

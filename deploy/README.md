@@ -10,8 +10,8 @@ git archive → scp 로 dodsas 서버 전송 → 압축 해제 → deploy/deploy
 - **대상 서버**: `dodsas@dodsas.iptime.org:22311`
 - **작업 디렉토리**: `/home/dodsas/work/aion2`
 - **접속 URL**: `http://dodsas.iptime.org:9092` (yclaude=9091 과 겹치지 않게 9092)
-- 앱은 **파이썬 표준 라이브러리 전용** → 의존성 설치 없음. 크래프트 DB·이미지가
-  리포에 포함돼 이미지에 그대로 구워진다(별도 데이터 볼륨 불필요).
+- 앱은 **파이썬 표준 라이브러리 전용** → 의존성 설치 없음. 이미지만 이미지에 포함되며,
+  제작 데이터는 Turso 백업에서 조회 스냅샷으로 복원된다.
 
 ## 파일 구성
 
@@ -55,13 +55,12 @@ cd /home/dodsas/work/aion2 && HOST_PORT=9092 bash deploy/deploy.sh
 
 ## DB 갱신
 
-크래프트 DB 는 로컬에서 `crawl_craft.py`(또는 `update.sh`)로 갱신 후 **커밋·push** 하면
-다음 배포 때 이미지에 반영된다(현재 워크플로와 동일: "Update craft database" 커밋).
+크래프트 데이터는 `crawl_craft.py`(또는 `update.sh`)로 갱신하면 조회 스냅샷과 Turso 백업이
+함께 갱신된다. 데이터 SQLite 파일은 Git에 커밋하지 않는다.
 
 ## 참고 · 보안
 
-- `/api/set_price` 는 무인증 쓰기 엔드포인트다. 컨테이너 재배포 시 이미지의 원본 DB 로
-  돌아가므로 운영 중 입력한 시세 오버라이드는 유지되지 않는다(운영값을 남기려면 별도
-  볼륨 필요 — 필요 시 compose 에 추가).
+- `/api/set_price` 는 무인증 쓰기 엔드포인트다. 시세 오버라이드는 조회 스냅샷과 Turso에
+  함께 기록하므로 컨테이너 재배포 뒤에도 유지된다.
 - 포트를 직접 노출한다(yclaude 와 동일). 도메인/HTTPS/인증이 필요하면 호스트의
   리버스 프록시 뒤에 두면 된다.

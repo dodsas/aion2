@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-아이온2 제작(장비) 레시피 크롤러 + 로컬 SQLite DB 빌더.
+아이온2 제작(장비) 레시피 크롤러 + Turso 이관용 임시 SQLite 스냅샷 빌더.
 
 데이터 출처: 인벤 아이온2 DB 비공식 JSON API
   https://aion2.inven.co.kr/db/api/craft/getList?class1=<분야코드>
@@ -13,7 +13,7 @@
 비공식 엔드포인트를 그대로 호출하는 방식이다.
 
 사용법:
-  python3 crawl_craft.py            # 크롤 + DB 구축 + 이미지 다운로드
+  python3 crawl_craft.py            # 크롤 + 임시 DB 구축 + 이미지 다운로드
   python3 crawl_craft.py --no-images  # 이미지 제외
 """
 from __future__ import annotations
@@ -28,6 +28,8 @@ import urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+from craft_snapshot import SNAPSHOT_PATH, push_snapshot
+
 # WSL 등 일부 환경의 시스템 CA 인증서 결함(key usage 확장 누락)으로
 # 기본 검증이 실패하므로 검증을 끈 컨텍스트를 사용한다. (공개 데이터 조회 목적)
 SSL_CTX = ssl.create_default_context()
@@ -35,7 +37,8 @@ SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "aion2_craft.db"
+# 제작 서비스의 실제 조회 캐시. 크롤은 이 스냅샷을 갱신한 뒤 Turso 백업까지 동기화한다.
+DB_PATH = SNAPSHOT_PATH
 IMG_DIR = BASE_DIR / "images"
 RAW_DIR = BASE_DIR / "raw"
 
@@ -410,6 +413,8 @@ def main():
     if args.prices_only:
         print("시세만 갱신...")
         load_prices(crawl_prices())
+        print("Turso 백업 동기화...")
+        push_snapshot(DB_PATH)
         print("완료.")
         return
 
@@ -426,6 +431,8 @@ def main():
     if not args.no_prices:
         print("5) 시세 수집...")
         load_prices(crawl_prices())
+    print("6) Turso 백업 동기화...")
+    push_snapshot(DB_PATH)
     print("완료.")
 
 

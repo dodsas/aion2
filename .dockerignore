@@ -1,11 +1,12 @@
-# 이미지에는 앱 실행에 필요한 것만: server.py, index.html, images/, aion2_craft.db,
-# crawl_craft.py, query.py 등. 아래는 제외한다.
+# 이미지에는 앱 실행에 필요한 코드·이미지만 포함한다. 제작 데이터는 Turso에서 읽는다.
 .git
 .github
 .idea
 *.iml
 __pycache__
 *.pyc
+cache/
+*.db
 *.db-shm
 *.db-wal
 char_cache.db

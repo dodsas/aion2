@@ -24,6 +24,8 @@ import os
 import secrets
 import sqlite3
 import ssl
+import subprocess
+import sys
 import threading
 import time
 import urllib.request
@@ -33,14 +35,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote, urlencode
 
-import crawl_craft as ccf  # 공유 스키마 상수(PRICE_OVERRIDES_DDL, V_*_SQL)
 import crawl_jobstats as cjs  # 직업 통계 수집 로직(collect) 재사용
+from craft_snapshot import ensure_snapshot, pull_snapshot, sync_price_override
 from store import Store, TursoBackend, load_dotenv, read_env  # 상태 저장소(Turso/로컬 자동)
 
 load_dotenv()  # .env → os.environ (로컬 개발용; 없으면 무시)
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "aion2_craft.db"
 IMG_DIR = BASE_DIR / "images"
 INDEX = BASE_DIR / "index.html"
 
@@ -72,31 +73,22 @@ def _now_kst() -> str:
 
 
 def db():
-    con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    path = ensure_snapshot()
+    con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     return con
 
 
 def db_rw():
-    con = sqlite3.connect(DB_PATH, timeout=10)
+    path = ensure_snapshot()
+    con = sqlite3.connect(path, timeout=10)
     con.row_factory = sqlite3.Row
     return con
 
 
 def ensure_schema():
-    """price_overrides 테이블 보장 + (기존 DB 대상) override-aware 뷰로 업그레이드."""
-    con = db_rw()
-    try:
-        con.executescript(ccf.PRICE_OVERRIDES_DDL)
-        if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' "
-                       "AND name='prices'").fetchone():
-            con.executescript("DROP VIEW IF EXISTS v_recipe_cost;"
-                              "DROP VIEW IF EXISTS v_price_best;")
-            con.executescript(ccf.V_PRICE_BEST_SQL)
-            con.executescript(ccf.V_RECIPE_COST_SQL)
-        con.commit()
-    finally:
-        con.close()
+    """조회용 로컬 스냅샷이 없으면 Turso 백업에서 복원한다."""
+    ensure_snapshot()
 
 
 def rows_to_dicts(rows):
@@ -257,19 +249,37 @@ def api_item(con, q):
 
 
 def api_set_price(con, data):
-    """가격 오버라이드 저장/삭제. 전역(그 아이템을 쓰는 모든 레시피)에 즉시 반영."""
+    """공용 시세 오버라이드 저장/삭제. 서버 시세와 대표가에 즉시 반영."""
     code = data.get("item_code")
     if code is None:
         return {"error": "item_code required"}
     code = int(code)
     price = data.get("price")
-    if price in (None, "", "null"):
-        con.execute("DELETE FROM price_overrides WHERE item_code=?", (code,))
-    else:
+    clearing = price in (None, "", "null")
+    if not clearing:
         price = int(float(price))
         if price < 0:
             return {"error": "price must be >= 0"}
+    # 조회 캐시를 갱신하기 전에 Turso 백업에도 먼저 반영한다. 캐시가 사라져 다시
+    # 복원되더라도 사용자가 입력한 공용 시세가 유지된다.
+    sync_price_override(code, None if clearing else price)
+    if clearing:
+        con.execute("DELETE FROM price_overrides WHERE item_code=?", (code,))
+        # 수동 입력은 실제 서버 시세 테이블에도 별도 출처로 남긴다. 원복 시 해당 행도
+        # 지워야 수집된 거래소 시세가 다시 대표가가 된다.
+        con.execute("DELETE FROM prices WHERE item_code=? AND source='user_override'", (code,))
+    else:
         now = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+        item = con.execute("SELECT name FROM items WHERE code=?", (code,)).fetchone()
+        if not item:
+            return {"error": "item not found"}
+        # price_overrides 는 대표가 우선순위를 보장하고, prices 의 공용 행은 시세 이력/API에도
+        # 같은 값을 노출한다. 따라서 다른 접속자에게도 서버 시세로 즉시 전달된다.
+        con.execute("DELETE FROM prices WHERE item_code=? AND source='user_override'", (code,))
+        con.execute(
+            "INSERT INTO prices(item_id_raw,item_code,item_name,server_id,market_type,race,price,updated_at,source) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            (f"api_{code}", code, item["name"], None, "world", None, price, now, "user_override"))
         con.execute(
             "INSERT INTO price_overrides(item_code, price, updated_at) VALUES (?,?,?) "
             "ON CONFLICT(item_code) DO UPDATE SET price=excluded.price, "
@@ -281,7 +291,7 @@ def api_set_price(con, data):
         "FROM v_price_best WHERE item_code=?", (code,)).fetchone()
     used = con.execute(
         "SELECT COUNT(*) c FROM materials WHERE code=?", (code,)).fetchone()["c"]
-    return {"ok": True, "item_code": code,
+    return {"ok": True, "item_code": code, "shared_market_updated": price not in (None, "", "null"),
             "best": dict(row) if row else None, "applied_to_recipes": used}
 
 
@@ -649,6 +659,10 @@ _CRAWL_LOCK = threading.Lock()
 _CRAWL_STATE = {"running": False, "last_started": None, "last_finished": None,
                 "last_ok": None, "last_error": None, "jobs": 0, "rows": 0,
                 "captured_at": None, "last_trigger": None}
+_ARCANA_CRAWL_STATE = {"running": False, "last_started": None, "last_finished": None,
+                       "last_ok": None, "last_error": None, "rows": 0}
+_CRAFT_CRAWL_STATE = {"running": False, "last_started": None, "last_finished": None,
+                      "last_ok": None, "last_error": None, "message": None}
 
 
 def _parse_hhmm(s):
@@ -697,6 +711,52 @@ def _run_jobstats_crawl(trigger="manual"):
         _CRAWL_LOCK.release()
 
 
+def _run_arcana_options_crawl():
+    """아르카나 옵션 풀만 빠르게 재수집한다."""
+    if not _CRAWL_LOCK.acquire(blocking=False):
+        return {"ok": False, "error": "다른 크롤링이 진행 중입니다."}
+    try:
+        _ARCANA_CRAWL_STATE.update(running=True, last_started=_now_kst(), last_error=None)
+        captured_at = _now_kst()
+        row = cjs.collect_arcana_options()
+        STORE.job_stats_write(captured_at, [row])
+        _ARCANA_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=True,
+                                  rows=1, captured_at=captured_at)
+        return {"ok": True, "captured_at": captured_at}
+    except Exception as e:
+        _ARCANA_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=False,
+                                  last_error=str(e))
+        return {"ok": False, "error": str(e)}
+    finally:
+        _CRAWL_LOCK.release()
+
+
+def _run_craft_refresh(mode="crawl"):
+    """제작 스냅샷 갱신 또는 Turso 백업 복원을 백그라운드에서 실행한다."""
+    if not _CRAWL_LOCK.acquire(blocking=False):
+        return {"ok": False, "error": "다른 크롤링이 진행 중입니다."}
+    try:
+        _CRAFT_CRAWL_STATE.update(running=True, last_started=_now_kst(), last_error=None, message=None)
+        if mode == "restore":
+            pull_snapshot()
+            message = "Turso 백업에서 제작 스냅샷을 복원했습니다."
+        else:
+            # 이미지 다운로드는 별도 자산 작업이므로 제외하고, 레시피·시세·스냅샷/Turso 동기화만 수행한다.
+            p = subprocess.run([sys.executable, str(BASE_DIR / "crawl_craft.py"), "--no-images"],
+                               cwd=BASE_DIR, text=True, capture_output=True, timeout=900)
+            if p.returncode:
+                raise RuntimeError((p.stderr or p.stdout or "제작 크롤링 실패").strip()[-1200:])
+            message = "제작 레시피·시세 수집 및 Turso 백업 동기화를 완료했습니다."
+        _CRAFT_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=True, message=message)
+        return {"ok": True, "message": message}
+    except Exception as e:
+        _CRAFT_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=False,
+                                  last_error=str(e))
+        return {"ok": False, "error": str(e)}
+    finally:
+        _CRAWL_LOCK.release()
+
+
 def _jobstats_scheduler():
     """매일 CRON_HHMM(KST)에 크롤을 실행하는 데몬 루프."""
     while True:
@@ -710,19 +770,28 @@ def _jobstats_scheduler():
         time.sleep(60)  # 실행 직후 재트리거 방지(다음 계산이 익일로 넘어가도록)
 
 
-def api_admin_crawl_start():
-    """수동 크롤 시작(백그라운드). 이미 진행 중이면 상태만 알린다."""
-    if _CRAWL_STATE["running"]:
+def api_admin_crawl_start(kind="jobstats"):
+    """관리자 수동 데이터 작업 시작. 종류별 실행은 모두 백그라운드 처리한다."""
+    state = {"jobstats": _CRAWL_STATE, "arcana": _ARCANA_CRAWL_STATE,
+             "craft": _CRAFT_CRAWL_STATE, "restore": _CRAFT_CRAWL_STATE}.get(kind)
+    if not state:
+        return {"ok": False, "error": "unknown crawl kind"}
+    if state["running"] or _CRAWL_STATE["running"] or _ARCANA_CRAWL_STATE["running"] or _CRAFT_CRAWL_STATE["running"]:
         return {"ok": False, "running": True, "error": "이미 크롤링이 진행 중입니다."}
-    threading.Thread(target=_run_jobstats_crawl, args=("manual",), daemon=True).start()
-    return {"ok": True, "started": True}
+    target = {"jobstats": lambda: _run_jobstats_crawl("manual"),
+              "arcana": _run_arcana_options_crawl,
+              "craft": lambda: _run_craft_refresh("crawl"),
+              "restore": lambda: _run_craft_refresh("restore")}[kind]
+    threading.Thread(target=target, daemon=True).start()
+    return {"ok": True, "started": True, "kind": kind}
 
 
 def api_admin_crawl_status():
     """크롤 진행/최근 결과 + 다음 예약 시각."""
     dt = _next_cron_dt()
-    return {**_CRAWL_STATE, "cron": CRON_HHMM or None,
-            "next_run": dt.isoformat(timespec="minutes") if dt else None}
+    return {"jobstats": {**_CRAWL_STATE, "cron": CRON_HHMM or None,
+                           "next_run": dt.isoformat(timespec="minutes") if dt else None},
+            "arcana": dict(_ARCANA_CRAWL_STATE), "craft": dict(_CRAFT_CRAWL_STATE)}
 
 
 ROUTES = {
@@ -934,7 +1003,31 @@ class Handler(BaseHTTPRequestHandler):
             if not self._require_admin():
                 return
             try:
-                self._json(api_admin_crawl_start())
+                self._json(api_admin_crawl_start("jobstats"))
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
+        if parsed.path == "/api/admin/crawl-arcana":
+            if not self._require_admin():
+                return
+            try:
+                self._json(api_admin_crawl_start("arcana"))
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
+        if parsed.path == "/api/admin/crawl-craft":
+            if not self._require_admin():
+                return
+            try:
+                self._json(api_admin_crawl_start("craft"))
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
+        if parsed.path == "/api/admin/restore-craft-snapshot":
+            if not self._require_admin():
+                return
+            try:
+                self._json(api_admin_crawl_start("restore"))
             except Exception as e:
                 self._json({"error": str(e)}, 500)
             return
@@ -967,8 +1060,8 @@ def main():
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8770)))
     ap.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
     args = ap.parse_args()
-    if not DB_PATH.exists():
-        raise SystemExit("aion2_craft.db 없음 — 먼저 crawl_craft.py 실행")
+    if STORE.kind != "turso":
+        raise SystemExit("Turso 연결이 필요합니다. TURSO_DATABASE_URL/TURSO_AUTH_TOKEN을 설정하세요.")
     ensure_schema()
     # 직업 통계 자동 크롤 예약(서버가 켜져 있으면 매일 지정 시각에 실행).
     if CRON_HHMM and not os.environ.get("DISABLE_JOBSTATS_CRON"):

@@ -25,6 +25,7 @@
 from __future__ import annotations
 import argparse
 import json
+import re
 import ssl
 import time
 import urllib.error
@@ -36,6 +37,7 @@ from store import Store, load_dotenv
 
 BASE = "https://aion2tool.com"
 JOBSTATS_REF = f"{BASE}/statistics/jobstats"
+ARCANA_OPTIONS_URL = "https://aion2scam.com/page_arcana/"
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 KST = timezone(timedelta(hours=9))
@@ -59,10 +61,55 @@ def fetch(path: str, referer: str = JOBSTATS_REF) -> dict:
         raise
 
 
+def fetch_text(url: str, referer: str) -> str:
+    """공개 페이지의 인라인 JSON 수집. SSL 검증 실패 환경은 JSON fetch와 동일하게 폴백."""
+    req = urllib.request.Request(url, headers={
+        "User-Agent": UA, "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "ko-KR,ko;q=0.9", "Referer": referer})
+    try:
+        with urllib.request.urlopen(req, timeout=25, context=_CTX_V) as r:
+            return r.read().decode("utf-8")
+    except urllib.error.URLError as e:
+        if isinstance(getattr(e, "reason", None), ssl.SSLCertVerificationError):
+            with urllib.request.urlopen(req, timeout=25, context=_CTX_U) as r:
+                return r.read().decode("utf-8")
+        raise
+
+
+def collect_arcana_options():
+    """공개 아르카나 계산기에 포함된 직업별 카드 옵션 풀을 정규화한다.
+
+    공식 사이트에는 직업별 전체 옵션 표가 공개돼 있지 않아, 출처와 수집 시각을 함께
+    저장한다. 따라서 UI에서는 '수집 데이터'로만 사용하고 공식 데이터라고 표기하지 않는다.
+    """
+    html = fetch_text(ARCANA_OPTIONS_URL, ARCANA_OPTIONS_URL)
+    m = re.search(r"window\.AION2_ARCANA_DATA\s*=\s*(\{.*?\});\s*</script>", html, re.S)
+    if not m:
+        raise RuntimeError("아르카나 옵션 데이터 블록을 찾지 못했습니다.")
+    options = json.loads(m.group(1))
+    return {
+        "job": "ALL", "category": "arcana_options", "source_updated": None,
+        "data": {
+            "source_url": ARCANA_OPTIONS_URL,
+            "source_type": "third_party_embedded_data",
+            "card_pools": {
+                "성배": "모든 액티브·패시브 옵션", "천칭": "모든 액티브·패시브 옵션",
+                "양피지": "active.pen", "나침반": "active.compass",
+                "종": "passive.bell", "거울": "passive.mirror",
+            },
+            "jobs": options,
+        },
+    }
+
+
 # ---------- 개별 데이터 정리(normalize) ----------
 def collect():
     """모든 통계를 수집해 (job, category, source_updated, data) 행 리스트로 정리."""
     rows = []
+    try:
+        rows.append(collect_arcana_options())
+    except Exception as e:
+        print(f"  ! 아르카나 옵션 풀 수집 실패: {e}")
 
     # 1) 직업 점유율 + 총계
     share = fetch("/api/statistics?min_power=0&max_power=10000&min_cp2=10000").get("data", {})
@@ -149,12 +196,16 @@ def main():
     ap = argparse.ArgumentParser(description="아이온2 직업 통계 크롤러")
     ap.add_argument("--dry-run", action="store_true", help="저장하지 않고 수집 요약만 출력")
     ap.add_argument("--prune", type=int, default=0, help="적재 후 최근 N개 스냅샷만 유지(0=미적용)")
+    ap.add_argument("--arcana-options-only", action="store_true", help="직업별 아르카나 카드 옵션 풀만 수집")
     args = ap.parse_args()
 
     load_dotenv()
     captured_at = datetime.now(KST).isoformat(timespec="seconds")
     print(f"[{captured_at}] 직업 통계 수집 시작 …")
-    job_names, rows = collect()
+    if args.arcana_options_only:
+        job_names, rows = [], [collect_arcana_options()]
+    else:
+        job_names, rows = collect()
     print(f"직업 {len(job_names)}종, 정리된 행 {len(rows)}개 "
           f"({', '.join(sorted({r['category'] for r in rows}))})")
 

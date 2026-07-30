@@ -1,7 +1,7 @@
-# 아이온2 제작(장비) 레시피 + 시세 로컬 DB
+# 아이온2 제작(장비) 레시피 + 시세 뷰어
 
 아이온2 제작 레시피(필요 **재료·개수·이미지**, 완성품, 콤보 산출물)와
-**거래소 시세**를 크롤링해 로컬 **SQLite** 파일로 만든 데이터셋.
+**거래소 시세**를 크롤링해 Turso(libSQL)에 저장하는 데이터셋.
 
 ## 데이터 출처
 
@@ -27,12 +27,12 @@
 
 | 경로 | 설명 |
 |------|------|
-| `crawl_craft.py` | 크롤러 + DB 빌더 (레시피 재생성 / 이미지 증분 / 시세 갱신) |
-| `query.py` | DB 조회 CLI |
+| `crawl_craft.py` | 레시피·시세 크롤러(조회 스냅샷 갱신 후 Turso 백업 동기화) |
+| `craft_snapshot.py` | `cache/craft-snapshot.sqlite3` 조회 캐시와 Turso 백업 동기화 |
+| `query.py` | Turso 제작 데이터 조회 CLI |
 | `server.py` | 로컬 웹 뷰어 서버 (검색 UI + JSON API) |
 | `index.html` | 검색 화면(단일 파일, 서버가 서빙) |
-| `update.sh` | cron용 갱신 래퍼 (`prices`/`full`, flock+로그) |
-| `aion2_craft.db` | SQLite DB (약 3.9MB) |
+| `docs/arcana-data.md` | 직업별 아르카나 옵션 풀 수집 출처·방법 |
 | `images/` | 아이템 아이콘 PNG (80×80, 497종) |
 | `raw/` | 원본 API 응답 스냅샷 (레시피 분야별 + market_prices) |
 | `logs/` | cron 갱신 로그 |
@@ -40,9 +40,9 @@
 ## 사용
 
 ```bash
-python3 crawl_craft.py               # 전체: 레시피+이미지+시세
-python3 crawl_craft.py --no-images   # 이미지 제외
-python3 crawl_craft.py --prices-only # 시세만 갱신(레시피/이미지 유지)
+python3 crawl_craft.py --no-images   # 조회 스냅샷 갱신 → Turso 백업 동기화
+python3 craft_snapshot.py --pull     # Turso 백업 → 로컬 조회 스냅샷 복원
+python3 craft_snapshot.py --push     # 로컬 조회 스냅샷 → Turso 백업 반영
 
 python3 query.py fields                    # 분야/종류별 레시피 수
 python3 query.py search 창룡왕             # 이름 검색
@@ -68,7 +68,6 @@ python3 server.py --port 9000
 - 등급별 색상, 다크 테마, 헤더 중앙정렬. 외부 의존성 0.
 
 의존성: **Python 3 표준 라이브러리만** 사용(`sqlite3`, `urllib`, `http.server`). 별도 설치 불필요.
-(SQLite = 서버 불필요·파일 하나로 완결되는 가장 가벼운 DB.)
 
 ### 파티 모집 (🛡️ 파티 탭)
 
@@ -82,14 +81,14 @@ python3 server.py --port 9000
 
 ## 상태 저장소 — Turso(libSQL) 또는 로컬 SQLite
 
-크래프트 레시피/시세(`aion2_craft.db`)는 크롤러가 만드는 **읽기 전용 정적 데이터**라 그대로
-파일로 둔다. 반면 **상태 데이터**(캐릭터 상세 캐시 · 내 캐릭터/그룹 · 파티 모집 · 숙제 프리셋 ·
-운영자 설정 · 보유량)는 사용자가 계속 쓰는 값이라 저장소가 필요하다. 이는 `store.py` 가 담당한다:
+크래프트 레시피/시세는 서버가 먼저 `cache/craft-snapshot.sqlite3`에서 조회하고, Turso를 영속
+백업·복원 원본으로 사용한다. **상태 데이터**(캐릭터 상세 캐시 · 내 캐릭터/그룹 · 파티 모집 · 숙제 프리셋 ·
+운영자 설정 · 보유량)는 `store.py`를 통해 Turso에 저장한다:
 
 - **`TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`** 이 있으면 → **Turso(libSQL)** 에 저장.
   표준 라이브러리(`urllib`)로 libSQL 의 HTTP(Hrana) `/v2/pipeline` 엔드포인트를 직접 호출하므로
   **추가 pip 의존성이 없다.**
-- 없으면 → 로컬 **`app_store.db`(SQLite)** 로 폴백 → 오프라인 개발 가능.
+- 스냅샷이 없거나 손상되면 기동 시 Turso에서 자동 복원한다. 가격 오버라이드는 스냅샷과 Turso에 즉시 함께 반영된다.
 
 클라이언트(`index.html`)는 예전 `localStorage` 대신 서버 API(`/api/store`)를 쓴다. 부팅 시 서버 값을
 메모리 캐시로 하이드레이트하고, 쓰기는 캐시 갱신 + 서버 저장(디바운스)으로 처리한다. 기존
@@ -99,7 +98,8 @@ python3 server.py --port 9000
 > 사용자별 분리가 필요해지면 `/api/store` 에 사용자 식별을 추가하면 된다.
 
 접속정보는 `.env` 로 주입한다(`cp .env.example .env` 후 값 입력). 발급법은 `.env.example` 참고.
-스키마: `app_kv(k, v[JSON], updated_at)` · `char_cache(k, data[JSON], hash, updated_at)`.
+스키마: `app_kv(k, v[JSON], updated_at)` · `char_cache(k, data[JSON], hash, updated_at)` ·
+제작 테이블(`recipes`, `items`, `materials`, `prices`, `price_overrides`)과 시세 뷰.
 
 ## 배포 — Render Blueprint (무료 플랜)
 
@@ -148,23 +148,17 @@ python3 server.py --port 9000
 > 자동 대표가 정책이 마음에 안 들면 `crawl_craft.py`의 `V_PRICE_BEST_SQL`(`ORDER BY` 절)만
 > 고치면 된다. 특정 서버 고정 등으로 바꿀 수 있고, 개별 아이템은 화면에서 오버라이드로 덮어쓰면 된다.
 
-## 자동 갱신 (cron)
+## 제작 데이터 갱신
 
-`update.sh`가 flock(중복 방지)+로그를 처리한다. 아래를 crontab에 등록하면
-**시세 6시간마다 / 레시피·이미지 전체 주 1회** 갱신된다:
+크롤러는 Git에서 제외된 `cache/craft-snapshot.sqlite3`을 갱신한다. 이 파일은 서버의 실제
+조회 캐시이며, 수집이 끝나면 Turso 백업에도 자동 반영된다.
 
-```cron
-5 */6 * * * /home/ysnam/projects/aion2/update.sh prices
-10 4 * * 1 /home/ysnam/projects/aion2/update.sh full
-```
-
-설치(직접 실행): 셸에서 아래 한 줄 —
 ```bash
-( crontab -l 2>/dev/null | grep -v 'aion2/update.sh'; \
-  echo '5 */6 * * * /home/ysnam/projects/aion2/update.sh prices'; \
-  echo '10 4 * * 1 /home/ysnam/projects/aion2/update.sh full' ) | crontab -
+python3 crawl_craft.py --no-images
 ```
-로그는 `logs/update.log`. 수동 갱신은 `./update.sh prices` 또는 `./update.sh full`.
+
+`--prices-only`는 기존 스냅샷의 레시피·아이템 정보를 재사용한다. 스냅샷 파일은 Git과 Docker 이미지에
+포함하지 않으며, 배포 환경에서는 Turso 백업으로부터 자동 복원된다.
 
 ## 알아둘 점
 
@@ -172,7 +166,7 @@ python3 server.py --port 9000
   `materials`의 "키나(통합)" 행 `count`로 표현**된다(예: `100000000`). 실제 재료비 합산 시
   이 행을 비용으로 처리할 것.
 - 현재 규모: 레시피 **1,354**건 / 재료행 **6,952**건 / 고유 아이템 **1,649**종 / 이미지 **497**종.
-- 게임 업데이트로 레시피가 늘면 `crawl_craft.py`를 다시 실행하면 된다.
+- 게임 업데이트로 레시피가 늘면 `crawl_craft.py`를 실행하면 조회 스냅샷과 Turso 백업이 함께 갱신된다.
 - 이 DB에는 **아이템 시세(가격)는 없다.** 재료 개수 × 시세로 제작 비용을 내려면
   별도의 시세 소스가 필요하나, 아이온2는 시세 공식 API가 없어 현재는 수동/커뮤니티
   데이터에 의존해야 한다.
