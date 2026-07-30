@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>아이온2 뷰어</title>
+<title>아이온2 도우미</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{
@@ -470,8 +470,8 @@
   .hw-charge .desc{font-size:10.5px;color:var(--dim)}
   .hw-actions{display:flex;gap:7px;flex-wrap:wrap}
   .hw-chars{display:grid;gap:10px;margin:12px 0}
-  .hw-char{--c:var(--accent);display:grid;grid-template-columns:40px minmax(120px,1fr) minmax(180px,260px);gap:10px;align-items:center;
-           background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--etched);border-radius:8px;padding:9px 11px;box-shadow:var(--shadow),var(--hl)}
+  .hw-char{--c:var(--accent);display:grid;grid-template-columns:40px minmax(120px,1fr) minmax(180px,260px);column-gap:10px;row-gap:0;align-items:center;
+           background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--etched);border-radius:8px;padding:11px 11px 0;box-shadow:var(--shadow),var(--hl)}
   .hw-char.main{border-color:color-mix(in srgb,var(--gold) 42%,var(--line))}
   .hw-char .hw-ico{width:40px;height:40px;border-radius:8px;background:#0b1016;border:1px solid color-mix(in srgb,var(--c) 34%,var(--line));object-fit:cover}
   .hw-char .hw-nm{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
@@ -481,8 +481,8 @@
   .hw-cp{font-size:11px;font-weight:900;color:var(--gold);white-space:nowrap}
   .hw-char input,.hw-char select,.hw-modal input{padding:8px 9px;border-radius:6px;background:#111923;color:var(--txt);border:1px solid var(--etched);min-width:0}
   .hw-dungeon-row{display:grid;grid-template-columns:minmax(0,1fr) calc(3em + 38px);gap:6px;min-width:0}
-  .hw-dungeon-row select{width:100%}
-  .hw-sanct{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding-top:8px;margin-top:2px;border-top:1px dashed var(--etched);font-size:12px;color:var(--dim)}
+  .hw-dungeon-row select{width:100%;font-size:11px}
+  .hw-sanct{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding-top:0;margin-top:0;border-top:1px dashed var(--etched);font-size:12px;color:var(--dim)}
   .hw-sanct .hw-manual{padding:5px 7px;font-size:10px}
   .hw-sanct .cap{font-weight:800;color:var(--txt)}
   .hw-sanct label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--txt)}
@@ -490,8 +490,6 @@
   .hw-sanct .cut{margin-left:auto;font-weight:800;display:inline-flex;gap:8px;align-items:center}
   .hw-sanct .cut .od.on{color:#ff9d6b}
   .hw-sanct .cut .rd.on{color:var(--gold)}
-  .raid{font-size:.82em;font-weight:700;color:var(--gold);opacity:.92}
-  .raid-hint{font-size:.72em;font-weight:700;color:var(--gold);opacity:.75}
   .hw-modal input{width:100%}
   .hw-modal-back{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:2000}
   .hw-modal-back.on{display:flex}
@@ -531,15 +529,19 @@
   .hw-mc-preset .pk{font-size:10.5px;font-weight:800;color:var(--dim);letter-spacing:.3px}
   .hw-mc-preset .pv{font-size:13px;font-weight:700;color:var(--txt)}
   .hw-mc-preset .pv b{color:var(--gold)}
-  .hw-mc-preset .pv em{font-style:normal;color:var(--gold);font-weight:900}
   .hw-mc-preset.off .pv{color:var(--dim);font-weight:600;font-size:12px}
-  .hw-mc-out{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
-  .hw-mc-hero{background:linear-gradient(180deg,#16232d,#0f151c);border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));border-radius:10px;padding:12px 18px;min-width:190px}
+  .hw-mc-work{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"inputs hero" "preset hero" "break break";gap:10px 14px;align-items:stretch}
+  .hw-mc-work>.hw-mc-inputs{grid-area:inputs;margin:0}
+  .hw-mc-work>.hw-mc-preset{grid-area:preset;min-width:0}
+  #hwmHero{grid-area:hero}
+  #hwmHero .hw-mc-hero{height:100%}
+  #hwmBreak{grid-area:break}
+  .hw-mc-hero{width:100%;background:linear-gradient(180deg,#16232d,#0f151c);border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));border-radius:10px;padding:12px 18px;min-width:0}
   .hw-mc-hero .lab{font-size:11px;color:var(--dim);font-weight:800;letter-spacing:.3px}
   .hw-mc-hero .num{font-size:40px;font-weight:900;color:var(--gold);line-height:1.05;font-variant-numeric:tabular-nums}
   .hw-mc-hero .num small{font-size:14px;color:var(--dim);font-weight:700;margin-left:4px}
   .hw-mc-hero .sub{font-size:12px;color:var(--dim);margin-top:4px} .hw-mc-hero .sub b{color:var(--txt)}
-  .hw-mc-break{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px 16px;flex:1;min-width:220px}
+  .hw-mc-break{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px 16px;min-width:220px}
   .hw-mc-break>div{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--line2)}
   .hw-mc-break span{color:var(--dim)} .hw-mc-break b{font-variant-numeric:tabular-nums}
   .hw-mc-break b.plus{color:var(--g2)}
@@ -683,8 +685,12 @@
     .admin-trigger{top:10px;right:14px}
     /* iOS·카카오 웹뷰는 16px 미만 입력창에 포커스하면 화면을 자동 확대한다. */
     input,select,textarea{font-size:16px!important}
+    /* 숙제 카드의 던전 선택은 네이티브 선택창이라 2px 작게 표시해도 화면 확대 대상이 아니다. */
+    .hw-dungeon-row select{font-size:14px!important}
     #tabs{width:100%;height:40px}
     .tab{flex:1;justify-content:center}
+    /* 제작은 넓은 목록·상세 2단 화면을 전제로 하므로 PC에서만 탭을 노출한다. */
+    .tab[data-view="craft"]{display:none}
     .split{flex-direction:column}
     #list,#clist{width:100%;max-width:none;min-width:0;max-height:42vh;border-right:none;border-bottom:1px solid var(--line)}
     #detail,#cdetail{padding:18px 14px}
@@ -707,6 +713,11 @@
     .mc-top{grid-template-columns:1fr;padding:14px 14px 2px}
     .hw-char{grid-template-columns:40px 1fr;gap:8px}
     .hw-char .hw-dungeon-row,.hw-char .hw-sanct{grid-column:1/-1}
+    /* iPhone 14 폭에서도 권장 판수 카드는 오른쪽 두 행을 유지한다. */
+    .hw-mc-work{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"inputs hero" "preset hero" "break break";gap:8px}
+    .hw-mc-inputs input{width:100%;min-width:0}
+    .hw-mc-hero{width:auto;min-width:0;padding:10px 12px}
+    .hw-mc-hero .num{font-size:34px}
     /* 숙제 결과표는 핵심 정보만 남겨 가로 스크롤 없이 본다. */
     .hw-table{table-layout:fixed;font-size:11px}
     .hw-table th,.hw-table td{padding:8px 5px;white-space:normal;overflow-wrap:anywhere}
@@ -717,11 +728,12 @@
     .hw-table th:nth-child(8),.hw-table td:nth-child(8),
     .hw-table th:nth-child(10),.hw-table td:nth-child(10),
     .hw-table th:nth-child(12),.hw-table td:nth-child(12){display:none}
-    .hw-table th:nth-child(1){width:19%}
-    .hw-table th:nth-child(3){width:17%}
-    .hw-table th:nth-child(4){width:14%}
-    .hw-table th:nth-child(9){width:20%}
-    .hw-table th:nth-child(11){width:30%}
+    /* 난이도·하루 판수는 짧은 값만 차지하게 하고, 던전명은 한 줄로 충분히 확보한다. */
+    .hw-table th:nth-child(1){width:15%}
+    .hw-table th:nth-child(3),.hw-table td:nth-child(3){width:34%;white-space:nowrap;overflow-wrap:normal}
+    .hw-table th:nth-child(4){width:12%}
+    .hw-table th:nth-child(9){width:14%}
+    .hw-table th:nth-child(11){width:25%}
     .hw-kpi{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
     .hw-k{padding:10px}
     .hw-k .v{font-size:19px}
@@ -994,7 +1006,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="logo">⚔</span> 아이온2 뷰어 <small id="hcount"></small></h1>
+  <h1><span class="logo">⚔</span> 아이온2 도우미 <small id="hcount"></small></h1>
   <nav id="tabs"></nav>
   <button class="hw-mini admin-trigger" id="adminTrigger" type="button">관리자</button>
 </header>
@@ -1230,8 +1242,13 @@
       </div>
       <div id="adminCrawlPanel" hidden>
         <div class="hw-head" style="margin-top:24px">
-          <div><h2>직업 통계 크롤링</h2><p>aion2tool 직업별 통계(스킬·스티그마 채용률·전투력 분포 등)를 수집해 저장합니다. 서버가 켜져 있으면 <b>매일 자동</b>으로도 실행됩니다.</p></div>
-          <div style="margin-left:auto"><button class="hw-mini" id="adminCrawlRun" type="button">통계 크롤링 하기</button></div>
+          <div><h2>데이터 크롤링 · 동기화</h2><p>수집 대상별로 실행합니다. 한 번에 하나만 실행할 수 있으며, 작업 상태와 최근 결과는 아래에서 확인합니다.</p></div>
+        </div>
+        <div class="hw-grid">
+          <div class="hw-box"><label>직업 통계</label><div class="desc">스킬·스티그마·전투력 등 aion2tool 직업 통계입니다. 매일 자동 수집됩니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="jobstats" id="adminCrawlJobstats" type="button">직업 통계 수집</button></div></div>
+          <div class="hw-box"><label>아르카나 옵션</label><div class="desc">직업별 성배·종·거울 등 공개된 아르카나 옵션 풀을 최신화합니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="arcana" id="adminCrawlArcana" type="button">아르카나 옵션 수집</button></div></div>
+          <div class="hw-box"><label>제작 레시피 · 시세</label><div class="desc">제작 공식과 시세를 갱신하고, 현재 스냅샷을 Turso 백업에도 동기화합니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="craft" id="adminCrawlCraft" type="button">제작 데이터 갱신</button></div></div>
+          <div class="hw-box"><label>제작 스냅샷 복원</label><div class="desc">Turso에 보관된 제작 데이터 백업을 서버 캐시에 다시 내려받습니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="restore" id="adminCraftRestore" type="button">백업에서 복원</button></div></div>
         </div>
         <div class="hw-note" id="adminCrawlStatus" style="margin:6px 0 0">…</div>
       </div>
@@ -1447,7 +1464,7 @@ const TABS=[
   {id:"mychar", label:"🗂️ 캐릭"},
   // {id:"char",  label:"🧝 캐릭터"},   // 기능 유지, 탭만 숨김 (검색은 내 캐릭터 탭으로 이관)
   {id:"party", label:"🛡️ 파티"},
-  // {id:"craft", label:"⚒️ 제작"},   // 기능 유지, 탭만 숨김
+  {id:"craft", label:"⚒️ 제작"},
   {id:"homework", label:"📅 숙제"},
   // {id:"screen", label:"📱 화면공유"},   // 기능 유지, 탭만 숨김
   {id:"settings", label:"⚙️ 설정"},
@@ -1502,7 +1519,7 @@ const HW_ROLE={
   sub:{label:"부캐",event:false,buy:8*40,desc:"주간 구매 8×40"},
 };
 // 성역: 선택 시 오드를 별도로 사용하므로 던전 계산 전 주간 에너지에서 개당 SANCTUARY_COST 차감.
-// profit=성역 레이드 예상수익(키나). 던전 수익과 별도로 예상수익에 합산하고 UI에 괄호로 따로 표기.
+// profit=성역 레이드 예상수익(키나). 던전 수익과 별도로 예상수익에 합산.
 const HW_SANCTUARIES=[
   {key:"rudra",  label:"루드라", profit:2_000_000},
   {key:"erosion",label:"침식",   profit:8_000_000},
@@ -1591,10 +1608,6 @@ function renderHwCharacters(chars){
         <button class="hw-mini hw-manual" data-hw-manual title="${esc(manualTip)}">${manual?"수기*":"수기"}</button>
         <span class="cap">성역</span>
         ${HW_SANCTUARIES.map(s=>`<label><input type="checkbox" data-sanct="${s.key}" ${c.sanctuaries?.[s.key]?'checked':''}>${s.label}</label>`).join("")}
-        <span class="cut">
-          <span class="od${sanctuaryCost(c)?' on':''}" title="선택 성역당 오드 ${SANCTUARY_COST} 차감(주간)">${sanctuaryCost(c)?`오드 −${fmt(sanctuaryCost(c))}`:'오드 차감 없음'}</span>
-          <span class="rd${sanctuaryProfit(c)?' on':''}" title="성역 레이드 예상수익(키나)">${sanctuaryProfit(c)?`레이드 +${fmt(sanctuaryProfit(c))}`:''}</span>
-        </span>
       </div>
     </div>`;
   }).join("");
@@ -1628,24 +1641,26 @@ function renderHomework(redrawCharacters=true){
   const totalEnergy=rows.reduce((a,r)=>a+r.weeklyEnergy,0);
   const totalRuns=rows.reduce((a,r)=>a+r.runs,0);
   const totalProfit=rows.reduce((a,r)=>a+r.profit,0);
+  const totalDungeonProfit=rows.reduce((a,r)=>a+r.dungeonProfit,0);
+  const totalManualProfit=rows.reduce((a,r)=>a+r.manualDailyProfit*7,0);
   const totalSanctProfit=rows.reduce((a,r)=>a+r.sanctProfit,0);
   document.getElementById("hwResult").innerHTML=`<div class="hw-kpi">
     <div class="hw-k"><div class="t">하루 자동 충전</div><div class="v">${fmt(Math.floor(dailyAuto))}</div><div class="s">${cycle}시간마다 ${fmt(charge)}</div></div>
     <div class="hw-k"><div class="t">전역 이벤트 수급</div><div class="v">${fmt(Math.floor(weeklyEvent))}</div><div class="s">본캐에만 합산 · 일 ${fmt(dailyEvent)}</div></div>
     <div class="hw-k"><div class="t">새싹 보너스</div><div class="v">${fmt(Math.floor(weeklySprout))}</div><div class="s">본캐에만 합산 · 주간 제한</div></div>
     <div class="hw-k"><div class="t">주간 총 에너지</div><div class="v">${fmt(Math.floor(totalEnergy))}</div><div class="s">${rows.length}캐릭터 합산</div></div>
-    <div class="hw-k"><div class="t">예상 주간 수익 <span class="raid-hint">(괄호=레이드)</span></div><div class="v">${fmtFull(totalProfit)}${totalSanctProfit?` <span class="raid">(${fmtFull(totalSanctProfit)})</span>`:''}</div><div class="s">총 ${fmt(totalRuns)}판 · 하루 ${(totalRuns/7).toFixed(2)}판</div></div>
+    <div class="hw-k"><div class="t">예상 주간 수익</div><div class="v">${fmtFull(totalProfit)}</div><div class="s">던전 ${fmtFull(totalDungeonProfit)} · 레이드 ${fmtFull(totalSanctProfit)}${totalManualProfit?` · 수기 ${fmtFull(totalManualProfit)}`:''}<br>총 ${fmt(totalRuns)}판 · 하루 ${(totalRuns/7).toFixed(2)}판</div></div>
   </div>
-  <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 수익(키나)</th><th>주간 판수</th><th>하루 판수</th><th>일간 부가수익(키나)</th><th>예상 수익(키나) <span class="raid-hint">(괄호=레이드)</span></th><th>잔여</th></tr></thead>
+  <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 수익(키나)</th><th>주간 판수</th><th>하루 판수</th><th>일간 부가수익(키나)</th><th>예상 수익(키나)</th><th>잔여</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td>${esc(r.char.name||'')}</td><td>${r.role.label}</td><td>${r.dungeon}</td><td>${r.name}</td><td class="num">${fmt(Math.floor(r.weeklyEnergy))}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmtFull(r.reward)}</td>
-      <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}${r.sanctProfit?` <span class="raid">(${fmtFull(r.sanctProfit)})</span>`:''}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
-  <div class="hw-note">현재 던전 수익 정보는 타락한 데바의 성 기준입니다. 본캐는 전역 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(루드라·침식·무스펠)은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 레이드 수익(루드라 ${fmtFull(HW_SANCTUARIES[0].profit)} · 침식 ${fmtFull(HW_SANCTUARIES[1].profit)} · 무스펠 ${fmtFull(HW_SANCTUARIES[2].profit)} 키나)은 던전 수익과 별도로 예상 수익에 합산되며 괄호로 따로 표기합니다.</div>`;
+      <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
+  <div class="hw-note">현재 던전 수익 정보는 타락한 데바의 성 기준입니다. 본캐는 전역 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(루드라·침식·무스펠)은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 레이드 수익(루드라 ${fmtFull(HW_SANCTUARIES[0].profit)} · 침식 ${fmtFull(HW_SANCTUARIES[1].profit)} · 무스펠 ${fmtFull(HW_SANCTUARIES[2].profit)} 키나)은 던전 수익과 별도로 예상 수익에 합산됩니다.</div>`;
   renderHwManual();
 }
 
 // ── 숙제 · 수기 계산 ────────────────────────────────────────────
 // 캐릭터 선택 + 현재 남은 오드 → 오늘부터 '다음 수요일 리셋(=화요일까지)' 하루 몇 판?
-// 가용 오드 = 현재 + (검색시각~리셋까지 자동충전) + (남은 일수 × 전역 이벤트) + 새싹.
+// 가용 오드 = 현재 + 검색시각~리셋까지 자동충전 + (본캐일 때만 남은 일수 × 전역 이벤트).
 // 저장은 기기별(localStorage). 캐릭터별로 입력한 오드를 기억한다.
 const HWM_KEY="aion2_hwmanual";
 function hwmGet(){try{const v=JSON.parse(localStorage.getItem(HWM_KEY)||"{}");if(!v.od||typeof v.od!=="object")v.od={};return v;}catch(e){return {od:{}};}}
@@ -1661,57 +1676,59 @@ function hwmCharCfg(st){const key=st.sel; return (key&&hwSettings()[key])||{};}
 function hwmDungeonKey(st){const s=hwmCharCfg(st); return HOMEWORK_DUNGEONS[s.dungeon]?s.dungeon:"fallen_deva";}
 function hwmDungeon(st){return HOMEWORK_DUNGEONS[hwmDungeonKey(st)];}
 function hwmMode(st){const d=hwmDungeon(st), s=hwmCharCfg(st); return (s.mode&&d.modes[s.mode])?s.mode:"hard";}
-function hwManualResultHtml(){
+function hwManualResult(){
   const st=hwmGet(), d=hwmDungeon(st), mode=hwmMode(st);
   const base=d.modes[mode].cost, cost=base*2;            // 패스 구매 시 한판당 오드 2배 소모
   const now=new Date(), reset=hwNextReset(now);
   const days=Math.round((reset-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5);  // 오늘~화요일 일수
   const hours=(reset-now)/36e5;
   const auto=Math.floor(hours/3)*15;                     // 검색시각부터 리셋까지 자동충전(3h당 15)
-  const evOn=st.evOn!==false;                            // 전역 이벤트 포함 여부(기본 포함)
   const c=opCfg(), dailyEvent=(+c.event40||0)*40+(+c.event10||0)*10;
-  const events=evOn?dailyEvent*days:0;
+  // 수기도 숙제 표와 같은 기준: 전역 이벤트는 선택한 본캐에만 자동 적용한다.
+  const selected=hwGroupChars().find(x=>x.key===st.sel);
+  const isMain=selected?.role==="main";
+  const events=isMain?dailyEvent*days:0;
   const od=+((st.od||{})[st.sel||"_"])||0;
   const total=od+auto+events;                            // 새싹 제외
   const runs=Math.floor(total/cost);
   const perDay=days>0?Math.ceil(runs/days):runs;
   const mm=(reset.getMonth()+1)+"/"+reset.getDate();
-  return `<div class="hw-mc-out">
-    <div class="hw-mc-hero"><div class="lab">하루 권장 판수</div><div class="num">${perDay}<small>판/일</small></div>
-      <div class="sub">리셋(${mm} 수) 까지 <b>${days}일</b> · 총 <b>${fmt(runs)}판</b> 가능</div></div>
-    <div class="hw-mc-break">
+  return {
+    hero:`<div class="hw-mc-hero"><div class="lab">하루 권장 판수</div><div class="num">${perDay}<small>판/일</small></div>
+      <div class="sub">${mm}수까지 <b>${days}일</b> · 총 <b>${fmt(runs)}판</b> 가능</div></div>`,
+    breakdown:`<div class="hw-mc-break">
       <div><span>현재 오드</span><b>${fmt(od)}</b></div>
       <div><span>자동충전</span><b class="plus">+${fmt(auto)}</b></div>
-      ${evOn?`<div><span>전역 이벤트 ×${days}일</span><b class="plus">+${fmt(events)}</b></div>`:`<div><span>전역 이벤트</span><b class="off">제외</b></div>`}
+      ${isMain?`<div><span>전역 이벤트 ×${days}일</span><b class="plus">+${fmt(events)}</b></div>`:""}
       <div class="tot"><span>가용 총 오드</span><b>${fmt(total)}</b></div>
-    </div></div>`;
+    </div>`
+  };
 }
 function renderHwManual(){
   const box=document.getElementById("hwManual"); if(!box)return;
   const st=hwmGet(), chars=hwGroupChars();
   if(st.sel&&!chars.some(c=>c.key===st.sel)){st.sel=null;hwmSet(st);}
   const d=hwmDungeon(st), mode=hwmMode(st), selKey=st.sel||"_", od=+((st.od||{})[selKey])||0;
-  const base=d.modes[mode].cost;
   const preset=st.sel
-    ? `<div class="hw-mc-preset"><span class="pk">적용 설정</span><span class="pv"><b>${esc(d.name)}</b> · ${esc(d.modes[mode].name)} · 1판 <em>${base}×2</em></span></div>`
+    ? `<div class="hw-mc-preset"><span class="pk">적용 설정</span><span class="pv"><b>${esc(d.name)}</b> · ${esc(d.modes[mode].name)}</span></div>`
     : `<div class="hw-mc-preset off"><span class="pk">적용 설정</span><span class="pv">캐릭터를 선택하면 설정된 던전·난이도가 적용됩니다</span></div>`;
-  let html=`<div class="hw-manual-h">🧮 수기 계산 <span>현재 남은 오드로 <b>다음 수요일 리셋(=화요일까지)</b> 하루 몇 판 돌아야 하는지</span></div>
+  const result=hwManualResult();
+  let html=`<div class="hw-manual-h">🧮 수기 계산 <span>현재 남은 오드로 <b>화요일까지</b> 하루 몇 판 돌아야 하는지</span></div>
     <div class="hw-mc-chars">`;
   if(!chars.length) html+=`<div class="hw-mc-empty">현재 그룹에 등록된 캐릭터가 없습니다. 🗂️ 캐릭 탭에서 그룹을 선택/등록하세요.</div>`;
   else chars.forEach(c=>{ html+=`<button type="button" class="hw-mc-char${c.key===st.sel?' on':''}" data-sel="${esc(c.key)}" style="--c:${c.race===1?'#8ff0d0':'#ffadc0'}">
       <img src="${c.img||''}" ${oe}><span class="nm">${esc(c.name)}</span></button>`; });
   html+=`</div>
-    <div class="hw-mc-inputs">
-      <label>현재 남은 오드<input id="hwmOd" type="number" min="0" value="${od}"></label>
-      <label class="hw-mc-chk"><input type="checkbox" id="hwmEv"${st.evOn!==false?' checked':''}> 전역 이벤트 포함</label>
+    <div class="hw-mc-work">
+      <div class="hw-mc-inputs"><label>현재 남은 오드<input id="hwmOd" type="number" min="0" value="${od}"></label></div>
       ${preset}
-    </div>
-    <div id="hwmResult">${hwManualResultHtml()}</div>`;
+      <div id="hwmHero">${result.hero}</div>
+      <div id="hwmBreak">${result.breakdown}</div>
+    </div>`;
   box.innerHTML=html;
   box.querySelectorAll("[data-sel]").forEach(b=>b.onclick=()=>{const s=hwmGet(); s.sel=(s.sel===b.dataset.sel?null:b.dataset.sel); hwmSet(s); renderHwManual();});
-  const upd=()=>{document.getElementById("hwmResult").innerHTML=hwManualResultHtml();};
+  const upd=()=>{const r=hwManualResult();document.getElementById("hwmBreak").innerHTML=r.breakdown;document.getElementById("hwmHero").innerHTML=r.hero;};
   document.getElementById("hwmOd").oninput=e=>{const s=hwmGet(); (s.od||(s.od={}))[s.sel||"_"]=+e.target.value||0; hwmSet(s); upd();};
-  document.getElementById("hwmEv").onchange=e=>{const s=hwmGet(); s.evOn=e.target.checked; hwmSet(s); upd();};
 }
 function initHomework(){
   document.getElementById("hwCharacters")?.addEventListener("change",e=>{
@@ -1762,7 +1779,7 @@ function recalc(){
   if(cEl) cEl.innerHTML=priced+"/"+total+(under?'<span class="warnnote">과소추정</span>':"");
 }
 
-// 시장가 인라인 편집 → 저장 시 백엔드 price_overrides 로 전역 반영
+// 시장가 인라인 편집 → 저장 시 서버의 공용 시세와 대표가에 전역 반영
 function editPrice(code){
   const tr=document.querySelector(`#mattable tbody tr.mat[data-code="${code}"]`);
   if(!tr) return;
@@ -1777,8 +1794,10 @@ function editPrice(code){
     if(save){
       const v=inp.value.trim();
       try{
-        await fetch("/api/set_price",{method:"POST",headers:{"Content-Type":"application/json"},
+        const res=await fetch("/api/set_price",{method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({item_code:+code, price: v===""?null:+v})});
+        const result=await res.json();
+        if(!res.ok||result.error)throw new Error(result.error||"서버 시세 저장 실패");
       }catch(e){ alert("저장 실패: "+e); }
     }
     if(curCode) openRecipe(curCode);   // 전역 반영된 시세로 새로고침
@@ -1793,7 +1812,7 @@ function editPrice(code){
 async function boot(){
   META=await j("/api/meta");
   document.getElementById("hcount").textContent=
-     `레시피 ${fmt(META.recipe_count)}건`+(META.has_prices?` · 시세 최신 ${(''+META.price_latest).slice(0,10)}`:"");
+     META.has_prices?`시세 최신 ${(''+META.price_latest).slice(0,10)}`:"";
   const sel=document.getElementById("class1");
   META.class1.forEach(c=>{const o=el("option");o.value=c.class1_text;o.textContent=c.class1_text;sel.appendChild(o);});
   search();
@@ -1904,7 +1923,7 @@ async function openRecipe(code,card){
              oninput="setOwn('${m.code}',this.value)"></td>
         <td class="num need"></td>
         ${hasP?`<td class="num price-cell ${m.is_override?'ovr':''}"
-             title="클릭해 시장가 수정 → 전체 적용" onclick="editPrice(${m.code})">${m.best_price==null?'<span class="nomkt">설정</span>':fmt(m.best_price)}</td>
+             title="클릭해 공용 서버 시세 수정 → 전체 적용" onclick="editPrice(${m.code})">${m.best_price==null?'<span class="nomkt">설정</span>':fmt(m.best_price)}</td>
           <td class="num line"></td>
           <td>${m.best_market?`<span class="pill">${m.best_market}</span>`:'<span class="nomkt">–</span>'}</td>`:''}`;
     }
@@ -2655,36 +2674,45 @@ function initAdmin(){
   if(refreshBtn)refreshBtn.onclick=renderAdminAccessLog;
   const importBtn=document.getElementById("adminImportProd");
   if(importBtn)importBtn.onclick=importProdData;
-  const crawlBtn=document.getElementById("adminCrawlRun");
-  if(crawlBtn)crawlBtn.onclick=runJobstatsCrawl;
+  on("adminCrawlJobstats","click",()=>runAdminCrawl("jobstats"));
+  on("adminCrawlArcana","click",()=>runAdminCrawl("arcana"));
+  on("adminCrawlCraft","click",()=>runAdminCrawl("craft"));
+  on("adminCraftRestore","click",()=>runAdminCrawl("restore"));
 }
 
-// 직업 통계 크롤 상태 표시(최근 결과 + 다음 자동 실행 시각). 진행 중이면 폴링.
+// 데이터 크롤링 상태 표시. 실행 중이면 폴링한다.
 let crawlPollTimer=null;
 function fmtDateTime(s){ if(!s)return "–"; return String(s).replace("T"," ").replace(/(\+09:00|Z)$/,"").slice(0,16); }
+function crawlStatusLine(name,s,detail=""){
+  if(s?.running)return `⏳ <b>${name} 진행 중…</b>`;
+  if(s?.last_ok===true)return `✅ ${name} <b>${fmtDateTime(s.captured_at||s.last_finished)}</b>${detail}`;
+  if(s?.last_ok===false)return `⚠️ ${name} 실패: ${esc(s.last_error||"")}`;
+  return `· ${name}: 아직 실행 이력이 없습니다.`;
+}
 async function refreshCrawlStatus(){
-  const box=document.getElementById("adminCrawlStatus"), btn=document.getElementById("adminCrawlRun");
+  const box=document.getElementById("adminCrawlStatus");
   if(!box)return;
   let s; try{ s=await j("/api/admin/crawl-status"); }catch(e){ box.textContent="상태를 불러오지 못했습니다."; return; }
-  const parts=[];
-  if(s.running){ parts.push("⏳ <b>크롤링 진행 중…</b>"); }
-  else if(s.last_ok===true){ parts.push(`✅ 최근 수집 <b>${fmtDateTime(s.captured_at||s.last_finished)}</b> · 직업 ${s.jobs}종 · ${s.rows}행${s.last_trigger==="cron"?" (자동)":""}`); }
-  else if(s.last_ok===false){ parts.push(`⚠️ 최근 실패: ${esc(s.last_error||"")}`); }
-  else { parts.push("아직 수집 이력이 없습니다."); }
-  if(s.cron) parts.push(`⏰ 자동 실행: 매일 ${s.cron} · 다음 ${fmtDateTime(s.next_run)}`);
-  box.innerHTML=parts.join(" &nbsp;·&nbsp; ");
-  if(btn)btn.disabled=!!s.running;
+  const job=s.jobstats||{}, arcana=s.arcana||{}, craft=s.craft||{};
+  const jobDetail=` · 직업 ${job.jobs||0}종 · ${job.rows||0}행${job.last_trigger==="cron"?" (자동)":""}`;
+  const craftDetail=craft.message?` · ${esc(craft.message)}`:"";
+  const schedule=job.cron?` · 자동 실행: 매일 ${job.cron} · 다음 ${fmtDateTime(job.next_run)}`:"";
+  box.innerHTML=[crawlStatusLine("직업 통계",job,jobDetail)+schedule,crawlStatusLine("아르카나 옵션",arcana,arcana.rows?` · ${arcana.rows}행`:""),crawlStatusLine("제작 데이터",craft,craftDetail)].join("<br>");
+  const running=!!(job.running||arcana.running||craft.running);
+  document.querySelectorAll("#adminCrawlPanel [data-crawl]").forEach(btn=>btn.disabled=running);
   clearTimeout(crawlPollTimer);
-  if(s.running) crawlPollTimer=setTimeout(refreshCrawlStatus,3000);   // 진행 중엔 폴링
+  if(running) crawlPollTimer=setTimeout(refreshCrawlStatus,3000);
 }
-async function runJobstatsCrawl(){
-  const btn=document.getElementById("adminCrawlRun"), box=document.getElementById("adminCrawlStatus");
-  if(btn)btn.disabled=true; if(box)box.innerHTML="⏳ <b>크롤링 시작…</b>";
+async function runAdminCrawl(kind){
+  const endpoints={jobstats:"/api/admin/crawl-jobstats",arcana:"/api/admin/crawl-arcana",craft:"/api/admin/crawl-craft",restore:"/api/admin/restore-craft-snapshot"};
+  const box=document.getElementById("adminCrawlStatus");
+  document.querySelectorAll("#adminCrawlPanel [data-crawl]").forEach(btn=>btn.disabled=true);
+  if(box)box.innerHTML="⏳ <b>작업 시작…</b>";
   try{
-    const r=await postJSON("/api/admin/crawl-jobstats");
+    const r=await postJSON(endpoints[kind]);
     if(r.ok===false&&!r.running&&r.error) box.textContent="실패: "+r.error;
-  }catch(e){ if(box)box.textContent="실패: "+(e.message||e); if(btn)btn.disabled=false; return; }
-  setTimeout(refreshCrawlStatus,800);   // 서버가 백그라운드로 시작 → 상태 폴링
+  }catch(e){ if(box)box.textContent="실패: "+(e.message||e); await refreshCrawlStatus(); return; }
+  setTimeout(refreshCrawlStatus,800);
 }
 
 // 운영(.env.real) 데이터를 로컬 저장소로 복사한 뒤, 화면을 최신 데이터로 다시 로드한다.
