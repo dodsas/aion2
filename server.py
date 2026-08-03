@@ -537,7 +537,7 @@ def api_char_item(q):
 # 인증이 없으므로 현재는 배포 인스턴스 전체가 공유하는 단일 데이터셋이다(소규모 길드용).
 ALLOWED_KV = {
     "mychars", "mychar_groups", "parties",
-    "homework_presets", "homework_chars", "op_cfg", "own", "dungeon_catalog",
+    "homework_presets", "homework_chars", "op_cfg", "own", "dungeon_catalog", "bookmarks",
 }
 
 # 숙제 던전 기준표. app_kv[dungeon_catalog]에 저장해 배포 환경에서도 하나의 DB 데이터로

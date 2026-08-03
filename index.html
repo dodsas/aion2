@@ -464,6 +464,13 @@
   .hw-dungeon-card h4{margin:0;padding:11px 13px;font-size:14px;border-bottom:1px solid var(--line)}
   .hw-dungeon-card table{width:100%;border-collapse:collapse;font-size:12px}.hw-dungeon-card th,.hw-dungeon-card td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line)}
   .hw-dungeon-card tr:last-child td{border-bottom:0}.hw-dungeon-card th{color:var(--dim);font-size:10.5px;font-weight:800}.hw-dungeon-card th:first-child,.hw-dungeon-card td:first-child{text-align:left}.hw-dungeon-card td.kina{color:var(--gold);font-weight:900}
+  /* 즐겨찾기 */
+  .bookmark-root{max-width:900px;margin:0 auto;padding:24px 28px;width:100%}
+  .bookmark-head{margin-bottom:16px}.bookmark-head h2{margin:0;font-size:22px}.bookmark-head p{margin:4px 0 0;color:var(--dim);font-size:12px}
+  .bookmark-form{display:grid;grid-template-columns:minmax(130px,.55fr) minmax(240px,1.45fr) auto;gap:8px;padding:12px;border:1px solid var(--etched);border-radius:9px;background:linear-gradient(180deg,#17222d,#101720)}
+  .bookmark-form input{min-width:0;padding:9px 10px;border:1px solid var(--etched);border-radius:6px;background:#0f151c;color:var(--txt);font:inherit}
+  .bookmark-list{display:grid;gap:8px;margin-top:12px}.bookmark-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#111923;min-width:0}
+  .bookmark-item .bk-main{min-width:0;flex:1}.bookmark-item .bk-name{display:block;color:var(--txt);font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bookmark-item .bk-url{display:block;color:var(--dim);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}.bookmark-item .bk-open{width:28px;height:28px;display:grid;place-items:center;flex:0 0 28px;border:1px solid var(--etched);border-radius:7px;background:#0b1016;overflow:hidden;text-decoration:none}.bookmark-item .bk-open img{width:18px;height:18px;object-fit:contain}.bookmark-item .bk-open img:not([hidden])+.fallback{display:none}.bookmark-item .bk-open .fallback{color:var(--gold);font-size:15px}.bookmark-empty{padding:34px 12px;text-align:center;color:var(--dim);border:1px dashed var(--etched);border-radius:8px}
   .hw-preset{min-width:360px;background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--line);border-radius:8px;padding:10px;box-shadow:var(--shadow),var(--hl)}
   .hw-preset .top{display:grid;grid-template-columns:1fr auto;gap:7px;margin-bottom:7px}
   .hw-preset .bottom{display:grid;grid-template-columns:1fr auto auto;gap:7px}
@@ -765,6 +772,7 @@
     .hw-k .v{font-size:19px}
     .hw-dungeon-catalog-head{align-items:flex-start;flex-direction:column}.hw-dungeon-catalog-head p{text-align:left}
     .hw-dungeon-card table{font-size:11px}.hw-dungeon-card th,.hw-dungeon-card td{padding:8px 6px}.hw-dungeon-card th:nth-child(2),.hw-dungeon-card td:nth-child(2){display:none}
+    .bookmark-root{padding:18px 14px}.bookmark-form{grid-template-columns:1fr}.bookmark-form .btn{min-height:38px}
     .hw-kpi .hw-k:last-child{grid-column:1/-1}
     /* 숙제 화면에서는 운영자 설정 안내만 간결하게 숨긴다. */
     .hw-operator-summary,.hw-auto-summary,.hw-target-summary{display:none}
@@ -1208,6 +1216,10 @@
 <section class="view" id="view-arcana">
   <div class="arc-root" id="arcanaRoot"></div>
 </section>
+<!-- 즐겨찾기: 현재 그룹에서 자주 보는 외부 링크를 저장 -->
+<section class="view" id="view-bookmarks">
+  <div class="bookmark-root" id="bookmarkRoot"></div>
+</section>
 <!-- 파티 모집 생성 모달 -->
 <div id="ptModal" class="hw-modal-back">
   <div class="hw-modal">
@@ -1371,10 +1383,10 @@ async function j(u){const r=await fetch(u,{credentials:"same-origin",headers:aut
 // 캐시(SB)에 채우고(sbLoad) 쓰기는 캐시 갱신 + 서버 저장(디바운스)로 처리한다(sbSave).
 // 서버 접속 실패 시 localStorage 로 폴백해 오프라인에서도 계속 동작한다.
 const SB={};
-const SB_KEYS=["mychars","mychar_groups","parties","homework_chars","arcana_plans","op_cfg","own"];
+const SB_KEYS=["mychars","mychar_groups","parties","homework_chars","arcana_plans","op_cfg","own","bookmarks"];
 // 서버 키 → (구버전) localStorage 키. 기존 사용자의 로컬 데이터를 자동 이관하는 데도 쓴다.
 const SB_LEGACY={mychars:"aion2_mychars",mychar_groups:"aion2_mychar_groups",parties:"aion2_parties",
-  homework_chars:"aion2_homework_chars",arcana_plans:"aion2_arcana_plans",op_cfg:"aion2_operator_cfg",own:"aion2_own"};
+  homework_chars:"aion2_homework_chars",arcana_plans:"aion2_arcana_plans",op_cfg:"aion2_operator_cfg",own:"aion2_own",bookmarks:"aion2_bookmarks"};
 function sbLocal(k){try{const s=localStorage.getItem(SB_LEGACY[k]);return s?JSON.parse(s):null;}catch(e){return null;}}
 function sbGet(k,def){return SB[k]==null?def:SB[k];}
 let sbTimers={};
@@ -1543,6 +1555,7 @@ const TABS=[
   // {id:"char",  label:"🧝 캐릭터"},   // 기능 유지, 탭만 숨김 (검색은 내 캐릭터 탭으로 이관)
   {id:"party", label:"🛡️ 파티"},
   {id:"arcana", label:"🔮 아르카나", compactLabel:"🔮 카드"},
+  {id:"bookmarks", label:"🔖 즐찾"},
   {id:"craft", label:"⚒️ 제작"},
   {id:"homework", label:"📅 숙제"},
   // {id:"screen", label:"📱 화면공유"},   // 기능 유지, 탭만 숨김
@@ -1564,6 +1577,7 @@ function showView(id){
     renderHomework();
   }
   if(id==="arcana" && typeof renderArcana==="function") renderArcana();
+  if(id==="bookmarks" && typeof renderBookmarks==="function") renderBookmarks();
   // 현재 탭을 URL 해시에 반영(링크 공유 시 해당 탭으로 바로 접속). replaceState 라 hashchange 미발생.
   const want="#"+id;
   if(location.hash!==want) history.replaceState(null,"",location.pathname+location.search+want);
@@ -1611,6 +1625,22 @@ document.getElementById("tabPagePrev").onclick=()=>moveTabPage(-1);
 document.getElementById("tabPageNext").onclick=()=>moveTabPage(1);
 document.getElementById("tabs").addEventListener("scroll",()=>requestAnimationFrame(syncTabPager),{passive:true});
 window.addEventListener("resize",syncTabPager);
+
+// ── 즐겨찾기 ─────────────────────────────────────────────────────
+// 즐겨찾기는 그룹별로 분리해 저장한다. 링크는 http(s)만 허용해 외부 URL 실행을 제한한다.
+function bookmarkStore(){const v=sbGet("bookmarks",{});return v&&typeof v==="object"&&!Array.isArray(v)?v:{};}
+function bookmarkList(){const group=effectiveGroup();return group&&Array.isArray(bookmarkStore()[group])?bookmarkStore()[group]:[];}
+function saveBookmarkList(items){const group=effectiveGroup();if(!group)return;const all=bookmarkStore();all[group]=items;sbSave("bookmarks",all);}
+function validBookmarkUrl(raw){try{const u=new URL((raw||"").trim());return /^https?:$/.test(u.protocol)?u:null;}catch(e){return null;}}
+function bookmarkIconUrl(url){try{const u=new URL(url);return `${u.origin}/favicon.ico`;}catch(e){return "";}}
+function renderBookmarks(){
+  const root=document.getElementById("bookmarkRoot");if(!root)return;
+  const group=effectiveGroup(),items=bookmarkList();
+  if(!group){root.innerHTML=`<div class="bookmark-head"><h2>🔖 즐겨찾기</h2><p>자주 보는 링크를 현재 그룹별로 저장합니다.</p></div><div class="bookmark-empty">먼저 🗂️ 캐릭 탭에서 내 그룹을 선택하세요.</div>`;return;}
+  root.innerHTML=`<div class="bookmark-head"><h2>🔖 즐겨찾기</h2><p><b>${esc(group)}</b> 그룹에서 저장한 링크입니다.</p></div><form class="bookmark-form" id="bookmarkForm"><input id="bookmarkTitle" maxlength="80" placeholder="제목 (선택)"><input id="bookmarkUrl" type="url" required maxlength="1500" placeholder="https:// 링크 주소" inputmode="url"><button class="btn" type="submit">저장</button></form><div class="bookmark-list">${items.length?items.map(x=>`<div class="bookmark-item"><a class="bk-open" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(x.title||x.url)} 열기"><img src="${esc(bookmarkIconUrl(x.url))}" alt="" onerror="this.hidden=true"><span class="fallback" aria-hidden="true">↗</span></a><div class="bk-main"><a class="bk-name" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title||x.url)}</a><span class="bk-url">${esc(x.url)}</span></div><button class="hw-mini" type="button" data-bookmark-delete="${esc(x.id)}">삭제</button></div>`).join(""):`<div class="bookmark-empty">저장한 링크가 없습니다. 자주 보는 공략·통계·게시글을 추가하세요.</div>`}</div>`;
+  root.querySelector("#bookmarkForm").onsubmit=e=>{e.preventDefault();const url=validBookmarkUrl(root.querySelector("#bookmarkUrl").value);if(!url){alert("http:// 또는 https:// 링크만 저장할 수 있습니다.");return;}const title=root.querySelector("#bookmarkTitle").value.trim()||url.hostname;const id=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;saveBookmarkList([{id,title,url:url.href},...bookmarkList()]);renderBookmarks();};
+  root.querySelectorAll("[data-bookmark-delete]").forEach(b=>b.onclick=()=>{saveBookmarkList(bookmarkList().filter(x=>x.id!==b.dataset.bookmarkDelete));renderBookmarks();});
+}
 
 // ── 아르카나 제작 계획 ─────────────────────────────────────────────
 // 현재 장착한 아르카나는 참조하지 않는다. 새로 제작할 카드에 붙일 옵션만 기록한다.
@@ -1981,11 +2011,12 @@ function hwManualResult(){
   const od=+((st.od||{})[st.sel||"_"])||0;
   const total=od+auto+events;                            // 새싹 제외
   const runs=Math.floor(total/cost);
+  const expectedProfit=runs*(+d.modes[mode].reward||0);
   const perDay=days>0?Math.ceil(runs/days):runs;
   const mm=(reset.getMonth()+1)+"/"+reset.getDate();
   return {
     hero:`<div class="hw-mc-hero"><div class="lab">하루 권장 판수</div><div class="num">${perDay}<small>판/일</small></div>
-      <div class="sub">${mm}수까지 <b>${days}일</b> · 총 <b>${fmt(runs)}판</b> 가능</div></div>`,
+      <div class="sub">${mm}수까지 <b>${days}일</b> · 총 <b>${fmt(runs)}판</b> 가능<br>모두 소모 시 예상 수익 <b>${fmtFull(expectedProfit)} 키나</b></div></div>`,
     breakdown:`<div class="hw-mc-break">
       <div><span>현재 오드</span><b>${fmt(od)}</b></div>
       <div><span>자동충전</span><b class="plus">+${fmt(auto)}</b></div>
@@ -2606,6 +2637,7 @@ function refreshIdentityViews(){
   renderMyChars();
   if(document.getElementById("hwCharacters")) renderHomework();
   if(document.querySelector("#view-arcana.active")) renderArcana();
+  if(document.querySelector("#view-bookmarks.active")) renderBookmarks();
 }
 function updateCurName(){
   const e=document.getElementById("mcCurName"); if(!e)return;
