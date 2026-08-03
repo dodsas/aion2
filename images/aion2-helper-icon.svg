@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="아이온2 도우미">
+  <defs>
+    <linearGradient id="bg" x1="20" y1="18" x2="162" y2="166" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8ff0d0"/>
+      <stop offset="1" stop-color="#6ed8f5"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#04110d" flood-opacity=".34"/>
+    </filter>
+  </defs>
+  <rect x="10" y="10" width="160" height="160" rx="40" fill="url(#bg)"/>
+  <circle cx="63" cy="54" r="15" fill="#e7fff7" opacity=".9"/>
+  <g filter="url(#shadow)" fill="#04110d" stroke="#04110d" stroke-linejoin="round">
+    <path d="M104 35 122 53 92 119 79 106Z"/>
+    <path d="m94 119 12 12-33 20 9-32Z"/>
+    <path d="m77 92 25 25-11 11-25-25Z" fill="#e7fff7"/>
+    <path d="m62 108 20 20-9 9-20-20Z"/>
+    <path d="m50 144 23-7-16-16Z"/>
+  </g>
+  <path d="M118 39 91 107" stroke="#e7fff7" stroke-width="5" stroke-linecap="round" opacity=".82"/>
+</svg>

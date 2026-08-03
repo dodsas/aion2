@@ -1,0 +1,10 @@
+{
+  "name": "아이온2 도우미",
+  "short_name": "아이온2 도우미",
+  "icons": [
+    { "src": "/images/aion2-helper-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "theme_color": "#8ff0d0",
+  "background_color": "#090b0f",
+  "display": "standalone"
+}

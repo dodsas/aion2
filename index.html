@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>아이온2 도우미</title>
-<link rel="icon" type="image/png" sizes="32x32" href="/images/aion2-favicon.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/images/aion2-apple-touch.png">
+<meta name="theme-color" content="#8ff0d0">
+<link rel="icon" type="image/svg+xml" href="/images/aion2-helper-icon.svg">
+<link rel="shortcut icon" href="/images/aion2-helper-icon.svg">
+<link rel="apple-touch-icon" href="/images/aion2-helper-icon.svg">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{
@@ -42,11 +45,7 @@
          display:flex;flex-wrap:wrap;gap:18px;align-items:center;min-height:58px;position:relative;z-index:5}
   header h1{font-size:16px;margin:0;color:var(--txt);letter-spacing:-.3px;white-space:nowrap;font-weight:800;
             display:flex;align-items:center;gap:9px}
-  header h1 .logo{width:29px;height:29px;border-radius:7px;background:
-            radial-gradient(circle at 35% 25%,#e7fff7 0 9%,transparent 10%),
-            linear-gradient(135deg,#8ff0d0,#6ed8f5);
-            color:#04110d;display:grid;place-items:center;font-size:15px;
-            box-shadow:0 8px 22px -10px rgba(143,240,208,.9),inset 0 1px 0 rgba(255,255,255,.45)}
+  header h1 .logo{width:29px;height:29px;display:block;filter:drop-shadow(0 8px 9px rgba(143,240,208,.3))}
   header h1 small{color:var(--dim);font-weight:500;font-size:11px;margin-left:2px}
   .tab-pager{display:flex;align-items:stretch;align-self:stretch}
   #tabs{display:flex;gap:2px;align-items:stretch;align-self:stretch}
@@ -1063,7 +1062,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="logo">⚔</span> 아이온2 도우미</h1>
+  <h1><img class="logo" src="/images/aion2-helper-icon.svg" alt=""> 아이온2 도우미</h1>
   <div class="tab-pager" id="tabPager">
     <button class="tab-page-btn" id="tabPagePrev" type="button" aria-label="이전 탭 보기">‹</button>
     <nav id="tabs" aria-label="주요 탭"></nav>
@@ -1665,8 +1664,15 @@ async function selectArcanaCharacter(key){
 async function loadArcanaSkillTargets(job){
   if(Object.hasOwn(arcanaSkillTargetCache,job))return arcanaSkillTargetCache[job];
   if(!arcanaSkillTargetLoads[job])arcanaSkillTargetLoads[job]=j(`/api/jobstats?category=skills&job=${encodeURIComponent(job||"")}`)
-    .then(r=>{const data=(r.rows||[]).find(x=>x.category==="skills")?.data||{},out={};[...(data.active||[]),...(data.passive||[])].forEach(s=>out[s.name]=+s.avg_level||0);return arcanaSkillTargetCache[job]=out;})
-    .catch(()=>arcanaSkillTargetCache[job]={});
+    .then(r=>{
+      // 아르카나 카드 종류가 아니라 직업 스킬 통계의 카테고리가 액티브/패시브의 유일한 기준이다.
+      // 성배·천칭은 두 종류의 스킬을 모두 담을 수 있으므로 카드 위치로 분류하면 안 된다.
+      const data=(r.rows||[]).find(x=>x.category==="skills")?.data||{};
+      const active=Array.isArray(data.active)?data.active:[],passive=Array.isArray(data.passive)?data.passive:[];
+      const targets={};[...active,...passive].forEach(s=>targets[s.name]=+s.avg_level||0);
+      return arcanaSkillTargetCache[job]={active,passive,targets};
+    })
+    .catch(()=>arcanaSkillTargetCache[job]={active:[],passive:[],targets:{}});
   return arcanaSkillTargetLoads[job];
 }
 // 액티브는 새 제작의 Lv.20 목표에 맞춰 보정한다. 패시브는 랭커 통계 원문을 보존한다.
@@ -1680,19 +1686,12 @@ function passiveArcanaTarget(raw){
   const level=Math.round(raw||0);
   return {level,reached:value=>level>0&&value>=level};
 }
-function arcanaRecommendations(data){
-  const seen=new Map();
-  ARCANA_TYPES.forEach(type=>(data?.[type]?.skills||[]).forEach(s=>{
-    const old=seen.get(s.name); if(!old||(+s.pick_rate||0)>(+old.pick_rate||0))seen.set(s.name,s);
-  }));
-  const all=[...seen.values()].sort((a,b)=>(+b.pick_rate||0)-(+a.pick_rate||0));
-  // 액티브 후보는 양피지·나침반에서 먼저 뽑고, 부족한 자리는 성배·천칭으로 보충한다.
-  const activeNames=new Set([...(data?.["양피지"]?.skills||[]),...(data?.["나침반"]?.skills||[])].map(s=>s.name));
-  const active=all.filter(s=>activeNames.has(s.name)).slice(0,7);
-  if(active.length<7)all.filter(s=>!active.some(x=>x.name===s.name)).slice(0,7-active.length).forEach(s=>active.push(s));
-  const passiveNames=new Set([...(data?.["종"]?.skills||[]),...(data?.["거울"]?.skills||[])].map(s=>s.name));
-  const passive=all.filter(s=>passiveNames.has(s.name)).slice(0,7);
-  return {active,passive};
+function arcanaRecommendations(arcanaData,skillStats){
+  // 카드에 실제로 붙을 수 있는 스킬만 남기되, 순위·채용률·카테고리는 비교하기와 같은 랭커 스킬 통계를 쓴다.
+  const available=new Set();
+  ARCANA_TYPES.forEach(type=>(arcanaData?.[type]?.skills||[]).forEach(s=>available.add(s.name)));
+  const rank=list=>list.filter(s=>available.has(s.name)).slice().sort((a,b)=>(+b.pick_rate||0)-(+a.pick_rate||0)).slice(0,7);
+  return {active:rank(skillStats?.active||[]),passive:rank(skillStats?.passive||[])};
 }
 function renderArcana(){
   const root=document.getElementById("arcanaRoot"); if(!root)return;
@@ -1718,9 +1717,10 @@ function renderArcana(){
     return;
   }
   const plan=arcanaPlans()[c.key]||{};
-  const rec=arcanaRecommendations(data);
+  const rankerSkillStats=arcanaSkillTargetCache[c.className];
+  const rec=arcanaRecommendations(data,rankerSkillStats);
   const skillLevels=arcanaBaseSkillCache[c.key],baseSkills=skillLevels.base,equippedSkills=skillLevels.equipped;
-  const skillTargets=arcanaSkillTargetCache[c.className];
+  const skillTargets=rankerSkillStats.targets;
   const chips=list=>list.length?list.slice(0,5).map(s=>`<span class="arc-chip">${esc(s.name)} <small>현재 Lv.${baseSkills[s.name]||0} · ${(+s.pick_rate||0).toFixed(1)}%</small></span>`).join(""):'<span class="arc-chip">추천 데이터 없음</span>';
   const added={}; ARCANA_TYPES.forEach(type=>(plan[type]||[]).forEach(p=>{if(p.skill)added[p.skill]=(added[p.skill]||0)+Math.max(1,Math.min(5,+p.level||1));}));
   const levelRows=(list,kind)=>list.map((s,i)=>{const current=baseSkills[s.name]||0,equipped=equippedSkills[s.name]||0,plus=added[s.name]||0,bare=Math.max(0,current-equipped),planned=bare+plus,targetInfo=kind==="active"?activeArcanaTarget(skillTargets[s.name]):passiveArcanaTarget(skillTargets[s.name]),reached=targetInfo.reached(planned),low=kind==="active"&&i<5&&targetInfo.level&&!reached,neutral=kind==="passive"||(kind==="active"&&i>=5&&!reached);return `<div class="arc-level-row"><span>${esc(s.name)}</span><span class="target">채용률 ${(+s.pick_rate||0).toFixed(1)}% · 목표 ${targetInfo.level||"–"}</span><span class="lv"><b class="${low?"low":neutral?"neutral":""}">Lv.${planned}${plus?`(+${plus})`:""}</b></span></div>`;}).join("");

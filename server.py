@@ -44,6 +44,7 @@ load_dotenv()  # .env → os.environ (로컬 개발용; 없으면 무시)
 BASE_DIR = Path(__file__).resolve().parent
 IMG_DIR = BASE_DIR / "images"
 INDEX = BASE_DIR / "index.html"
+WEB_MANIFEST = BASE_DIR / "site.webmanifest"
 JOBSTATS_CACHE_DB = BASE_DIR / "cache" / "jobstats-runtime.sqlite3"
 JOBSTATS_CACHE_LOCK = threading.Lock()
 
@@ -1059,9 +1060,17 @@ class Handler(BaseHTTPRequestHandler):
             f = (IMG_DIR / name).resolve()
             # 디렉토리 이탈 방지
             if IMG_DIR.resolve() in f.parents and f.is_file():
-                self._send(200, f.read_bytes(), "image/png")
+                ctype = "image/svg+xml" if f.suffix.lower() == ".svg" else "image/png"
+                self._send(200, f.read_bytes(), ctype)
             else:
                 self._send(404, b"", "image/png")
+            return
+
+        if path == "/site.webmanifest":
+            if WEB_MANIFEST.exists():
+                self._send(200, WEB_MANIFEST.read_bytes(), "application/manifest+json; charset=utf-8", cache="no-store")
+            else:
+                self._send(404, b"", "text/plain")
             return
 
         if path == "/api/admin/session":
