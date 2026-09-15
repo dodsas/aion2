@@ -36,6 +36,24 @@
   a:hover{text-decoration:underline}
   ::selection{background:var(--gold);color:#04110d}
 
+  /* ── 스크롤바 ────────────────────────────────────────────────
+     Chrome/Edge/Safari 는 ::-webkit-scrollbar 로 자유롭게, Firefox 는
+     scrollbar-color 두 색만 지원한다. Chrome 121+ 는 scrollbar-color 가
+     지정되면 webkit 스타일을 무시하므로 Firefox 에서만 적용되게 분기한다. */
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#2e4152,#233240);
+        border:2px solid transparent;border-radius:99px;background-clip:padding-box;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  ::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--gold) 40%,#233240);
+        border:2px solid transparent;border-radius:99px;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:active{background:color-mix(in srgb,var(--gold) 60%,#233240);
+        border:2px solid transparent;border-radius:99px;background-clip:padding-box}
+  ::-webkit-scrollbar-corner{background:transparent}
+  @supports not selector(::-webkit-scrollbar){
+    *{scrollbar-width:thin;scrollbar-color:var(--etched) transparent}
+  }
+
   /* 헤더 + 탭 */
   header{padding:0 22px;background:
          linear-gradient(90deg,rgba(143,240,208,.08),transparent 38%),
@@ -877,6 +895,8 @@
     color:var(--dim);font:800 11px/1 inherit;font-family:inherit;cursor:pointer}
   .pt-unmark:hover{color:var(--danger);border-color:var(--danger)}
   .pt-poolbody{display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 240px);overflow:auto;padding-right:4px}
+  /* 항목이 max-height 를 넘으면 flex 기본 shrink 로 카드가 세로로 짜부라진다 → 항상 원래 높이 유지 */
+  .pt-poolbody>*{flex-shrink:0}
   .pt-pg{color:var(--dim);font-size:11px;font-weight:800;margin:8px 0 2px;letter-spacing:.3px}
 
   /* 카드(풀/신청/현황 공통 골격) */
@@ -1051,6 +1071,90 @@
   .pt-history-row{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line2);font-size:11px;color:var(--dim)}
   .pt-history-row b{color:var(--txt)} .pt-history-row .when{margin-left:auto;font-variant-numeric:tabular-nums}
 
+  /* ── 공대 탭 ─────────────────────────────────────────────── */
+  .rd-tabs{display:flex;gap:8px;margin:-4px 0 14px;flex-wrap:wrap}
+  .rd-tabs .pt-typebtn{flex:0 0 auto;min-width:120px}
+  .rd-q{width:100%;margin:0 0 8px;padding:8px 11px;border-radius:8px;border:1px solid var(--line);background:#0e151d;color:var(--txt);
+        font:600 12.5px/1.3 inherit;font-family:inherit;box-sizing:border-box}
+  .rd-q:focus{outline:none;border-color:var(--gold)}
+  .rd-edit{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .rd-edit input,.rd-edit select{padding:6px 8px;border-radius:7px;border:1px solid var(--etched);background:#101a24;color:var(--txt);
+        font:700 12px/1.2 inherit;font-family:inherit;color-scheme:dark}
+  .rd-edit label{display:inline-flex;align-items:center;gap:3px;font:800 12px/1 inherit;font-family:inherit;color:var(--gold)}
+  .rd-minnote{margin:0 0 8px;padding:7px 10px;border-radius:8px;font-size:11.5px;font-weight:800;color:var(--gold);
+        background:color-mix(in srgb,var(--gold) 10%,#0d1a17);border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line))}
+  .rd-minnote span{color:var(--dim);font-weight:700}
+  /* 전체 캐릭터 풀: 위쪽 요소(헤더·배지·검색창) 높이와 무관하게 항상 화면 안에서 끝까지
+     휠 스크롤되도록, 풀 컬럼 자체를 sticky + 뷰포트 맞춤 높이의 세로 flex 로 잡고
+     목록(.pt-poolbody)이 남은 공간을 차지해 내부 스크롤한다. (고정 max-height 는 위
+     오프셋만큼 바닥이 화면 밖으로 밀려 마지막 캐릭터가 잘리는 문제가 있었다) */
+  [data-rd-pool]{position:sticky;top:0;align-self:flex-start;display:flex;flex-direction:column;
+        max-height:calc(100vh - 152px);min-height:0}
+  [data-rd-pool] .pt-poolbody{flex:1;min-height:0;max-height:none}
+  /* 공팟(외부) 인원: 이름·역할만 있는 1회성 멤버 */
+  .rd-guest-btn{margin-left:6px;padding:3px 8px;font-size:10.5px;white-space:nowrap}
+  .rd-guest-add{display:flex;gap:6px;align-items:center;margin:0 0 8px;padding:7px;border-radius:8px;border:1px dashed var(--etched);background:rgba(255,255,255,.02)}
+  .rd-guest-add[hidden]{display:none}
+  .rd-guest-add input{flex:1;min-width:0;padding:6px 8px;border-radius:7px;border:1px solid var(--etched);background:#101a24;color:var(--txt);font:700 12px/1.2 inherit;font-family:inherit}
+  .rd-guest-add select{padding:6px 6px;border-radius:7px;border:1px solid var(--etched);background:#101a24;color:var(--txt);font:700 12px/1.2 inherit;font-family:inherit}
+  .rd-gav{width:24px;height:24px;border-radius:5px;background:#0e151d;border:1px dashed var(--etched);flex-shrink:0;
+        display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+  .pt-tm-chip.guest{border-style:dashed}
+  .pt-tm-chip .sub .mis{color:var(--gold);font-weight:900}
+  /* 파티별 임무판 (겨울의핵 쐐기 등) */
+  .rd-missions{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+  .rd-mission{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:linear-gradient(180deg,var(--slot-hi),var(--slot))}
+  .rd-mission-h{display:flex;align-items:baseline;gap:8px;font-weight:900;font-size:13px;color:var(--gold);letter-spacing:-.2px}
+  .rd-mission-h span{color:var(--dim);font-size:11px;font-weight:700}
+  /* 임무판 접기: summary 클릭으로 토글, ▶ 화살표로 상태 표시 */
+  summary.rd-mission-h{cursor:pointer;user-select:none;list-style:none;margin:-4px -6px;padding:4px 6px;border-radius:7px}
+  summary.rd-mission-h::-webkit-details-marker{display:none}
+  summary.rd-mission-h::before{content:"▶";align-self:center;font-size:9px;color:var(--dim);transition:transform .15s}
+  .rd-mission[open]>summary.rd-mission-h::before{transform:rotate(90deg)}
+  summary.rd-mission-h:hover{background:rgba(255,255,255,.035)}
+  /* 파티별 한 줄: [파티 라벨] [위치 카드][위치 카드] */
+  .rd-pos-team{display:flex;gap:10px;align-items:stretch;margin-top:10px}
+  .rd-pos-team-h{flex:0 0 84px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;border-radius:9px;
+        background:color-mix(in srgb,var(--gold) 10%,#0d1a17);border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line))}
+  .rd-pos-team-h b{color:var(--gold);font-size:15px;font-weight:900;letter-spacing:-.3px}
+  .rd-pos-team-h span{color:var(--dim);font-size:10.5px;font-weight:800}
+  .rd-pos-pair{flex:1;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .rd-pos-pair.quad{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .rd-pos{padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:#0f151c}
+  /* hot = 잘하는(숙련) 인원 우선 배치 위치 — 금색 테두리·배지로 강조 */
+  .rd-pos.hot{border-color:color-mix(in srgb,var(--gold) 65%,var(--line));
+        background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 9%,#0f151c),#0f151c);
+        box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 30%,transparent),0 0 14px -8px color-mix(in srgb,var(--gold) 80%,transparent)}
+  .rd-hot{margin-left:auto;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:900;color:#0a1218;background:var(--gold);white-space:nowrap}
+  .rd-pos-h{display:flex;align-items:center;gap:6px;font-weight:900;font-size:14px;letter-spacing:-.2px;color:var(--gold);padding-bottom:7px;border-bottom:1px solid var(--line)}
+  .rd-pos-row{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px}
+  .rd-pos-row .rl{flex-shrink:0;width:74px;color:var(--dim);font-weight:800;font-size:11.5px}
+  .rd-pos-row select{flex:1;min-width:0;padding:5px 6px;border-radius:7px;border:1px solid var(--etched);background:#101a24;color:var(--txt);font:700 11.5px/1.2 inherit;font-family:inherit}
+  .rd-pos-name{font-weight:800} .rd-pos-name.none{color:var(--dim);font-weight:600}
+  /* 공략 공유: 네임드별 얇은 테두리 그룹(1넴/2-1넴/2-2넴) 안에 복사 버튼 + 문구 미리보기 */
+  .rd-strat-groups{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+  .rd-strat-group{flex:1 1 280px;min-width:0;padding:9px 11px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.015)}
+  .rd-strat-group .gh{font-size:11px;font-weight:900;color:var(--dim);letter-spacing:.4px;margin-bottom:7px;
+        padding-bottom:5px;border-bottom:1px dashed var(--line2)}
+  .rd-strat{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+  .rd-strat-btn{padding:8px 14px;border-radius:8px;cursor:pointer;font:800 12.5px/1 inherit;font-family:inherit;color:var(--gold);
+        border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line));
+        background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 12%,#0d1a17),#0b1410);transition:border-color .12s,transform .12s}
+  .rd-strat-btn:hover{border-color:var(--gold);transform:translateY(-1px)}
+  .rd-strat-btn.done{color:#0a1218;background:var(--gold);border-color:var(--gold)}
+  .rd-strat-btn.off{color:var(--dim);border-color:var(--etched);background:#101820}
+  .rd-strat-btn.all{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 50%,var(--line));
+        background:linear-gradient(180deg,color-mix(in srgb,var(--teal) 12%,#0c1620),#0b1218)}
+  .rd-strat-prev{display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-radius:9px;border:1px dashed var(--etched);background:rgba(255,255,255,.02)}
+  .rd-strat-prev .row{font-size:12px;font-weight:600;color:var(--txt);word-break:break-all}
+  .rd-strat-prev .row.off{color:var(--dim)}
+  .rd-strat-prev .row i{font-style:normal;color:var(--danger);font-weight:800;font-size:11px;margin-left:4px}
+  .rd-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;align-items:start}
+  .rd-cpsum{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--dim);white-space:nowrap}
+  .pt-tm-chip .pt-memx{margin-left:auto;flex-shrink:0}
+  .pt-pc.rd-ro{cursor:default}
+  .pt-poolbody .pt-pg{flex:0 0 100%;width:100%}
+
   @media (max-width:820px){
     /* iOS/Android에서 세로 1단 레이아웃이 전체 폭을 항상 사용하도록 고정한다. */
     .pt-root{width:100%;align-self:stretch;padding:14px}
@@ -1065,6 +1169,14 @@
     .pt-cell-av img{justify-self:center}
     /* 팀 편성은 드래그·드롭 기반 PC 전용 기능 — 모바일에선 숨겨 방해 요소를 없앤다. */
     .pt-tm-wrap{display:none}
+    /* 공대 편성은 클릭만으로도 가능하므로 모바일에서도 그대로 노출한다. */
+    .rd-teams{grid-template-columns:1fr}
+    /* 모바일은 페이지 스크롤 하나로 보는 게 자연스러워 풀 sticky·내부 스크롤을 해제한다. */
+    [data-rd-pool]{position:static;max-height:none;display:block}
+    /* 임무판: 모바일은 파티 라벨을 가로 배너로, 위치 카드는 세로로 쌓는다. */
+    .rd-pos-team{flex-direction:column;gap:8px}
+    .rd-pos-team-h{flex:0 0 auto;flex-direction:row;padding:6px 10px;justify-content:flex-start}
+    .rd-pos-pair{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -1212,6 +1324,10 @@
 <section class="view" id="view-party">
   <div id="partyRoot" class="pt-root"></div>
 </section>
+<!-- 공대 탭 (콘텐츠별 하위 탭 → 공대장이 전체 캐릭터 풀에서 직접 파티 편성) -->
+<section class="view" id="view-raid">
+  <div id="raidRoot" class="pt-root"></div>
+</section>
 <!-- 아르카나 탭: 현재 장착분을 제외한 신규 제작 계획 -->
 <section class="view" id="view-arcana">
   <div class="arc-root" id="arcanaRoot"></div>
@@ -1248,6 +1364,25 @@
     <div class="hw-modal-actions">
       <button class="hw-mini" id="ptTimeModalCancel" type="button">취소</button>
       <button class="btn" id="ptTimeModalSave" type="button">저장</button>
+    </div>
+  </div>
+</div>
+<!-- 공대 만들기 모달 -->
+<div id="rdModal" class="hw-modal-back">
+  <div class="hw-modal">
+    <h3>공대 만들기</h3>
+    <label>콘텐츠</label>
+    <div id="rdTypeSel" class="pt-typesel"></div>
+    <label style="margin-top:13px">날짜</label>
+    <input id="rdDate" type="date">
+    <label style="margin-top:13px">시작 시간</label>
+    <input id="rdTime" type="time" value="21:00">
+    <label style="margin-top:13px">최소 전투력 (천 단위 · 예: 700 = 70만)</label>
+    <input id="rdMinCp" type="number" min="0" step="10" value="700">
+    <div class="pt-capnote">구성 <b>1파티 · 2파티</b> 고정 · 파티당 <b>5명</b> · 최대 <b>10명</b> · 최소 전투력 미만 캐릭터는 편성 목록에서 숨겨집니다</div>
+    <div class="hw-modal-actions">
+      <button class="hw-mini" id="rdModalCancel" type="button">취소</button>
+      <button class="btn" id="rdModalCreate" type="button">공대 생성</button>
     </div>
   </div>
 </div>
@@ -1383,9 +1518,9 @@ async function j(u){const r=await fetch(u,{credentials:"same-origin",headers:aut
 // 캐시(SB)에 채우고(sbLoad) 쓰기는 캐시 갱신 + 서버 저장(디바운스)로 처리한다(sbSave).
 // 서버 접속 실패 시 localStorage 로 폴백해 오프라인에서도 계속 동작한다.
 const SB={};
-const SB_KEYS=["mychars","mychar_groups","parties","homework_chars","arcana_plans","op_cfg","own","bookmarks"];
+const SB_KEYS=["mychars","mychar_groups","parties","raids","homework_chars","arcana_plans","op_cfg","own","bookmarks"];
 // 서버 키 → (구버전) localStorage 키. 기존 사용자의 로컬 데이터를 자동 이관하는 데도 쓴다.
-const SB_LEGACY={mychars:"aion2_mychars",mychar_groups:"aion2_mychar_groups",parties:"aion2_parties",
+const SB_LEGACY={mychars:"aion2_mychars",mychar_groups:"aion2_mychar_groups",parties:"aion2_parties",raids:"aion2_raids",
   homework_chars:"aion2_homework_chars",arcana_plans:"aion2_arcana_plans",op_cfg:"aion2_operator_cfg",own:"aion2_own",bookmarks:"aion2_bookmarks"};
 function sbLocal(k){try{const s=localStorage.getItem(SB_LEGACY[k]);return s?JSON.parse(s):null;}catch(e){return null;}}
 function sbGet(k,def){return SB[k]==null?def:SB[k];}
@@ -1459,7 +1594,7 @@ async function refreshAdminState(){
 // 서버 부담을 줄이려고 클라이언트에서 걸러낸다. 그룹이 아직 선택 안 됐으면 스킵.
 // detail 을 넘기면 그 값이 dedupe 키에 포함돼 파티별로 별개 이벤트가 된다.
 const ACCESS_LOG_DEDUPE_MS=60_000;
-const ACCESS_LOG_ALLOWED=new Set(["mychar","party","party_detail","homework","arcana","arcana_detail","char_detail","char_compare"]);
+const ACCESS_LOG_ALLOWED=new Set(["mychar","party","party_detail","raid","raid_detail","homework","arcana","arcana_detail","char_detail","char_compare"]);
 const _accessLogLast={};
 function logAccess(view,detail){
   // 운영 관리 화면은 제외하되, 아르카나 열람은 로컬·관리자 검증에서도 이력을 남긴다.
@@ -1473,7 +1608,7 @@ function logAccess(view,detail){
   fetch("/api/access-log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).catch(()=>{});
 }
 
-const ACCESS_LOG_LABEL={mychar:"🗂️ 캐릭",party:"🛡️ 파티",party_detail:"🎯 파티 상세",homework:"📅 숙제",arcana:"🔮 아르카나",arcana_detail:"🔮 아르카나 상세",settings:"⚙️ 설정",char_detail:"🔎 캐릭터 상세",char_compare:"⚖️ 비교"};
+const ACCESS_LOG_LABEL={mychar:"🗂️ 캐릭",party:"🛡️ 파티",party_detail:"🎯 파티 상세",raid:"⚔️ 공대",raid_detail:"⚔️ 공대 상세",homework:"📅 숙제",arcana:"🔮 아르카나",arcana_detail:"🔮 아르카나 상세",settings:"⚙️ 설정",char_detail:"🔎 캐릭터 상세",char_compare:"⚖️ 비교"};
 async function renderAdminAccessLog(){
   const box=document.getElementById("adminAccessLog"); if(!box)return;
   try{
@@ -1554,6 +1689,7 @@ const TABS=[
   {id:"mychar", label:"🗂️ 캐릭"},
   // {id:"char",  label:"🧝 캐릭터"},   // 기능 유지, 탭만 숨김 (검색은 내 캐릭터 탭으로 이관)
   {id:"party", label:"🛡️ 파티"},
+  {id:"raid", label:"⚔️ 공대"},
   {id:"arcana", label:"🔮 아르카나", compactLabel:"🔮 카드"},
   {id:"bookmarks", label:"🔖 즐찾"},
   {id:"craft", label:"⚒️ 제작"},
@@ -1569,6 +1705,11 @@ function showView(id){
   if(id==="party" && typeof renderParty==="function"){
     ptState.openId=null; ptState.focusDate=null;
     renderParty();
+  }
+  // 공대 탭도 진입 시 항상 목록부터 노출한다.
+  if(id==="raid" && typeof renderRaid==="function"){
+    rdState.openId=null; rdState.q="";
+    renderRaid();
   }
   // 숙제 탭은 진입할 때마다 현재 그룹의 본캐를 수기 계산 대상으로 연다.
   // 탭 안에서 사용자가 다른 캐릭터를 선택한 경우에는 그 선택을 그대로 유지한다.
@@ -4293,6 +4434,543 @@ function initParty(){
   renderParty();
 }
 
+// ── 공대(레이드) ─────────────────────────────────────────────
+// 파티 모집과 달리 신청을 받지 않는다. 공대장(공대를 만든 그룹)이 등록된 모든
+// 캐릭터 풀에서 직접 골라 파티를 편성한다 — 다른 사람 캐릭터도 임의로 추가 가능.
+// 콘텐츠별 하위 탭 구조이며 지금은 '비탄' 하나만 노출한다. 저장은 SB 'raids' 키.
+// minCp: 편성 풀 노출 기준 최소 전투력(천 단위 표기 = 화면의 전투력 수치와 동일 단위).
+const RAID_TYPES=[
+  {key:"bitan", label:"비탄", color:"var(--g7)", icon:"🥀", minCp:700},
+];
+const rdType=k=>RAID_TYPES.find(t=>t.key===k)||RAID_TYPES[0];
+const RD_TEAM_MAX=5;      // 파티당 최대 인원
+const RD_TEAM_COUNT=2;    // 공대 구성은 항상 1파티·2파티 고정
+// 파티별 임무판. positions[].team = 담당 파티(0=1파티,1=2파티, null=파티 무관 전체에서 지정).
+// positions[].slots = 그 위치에서 채워야 하는 자리 목록(위치마다 다를 수 있다).
+// positions[].hot = 난이도 높은 자리 — 잘하는(숙련) 인원 위주 배치를 강조 표시한다.
+// 저장은 r.missions[msKey][posKey][slotKey]=charKey.
+const WC_SLOTS=()=>[{key:"watcher",label:"주시자",icon:"👁"},{key:"wedge",label:"쐐기담당",icon:"🔻"}];
+const PF_SLOTS=()=>[{key:"a",label:"담당 1",icon:"🧊"},{key:"b",label:"담당 2",icon:"🧊"},{key:"c",label:"담당 3",icon:"🧊"}];
+const RD_MISSIONS=[
+  {key:"winter_core", types:["bitan"], label:"겨울의핵(쐐기)", icon:"❄️",
+   note:"시계방향 11시 → 1시 → 5시 → 7시 · 1파티: 11시·7시 / 2파티: 1시·5시",
+   positions:[
+     {key:"11",label:"11시",icon:"🕚",team:0,slots:WC_SLOTS()},
+     {key:"1", label:"1시", icon:"🕐",team:1,slots:WC_SLOTS()},
+     {key:"5", label:"5시", icon:"🕔",team:1,slots:WC_SLOTS()},
+     {key:"7", label:"7시", icon:"🕖",team:0,slots:WC_SLOTS()},
+   ]},
+  {key:"permafrost", types:["bitan"], label:"영구동토", icon:"🧊",
+   note:"11시·5시·7시 각 3명 + 1시 탱커 1명 · ⭐ 11시·5시는 잘하는 인원 위주로 배치",
+   positions:[
+     {key:"11",label:"11시",icon:"🕚",team:null,hot:true,slots:PF_SLOTS()},
+     {key:"1", label:"1시", icon:"🕐",team:null,slots:[{key:"tank",label:"탱커",icon:"🛡️",role:"tank"}]},
+     {key:"5", label:"5시", icon:"🕔",team:null,hot:true,slots:PF_SLOTS()},
+     {key:"7", label:"7시", icon:"🕖",team:null,slots:PF_SLOTS()},
+   ]},
+];
+const rdMissionsFor=r=>RD_MISSIONS.filter(ms=>!ms.types||ms.types.includes(r?.type));
+function rdNormalize(r){
+  if(!r||typeof r!=="object")return r;
+  if(!RAID_TYPES.some(t=>t.key===r.type))r.type=RAID_TYPES[0].key;
+  if(typeof r.creatorGroup!=="string")r.creatorGroup="";
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date||""))r.date=ptYmd(new Date());
+  r.time=ptTime(r.time);
+  r.teamCount=RD_TEAM_COUNT;   // 과거에 저장된 값이 있어도 고정 구성으로 강제
+  const defMinCp=rdType(r.type).minCp||0;
+  r.minCp=Number.isFinite(+r.minCp)&&+r.minCp>=0?Math.floor(+r.minCp):defMinCp;
+  if(!Array.isArray(r.members))r.members=[];
+  const seen=new Set();
+  r.members=r.members.filter(m=>{
+    if(!m||!m.key||seen.has(m.key))return false;
+    seen.add(m.key);
+    m.team=Math.min(RD_TEAM_COUNT-1,Math.max(0,parseInt(m.team,10)||0));
+    return true;
+  });
+  // 임무 지정 정리: 공대에서 빠졌거나 담당 파티가 바뀐 캐릭터의 지정은 자동 해제한다.
+  if(!r.missions||typeof r.missions!=="object")r.missions={};
+  rdMissionsFor(r).forEach(ms=>{
+    const board=r.missions[ms.key];
+    if(!board||typeof board!=="object"){r.missions[ms.key]={};return;}
+    ms.positions.forEach(pos=>{
+      const slot=board[pos.key];
+      if(!slot||typeof slot!=="object"){delete board[pos.key];return;}
+      pos.slots.forEach(sl=>{
+        const key=slot[sl.key]; if(!key)return;
+        const m=r.members.find(x=>x.key===key);
+        if(!m||(pos.team!=null&&m.team!==pos.team))delete slot[sl.key];
+      });
+      if(!pos.slots.some(sl=>slot[sl.key]))delete board[pos.key];
+    });
+  });
+  return r;
+}
+const RaidStore={
+  async all(){ return (sbGet("raids",[])||[]).map(rdNormalize); },
+  async get(id){ return (await this.all()).find(x=>x.id===id)||null; },
+  async _saveAll(list){ sbSave("raids",list); },
+  async upsert(r){ const l=await this.all(); const i=l.findIndex(x=>x.id===r.id); if(i>=0)l[i]=r; else l.push(r); await this._saveAll(l); return r; },
+  async remove(id){ await this._saveAll((await this.all()).filter(x=>x.id!==id)); },
+};
+// msOpen[임무키]=false 면 접힘. 재렌더(지정 변경 등) 후에도 접힘 상태를 유지한다.
+const rdState={type:RAID_TYPES[0].key, openId:null, q:"", qFocus:false, msOpen:{}};
+let rdNewType=RAID_TYPES[0].key;
+const rdCanEdit=r=>isAdmin||(!!r?.creatorGroup&&r.creatorGroup===effectiveGroup());
+const rdMax=r=>r.teamCount*RD_TEAM_MAX;
+// 파티(팀)별 멤버 배열. 인덱스 = 팀 번호(0..teamCount-1).
+const rdTeams=r=>{const t=Array.from({length:r.teamCount},()=>[]);r.members.forEach(m=>{if(t[m.team])t[m.team].push(m);});return t;};
+const rdWd=d=>PT_WD[ptParse(d).getDay()];
+
+// 공대 만들기 모달
+function rdOpenCreate(){
+  if(!effectiveGroup()){alert("먼저 🗂️ 캐릭 탭에서 내 그룹을 선택하세요.");return;}
+  rdNewType=rdState.type;
+  const sel=document.getElementById("rdTypeSel");
+  sel.innerHTML=RAID_TYPES.map(t=>`<button type="button" class="pt-typebtn${t.key===rdNewType?' on':''}" data-t="${t.key}" style="--c:${t.color}">${t.icon} ${t.label}</button>`).join("");
+  sel.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{rdNewType=b.dataset.t;
+    sel.querySelectorAll(".pt-typebtn").forEach(x=>x.classList.toggle("on",x.dataset.t===rdNewType));
+    document.getElementById("rdMinCp").value=rdType(rdNewType).minCp||0;});
+  document.getElementById("rdDate").value=ptYmd(new Date());
+  document.getElementById("rdTime").value="21:00";
+  document.getElementById("rdMinCp").value=rdType(rdNewType).minCp||0;
+  document.getElementById("rdModal").classList.add("on");
+}
+function rdCloseCreate(){document.getElementById("rdModal").classList.remove("on");}
+async function rdCreate(){
+  const date=document.getElementById("rdDate").value||ptYmd(new Date());
+  const time=ptTime(document.getElementById("rdTime").value);
+  const minCp=Math.max(0,Math.floor(+document.getElementById("rdMinCp").value||0));
+  const id="r"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  await RaidStore.upsert(rdNormalize({id,type:rdNewType,creatorGroup:effectiveGroup(),date,time,minCp,teamCount:RD_TEAM_COUNT,
+    createdAt:new Date().toISOString(),members:[]}));
+  rdCloseCreate();
+  rdState.type=rdNewType; rdState.openId=id; rdState.q="";
+  renderRaid();
+}
+
+// 편성 변경(모두 RaidStore 경유, 공대장·관리자만)
+async function rdDeleteRaid(id){
+  const r=await RaidStore.get(id); if(!r)return false;
+  if(!rdCanEdit(r)){alert("공대를 만든 그룹(공대장)만 삭제할 수 있습니다.");return false;}
+  await RaidStore.remove(id); return true;
+}
+async function rdAddChar(key,teamIdx){
+  const r=await RaidStore.get(rdState.openId); if(!r)return;
+  if(!rdCanEdit(r)){alert("공대 편성은 공대장(공대를 만든 그룹)만 할 수 있습니다.");return;}
+  const c=mcChars().find(x=>x.key===key); if(!c)return;
+  if(r.members.some(m=>m.key===key))return;
+  const teams=rdTeams(r);
+  let t=teamIdx;
+  if(t==null||!Number.isInteger(t)||t<0||t>=r.teamCount){
+    t=teams.findIndex(list=>list.length<RD_TEAM_MAX);
+    if(t<0){alert(`모든 파티가 가득 찼습니다 (파티당 ${RD_TEAM_MAX}명).`);return;}
+  }else if(teams[t].length>=RD_TEAM_MAX){alert(`${t+1}파티 정원(${RD_TEAM_MAX}명)을 초과할 수 없습니다.`);return;}
+  r.members.push({key:c.key,characterId:c.characterId,serverId:c.serverId,name:c.name,img:c.img,cp:c.cp,
+    race:c.race,serverName:c.serverName,level:c.level,className:c.className,group:c.group||"",team:t});
+  await RaidStore.upsert(r); renderRaid();
+}
+async function rdRemoveChar(key){
+  const r=await RaidStore.get(rdState.openId); if(!r)return;
+  if(!rdCanEdit(r)){alert("공대 편성은 공대장(공대를 만든 그룹)만 할 수 있습니다.");return;}
+  if(!r.members.some(m=>m.key===key))return;
+  r.members=r.members.filter(m=>m.key!==key);
+  await RaidStore.upsert(r); renderRaid();
+}
+async function rdMoveChar(key,teamIdx){
+  const r=await RaidStore.get(rdState.openId); if(!r)return;
+  if(!rdCanEdit(r))return;
+  const m=r.members.find(x=>x.key===key);
+  if(!m||m.team===teamIdx||!Number.isInteger(teamIdx)||teamIdx<0||teamIdx>=r.teamCount)return;
+  if(r.members.filter(x=>x.team===teamIdx).length>=RD_TEAM_MAX){alert(`${teamIdx+1}파티 정원(${RD_TEAM_MAX}명)을 초과할 수 없습니다.`);return;}
+  m.team=teamIdx;
+  await RaidStore.upsert(r); renderRaid();
+}
+async function rdUpdate(id,patch){   // 헤더의 날짜/시간 인라인 편집 공통 저장
+  const r=await RaidStore.get(id); if(!r)return;
+  if(!rdCanEdit(r))return;
+  if(patch.date!=null&&/^\d{4}-\d{2}-\d{2}$/.test(patch.date))r.date=patch.date;
+  if(patch.time!=null)r.time=ptTime(patch.time);
+  if(patch.minCp!=null)r.minCp=Math.max(0,Math.floor(+patch.minCp||0));
+  await RaidStore.upsert(r); renderRaid();
+}
+// 공팟(외부) 인원: 앱에 등록 안 된 사람을 이름·직업만으로 1회성 추가한다. 정보 조회 없음.
+// 직업을 고르면 역할(탱/힐/딜)은 등록 캐릭터와 동일한 기준으로 자동 분류된다.
+const RD_GUEST_CLASSES=["수호성","검성","궁성","살성","권성","정령성","마도성","치유성","호법성"];
+async function rdAddGuest(teamIdx,name,className){
+  const r=await RaidStore.get(rdState.openId); if(!r)return false;
+  if(!rdCanEdit(r)){alert("공대 편성은 공대장(공대를 만든 그룹)만 할 수 있습니다.");return false;}
+  name=(name||"").trim();
+  if(!name){alert("이름을 입력하세요.");return false;}
+  if(!Number.isInteger(teamIdx)||teamIdx<0||teamIdx>=RD_TEAM_COUNT)return false;
+  if(r.members.filter(m=>m.team===teamIdx).length>=RD_TEAM_MAX){alert(`${teamIdx+1}파티 정원(${RD_TEAM_MAX}명)을 초과할 수 없습니다.`);return false;}
+  if(!RD_GUEST_CLASSES.includes(className))className=RD_GUEST_CLASSES[0];
+  const role=TANK_CLASSES.has(className)?"tank":HEAL_CLASSES.has(className)?"heal":"deal";
+  const key="guest:"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  r.members.push({key,name,className,group:"공팟",guest:true,guestRole:role,team:teamIdx});
+  await RaidStore.upsert(r); renderRaid(); return true;
+}
+// 캐릭터 역할: 직업이 있으면 직업 기준, 직업 없는 구(舊) 공팟 인원만 저장된 역할 사용.
+const rdRoleOfMember=m=>m?.guest?(m.className?ptRoleOf(m):(m.guestRole||"deal")):ptRoleOf(m);
+const RD_ROLE_ICON={deal:"⚔️",tank:"🛡️",heal:"✚"};
+// 임무 지정/해제. charKey 가 빈 값이면 해제. 같은 임무판 안에서 한 캐릭터는 한 자리만 맡는다.
+async function rdAssignMission(msKey,posKey,slotKey,charKey){
+  const r=await RaidStore.get(rdState.openId); if(!r)return;
+  if(!rdCanEdit(r)){alert("임무 지정은 공대장(공대를 만든 그룹)만 할 수 있습니다.");return;}
+  const ms=rdMissionsFor(r).find(x=>x.key===msKey); if(!ms)return;
+  const pos=ms.positions.find(p=>p.key===posKey); if(!pos)return;
+  r.missions=r.missions||{};
+  const board=r.missions[msKey]=r.missions[msKey]||{};
+  if(charKey){
+    const m=r.members.find(x=>x.key===charKey);
+    if(!m||(pos.team!=null&&m.team!==pos.team)){alert(`${pos.label}는 ${pos.team+1}파티 캐릭터만 지정할 수 있습니다.`);renderRaid();return;}
+    const sl=pos.slots.find(s=>s.key===slotKey);
+    if(sl?.role&&rdRoleOfMember(m)!==sl.role){alert(`${pos.label} ${sl.label} 자리는 ${PT_ROLE_LABEL[sl.role]}만 지정할 수 있습니다.`);renderRaid();return;}
+    const dup=ms.positions.some(p=>p.slots.some(sl=>{
+      const k=(board[p.key]||{})[sl.key];
+      return k===charKey&&!(p.key===posKey&&sl.key===slotKey);
+    }));
+    if(dup){alert("이미 이 임무의 다른 자리에 지정된 캐릭터입니다. 먼저 기존 지정을 해제하세요.");renderRaid();return;}
+    (board[posKey]=board[posKey]||{})[slotKey]=charKey;
+  }else if(board[posKey]){
+    delete board[posKey][slotKey];
+  }
+  await RaidStore.upsert(r); renderRaid();
+}
+// 공략 공유 문구: 단계별로 채팅창에 붙여넣을 한 줄 텍스트를 만든다.
+// ok=false(임무 미완료)면 복사 대신 미지정 위치를 알려준다. 1넴은 고정 멘트라 항상 복사 가능.
+function rdStratLines(r){
+  const missions=rdMissionsFor(r);
+  const wc=missions.find(x=>x.key==="winter_core"), pf=missions.find(x=>x.key==="permafrost");
+  const board=k=>(r.missions||{})[k]||{};
+  const nameOf=k=>r.members.find(m=>m.key===k)?.name||"?";
+  const lines=[{key:"boss1",group:"1넴",label:"냉기구술",text:"냉기구술: 1왼2오. 메인탱 6>12 서브탱 9>3",ok:true,missing:[]}];
+  if(wc){
+    const b=board("winter_core");
+    [["watcher","주시자"],["wedge","쐐기"]].forEach(([slotKey,lab])=>{
+      const parts=[],missing=[];
+      wc.positions.forEach(p=>{
+        const k=(b[p.key]||{})[slotKey];
+        if(k)parts.push(`[${p.label}] ${nameOf(k)}`); else missing.push(p.label);
+      });
+      lines.push({key:"wc_"+slotKey,group:"2-1넴",label:`겨울의핵-${lab}`,text:`겨울의핵-${lab} : ${parts.join(" ")}`,ok:!missing.length,missing});
+    });
+  }
+  if(pf){
+    const b=board("permafrost");
+    const parts=[],missing=[];
+    ["1","11","5","7"].forEach(pk=>{                 // 요청된 나열 순서: 1시 → 11시 → 5시 → 7시
+      const pos=pf.positions.find(p=>p.key===pk); if(!pos)return;
+      const names=pos.slots.map(sl=>(b[pk]||{})[sl.key]).filter(Boolean).map(nameOf);
+      if(names.length<pos.slots.length)missing.push(pos.label);
+      parts.push([`[${pos.label}]`,...names].join(" "));
+    });
+    lines.push({key:"pf",group:"2-2넴",label:"영구동토",text:`영구동토 : ${parts.join("  ")}`,ok:!missing.length,missing});
+  }
+  return lines;
+}
+// 캐릭터 key → 임무 배지("👁 11시" 등) 목록. 편성 칩에 붙여 한눈에 보이게 한다.
+function rdMissionTags(r){
+  const map={};
+  rdMissionsFor(r).forEach(ms=>{
+    const board=(r.missions||{})[ms.key]||{};
+    ms.positions.forEach(pos=>pos.slots.forEach(sl=>{
+      const k=(board[pos.key]||{})[sl.key]; if(!k)return;
+      (map[k]=map[k]||[]).push(`${sl.icon} ${pos.label}`);
+    }));
+  });
+  return map;
+}
+
+// ── 공대 렌더 ─────────────────────────────────────────────
+function rdChip(m,canEdit,tagMap){
+  const role=rdRoleOfMember(m), cp=cpShort(m.cp);
+  const cls=m.className||(m.guest?"":(mcChars().find(x=>x.key===m.key)?.className||""));
+  const nameLbl=cls?`${esc(m.name)}<span class="cls">[${esc(cls)}]</span>`:esc(m.name);
+  const tags=(tagMap&&tagMap[m.key])||[];
+  const sub=[m.guest?"공팟 인원":esc(m.group||""),tags.length?`<span class="mis">${tags.map(esc).join(" · ")}</span>`:""].filter(Boolean).join(" · ");
+  return `<div class="pt-tm-chip role-${role}${m.guest?' guest':''}"${canEdit?` draggable="true" data-rd-drag="${esc(m.key)}"`:''} title="${esc(m.name)}${cls?` · ${esc(cls)}`:''} · ${m.guest?'공팟 인원':esc(m.group||'')}">
+    ${m.guest?`<span class="rd-gav">👤</span>`:`<img src="${esc(m.img||'')}" ${oe}>`}
+    <div class="tc-b"><div class="nm">${nameLbl} <span class="cp">${cp??'–'}</span></div><div class="sub">${sub}</div></div>
+    ${canEdit?`<button class="pt-memx" data-rd-rm="${esc(m.key)}" title="편성 제외">×</button>`:''}
+  </div>`;
+}
+function rdRoleBlock(list,canEdit,tagMap){
+  return ["deal","tank","heal"].map(role=>{
+    const arr=list.filter(m=>rdRoleOfMember(m)===role).slice().sort((a,b)=>(b.cp??-1)-(a.cp??-1));
+    if(!arr.length)return '';
+    return `<div class="pt-tm-role"><span class="pt-tm-roleh">${PT_ROLE_LABEL[role]} · ${arr.length}</span><div class="pt-tm-body">${arr.map(m=>rdChip(m,canEdit,tagMap)).join("")}</div></div>`;
+  }).join("");
+}
+// 임무판 렌더: 위치(시계방향) 카드마다 담당 파티 멤버 중에서 역할별 지정.
+function rdMissionHtml(r,canEdit){
+  const missions=rdMissionsFor(r);
+  if(!missions.length)return "";
+  const teams=rdTeams(r);
+  let h=`<div class="pt-sech" style="margin-top:18px">📌 파티별 임무 지정 <span class="hint">${canEdit?'각 위치의 담당을 해당 파티 인원 중에서 지정하세요':''}</span></div><div class="rd-missions">`;
+  missions.forEach(ms=>{
+    const board=(r.missions||{})[ms.key]||{};
+    // 이 임무판에서 이미 자리를 받은 캐릭터 — 다른 자리의 선택 목록에서 제외해 중복을 원천 차단.
+    const assigned=new Set();
+    ms.positions.forEach(p=>p.slots.forEach(sl=>{const k=(board[p.key]||{})[sl.key];if(k)assigned.add(k);}));
+    h+=`<details class="rd-mission"${rdState.msOpen[ms.key]===false?'':' open'} data-ms="${ms.key}"><summary class="rd-mission-h">${ms.icon} ${ms.label}<span>${esc(ms.note||"")}</span></summary>`;
+    const posCard=pos=>{
+      const slotVals=board[pos.key]||{};
+      // 파티 지정형은 해당 파티만, 파티 무관형은 전체 인원(1파티→2파티, 전투력순)에서 고른다.
+      const pool=pos.team!=null?(teams[pos.team]||[])
+        :r.members.slice().sort((a,b)=>a.team-b.team||((b.cp??-1)-(a.cp??-1)));
+      let ph=`<div class="rd-pos${pos.hot?' hot':''}"><div class="rd-pos-h">${pos.icon} ${pos.label}${pos.hot?'<span class="rd-hot">⭐ 잘하는 인원</span>':''}</div>`;
+      pos.slots.forEach(sl=>{
+        const cur=slotVals[sl.key]||"";
+        if(canEdit){
+          // slot.role 이 있으면 그 역할만 노출(예: 영구동토 1시=탱커). 이미 지정된 본인은 항상 유지.
+          const opts=pool.filter(m=>m.key===cur||(!assigned.has(m.key)&&(!sl.role||rdRoleOfMember(m)===sl.role)));
+          ph+=`<div class="rd-pos-row"><span class="rl">${sl.icon} ${sl.label}</span>
+            <select data-mis="${ms.key}|${pos.key}|${sl.key}"><option value="">— 미지정 —</option>
+            ${opts.map(m=>`<option value="${esc(m.key)}"${m.key===cur?' selected':''}>${RD_ROLE_ICON[rdRoleOfMember(m)]} ${esc(m.name)}${m.className?` (${esc(m.className)})`:m.guest?' (공팟)':''}${pos.team==null?` · ${m.team+1}팟`:''}</option>`).join("")}
+            </select></div>`;
+        }else{
+          const m=r.members.find(x=>x.key===cur);
+          ph+=`<div class="rd-pos-row"><span class="rl">${sl.icon} ${sl.label}</span><span class="rd-pos-name${m?'':' none'}">${m?`${RD_ROLE_ICON[rdRoleOfMember(m)]} ${esc(m.name)}`:'미지정'}</span></div>`;
+        }
+      });
+      return ph+`</div>`;
+    };
+    if(ms.positions.some(p=>p.team!=null)){
+      // 파티 지정형: 파티별 한 줄씩 (겨울의핵 — 1파티 11·7시 / 2파티 1·5시)
+      [...new Set(ms.positions.map(p=>p.team))].forEach(ti=>{
+        const poss=ms.positions.filter(p=>p.team===ti);
+        h+=`<div class="rd-pos-team"><div class="rd-pos-team-h"><b>${ti+1}파티</b><span>${poss.map(p=>p.label).join(" · ")}</span></div><div class="rd-pos-pair">${poss.map(posCard).join("")}</div></div>`;
+      });
+    }else{
+      // 파티 무관형: 전체 인원에서 지정 (영구동토 — 시계방향 4방향 카드)
+      h+=`<div class="rd-pos-team"><div class="rd-pos-pair quad">${ms.positions.map(posCard).join("")}</div></div>`;
+    }
+    h+=`</details>`;
+  });
+  return h+`</div>`;
+}
+// 왼쪽 풀: 그룹 구분 없이 '등록된 모든 캐릭터'를 그룹별로 묶어 노출(내 그룹 우선).
+function rdPoolHtml(r,canEdit){
+  const inRaid=new Set(r.members.map(m=>m.key));
+  const q=(rdState.q||"").trim().toLowerCase();
+  const minCp=r.minCp||0;
+  // 최소 전투력 미만 캐릭터는 풀에서 숨긴다. 전투력 미확인(–) 캐릭터는 '미만'이 아니므로 남긴다.
+  const eligible=mcChars().filter(c=>{const cp=cpShort(c.cp);return cp==null||cp>=minCp;});
+  const hiddenCnt=mcChars().length-eligible.length;
+  const all=eligible.filter(c=>!q||[c.name,c.group,c.className,c.serverName].some(v=>(v||"").toLowerCase().includes(q)));
+  const me=effectiveGroup();
+  const groups=[...new Set(all.map(c=>c.group||"기타"))].sort((a,b)=>(a===me?-1:b===me?1:a.localeCompare(b,"ko")));
+  let h=`<div class="pt-sech">전체 캐릭터 <span class="hint">${canEdit?'클릭 → 빈 파티에 편성 · 다시 클릭 → 제외':'공대장만 편성할 수 있습니다'}</span></div>`;
+  if(minCp>0)h+=`<div class="rd-minnote">⚡ 전투력 <b>${fmt(minCp)}</b> 이상만 표시${hiddenCnt?` · <span>${hiddenCnt}캐릭 숨김</span>`:''}</div>`;
+  h+=`<input class="rd-q" id="rdQ" placeholder="이름·그룹·직업 검색" autocomplete="off" spellcheck="false" value="${esc(rdState.q||"")}">`;
+  h+=`<div class="pt-poolbody">`;
+  if(!all.length)h+=`<div class="pt-empty">${q?'검색 결과가 없습니다.':(minCp>0&&hiddenCnt?`전투력 ${fmt(minCp)} 이상인 캐릭터가 없습니다.`:'등록된 캐릭터가 없습니다.<br>🗂️ 캐릭 탭에서 등록하세요.')}</div>`;
+  groups.forEach(g=>{
+    const chars=all.filter(c=>(c.group||"기타")===g);
+    h+=`<div class="pt-pg">${esc(g)} · ${chars.length}</div>`;
+    chars.forEach(c=>{
+      const applied=inRaid.has(c.key), cp=cpShort(c.cp);
+      h+=`<div class="pt-pc${applied?' applied':''}${canEdit?'':' rd-ro'}" data-rdkey="${esc(c.key)}"${canEdit&&!applied?' draggable="true"':''} style="--c:${ptRaceCol(c.race)}" title="${canEdit?(applied?'클릭 → 편성 제외':'클릭 → 빈 자리에 편성 · 드래그로 특정 파티에 배치'):esc(c.name)}">
+        <img class="ico sm" src="${c.img||''}" ${oe}>
+        <div class="pt-pc-b"><div class="nm">${esc(c.name)}</div><div class="pt-cp">${classMark(c)} ${cp??'–'}</div></div>
+        ${applied?'<span class="pt-tag">✓ 편성됨</span>':''}
+      </div>`;
+    });
+  });
+  return h+`</div>`;
+}
+
+async function renderRaidList(root){
+  const raids=(await RaidStore.all()).filter(x=>x.type===rdState.type)
+    .sort((a,b)=>a.date.localeCompare(b.date)||ptTime(a.time).localeCompare(ptTime(b.time))||(a.createdAt||"").localeCompare(b.createdAt||""));
+  const T=rdType(rdState.type);
+  let html=`<div class="pt-head"><h2>⚔️ 공대</h2><span class="spacer"></span><button class="btn" id="rdNew">＋ 공대 만들기</button></div>`;
+  html+=`<div class="rd-tabs">${RAID_TYPES.map(t=>`<button type="button" class="pt-typebtn${t.key===rdState.type?' on':''}" data-rdt="${t.key}" style="--c:${t.color}">${t.icon} ${t.label}</button>`).join("")}</div>`;
+  html+=`<div class="pt-list-note">공대를 만든 그룹(공대장)이 등록된 전체 캐릭터에서 직접 파티를 편성합니다.</div>`;
+  if(!raids.length){
+    html+=`<div class="pt-empty big">아직 ${T.label} 공대가 없습니다.<br><b>공대 만들기</b>로 공대를 열고 파티를 직접 편성해 보세요.</div>`;
+  }else{
+    html+=`<div class="pt-list">${raids.map(x=>`<div class="pt-rc" data-open="${x.id}" style="--c:${T.color}">
+        ${rdCanEdit(x)?`<button class="pt-rcx" data-delc="${x.id}" title="삭제">✕</button>`:""}
+        <div class="t">${T.icon} ${T.label} 공대</div>
+        <div class="meta"><span class="pt-expected">${ptMd(x.date)}(${rdWd(x.date)}) ${x.time} 시작</span>공대장 ${esc(x.creatorGroup||"?")}${x.minCp?` · 전투력 ${fmt(x.minCp)}+`:''}</div>
+        <div class="bars"><div class="bar">인원 <b>${x.members.length}</b>/${rdMax(x)}</div></div>
+      </div>`).join("")}</div>`;
+  }
+  root.innerHTML=html;
+  on("rdNew","click",rdOpenCreate);
+  root.querySelectorAll("[data-rdt]").forEach(b=>b.onclick=()=>{rdState.type=b.dataset.rdt;renderRaid();});
+  root.querySelectorAll("[data-open]").forEach(c=>c.onclick=e=>{
+    if(e.target.closest("[data-delc]"))return;
+    rdState.openId=c.dataset.open; rdState.q=""; renderRaid();});
+  root.querySelectorAll("[data-delc]").forEach(b=>b.onclick=async e=>{
+    e.stopPropagation();
+    if(confirm("이 공대를 삭제할까요?")&&await rdDeleteRaid(b.dataset.delc))renderRaid();});
+}
+
+async function renderRaidDetail(root){
+  const r=await RaidStore.get(rdState.openId);
+  if(!r){ rdState.openId=null; return renderRaidList(root); }
+  const T=rdType(r.type), canEdit=rdCanEdit(r), teams=rdTeams(r);
+  logAccess("raid_detail",`${T.label} ${ptMd(r.date)} ${r.time}`);
+  let html=`<div class="pt-head">
+    <button class="hw-mini" id="rdBack">← 목록</button>
+    <h2><span class="pt-dot" style="color:${T.color}"></span>${T.icon} ${T.label} 공대</h2>`;
+  if(canEdit){
+    html+=`<span class="rd-edit"><input id="rdEditDate" type="date" value="${esc(r.date)}"><input id="rdEditTime" type="time" value="${esc(r.time)}"><label title="최소 전투력 (천 단위)">⚡<input id="rdEditMinCp" type="number" min="0" step="10" value="${r.minCp||0}" style="width:74px">+</label></span>`;
+  }else{
+    html+=`<strong class="pt-detail-time">${ptMd(r.date)}(${rdWd(r.date)}) ${r.time} 시작</strong>${r.minCp?`<span class="pt-cap">전투력 <b>${fmt(r.minCp)}+</b></span>`:''}`;
+  }
+  html+=`<span class="pt-sub">공대장 <b style="color:var(--gold)">${esc(r.creatorGroup||"?")}</b></span>
+    <span class="pt-cap${r.members.length>rdMax(r)?' over':''}">인원 <b>${r.members.length}</b>/${rdMax(r)}</span>
+    <span class="spacer"></span>
+    ${canEdit?'<button class="hw-mini" id="rdDel">공대 삭제</button>':''}
+  </div>`;
+  html+=`<div class="pt-detail">`;
+  html+=`<div class="pt-pool" data-rd-pool>${rdPoolHtml(r,canEdit)}</div>`;
+  html+=`<div class="pt-main"><div class="pt-sech">파티 편성 <span class="hint">${canEdit?'왼쪽 캐릭터를 클릭하거나 파티로 드래그 · ×로 제외':''}</span><b class="pt-starttime">${ptMd(r.date)}(${rdWd(r.date)}) ${r.time} 시작</b></div>`;
+  const tagMap=rdMissionTags(r);
+  html+=`<div class="rd-teams">${teams.map((list,i)=>{
+    const over=list.length>RD_TEAM_MAX;
+    const cpSum=list.reduce((n,m)=>n+(m.cp||0),0);
+    return `<div class="pt-tm-team${over?' over':''}"${canEdit?` data-rd-drop="${i}"`:''}>
+      <div class="pt-tm-teamh${over?' over':''}">${i+1}파티 <b>${list.length}</b>/${RD_TEAM_MAX}<span class="rd-cpsum">전투력 합 ${cpSum?fmt(cpShort(cpSum)):'–'}</span>${canEdit?`<button class="hw-mini rd-guest-btn" data-guest-btn="${i}" type="button" title="이름·역할만 입력해 공팟 인원 추가">＋ 공팟 인원</button>`:''}</div>
+      ${canEdit?`<div class="rd-guest-add" data-guest-form="${i}" hidden>
+        <input data-guest-name placeholder="이름 (예: 공팟힐러님)" maxlength="20" autocomplete="off" spellcheck="false">
+        <select data-guest-class>${RD_GUEST_CLASSES.map(c=>`<option value="${c}">${classMark({className:c})} ${c}</option>`).join("")}</select>
+        <button class="hw-mini" data-guest-save type="button">추가</button>
+      </div>`:''}
+      ${list.length?rdRoleBlock(list,canEdit,tagMap):`<div class="pt-empty" style="padding:8px">${canEdit?'여기로 캐릭터를 끌어놓거나 왼쪽에서 클릭하세요':'아직 편성된 캐릭터가 없습니다'}</div>`}
+    </div>`;
+  }).join("")}</div>`;
+  html+=rdMissionHtml(r,canEdit);
+  // 공략 공유: 네임드(1넴/2-1넴/2-2넴)별 그룹 박스 안에 복사 버튼 + 문구 미리보기.
+  const strat=rdStratLines(r);
+  html+=`<div class="pt-sech" style="margin-top:18px">📋 공략 공유 <span class="hint">버튼을 클릭하면 문구가 복사됩니다 — 채팅창에 붙여넣으세요</span>${strat.every(s=>s.ok)?`<button type="button" class="rd-strat-btn all" data-strat="__all" style="margin-left:auto">📋 전체 복사</button>`:''}</div>
+    <div class="rd-strat-groups">${[...new Set(strat.map(s=>s.group))].map(g=>{
+      const items=strat.filter(s=>s.group===g);
+      return `<div class="rd-strat-group"><div class="gh">${esc(g)}</div>
+        <div class="rd-strat">${items.map(s=>`<button type="button" class="rd-strat-btn${s.ok?'':' off'}" data-strat="${s.key}"${s.ok?'':` title="임무 미지정: ${esc(s.missing.join(", "))}"`}>📋 ${esc(s.label)}</button>`).join("")}</div>
+        <div class="rd-strat-prev">${items.map(s=>`<div class="row${s.ok?'':' off'}">${esc(s.text)}${s.ok?'':` <i>미지정: ${esc(s.missing.join(", "))}</i>`}</div>`).join("")}</div>
+      </div>`;
+    }).join("")}</div>`;
+  html+=`</div></div>`;
+  root.innerHTML=html;
+
+  on("rdBack","click",()=>{rdState.openId=null;rdState.q="";renderRaid();});
+  const delBtn=document.getElementById("rdDel");
+  if(delBtn)delBtn.onclick=async()=>{if(confirm("이 공대를 삭제할까요?")&&await rdDeleteRaid(r.id)){rdState.openId=null;renderRaid();}};
+  const dateIn=document.getElementById("rdEditDate");
+  if(dateIn)dateIn.onchange=()=>rdUpdate(r.id,{date:dateIn.value});
+  const timeIn=document.getElementById("rdEditTime");
+  if(timeIn)timeIn.onchange=()=>rdUpdate(r.id,{time:timeIn.value});
+  const minCpIn=document.getElementById("rdEditMinCp");
+  if(minCpIn)minCpIn.onchange=()=>rdUpdate(r.id,{minCp:minCpIn.value});
+  // 임무판 접기/펼치기 상태 보관 (재렌더 시 유지)
+  root.querySelectorAll("details.rd-mission[data-ms]").forEach(d=>{
+    d.addEventListener("toggle",()=>{rdState.msOpen[d.dataset.ms]=d.open;});
+  });
+  // 임무 지정 셀렉트
+  root.querySelectorAll("[data-mis]").forEach(sel=>sel.onchange=()=>{
+    const [a,b,c]=sel.dataset.mis.split("|");
+    rdAssignMission(a,b,c,sel.value);
+  });
+  // 공략 공유 복사: 미완료 단계는 복사 대신 미지정 위치를 알려준다.
+  root.querySelectorAll("[data-strat]").forEach(b=>b.onclick=async()=>{
+    let text;
+    if(b.dataset.strat==="__all"){
+      text=strat.filter(x=>x.ok).map(x=>x.text).join("\n");
+    }else{
+      const it=strat.find(x=>x.key===b.dataset.strat); if(!it)return;
+      if(!it.ok){alert(`임무 지정이 아직 완료되지 않았습니다.\n미지정: ${it.missing.join(", ")}`);return;}
+      text=it.text;
+    }
+    try{
+      if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(text);
+      else throw new Error("clipboard unavailable");
+    }catch(e){ prompt("아래 문구를 복사하세요.",text); return; }
+    const old=b.textContent;
+    b.textContent="✔ 복사됨"; b.classList.add("done");
+    setTimeout(()=>{ b.textContent=old; b.classList.remove("done"); },1200);
+  });
+  // 공팟 인원 추가: 버튼으로 폼 토글, 이름+역할만 입력해 바로 편성.
+  root.querySelectorAll("[data-guest-btn]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const form=root.querySelector(`[data-guest-form="${b.dataset.guestBtn}"]`);
+    if(form){form.hidden=!form.hidden;if(!form.hidden)form.querySelector("[data-guest-name]")?.focus();}
+  });
+  root.querySelectorAll("[data-guest-form]").forEach(form=>{
+    const idx=parseInt(form.dataset.guestForm,10);
+    const save=()=>rdAddGuest(idx,form.querySelector("[data-guest-name]").value,form.querySelector("[data-guest-class]").value);
+    form.querySelector("[data-guest-save]").onclick=e=>{e.stopPropagation();save();};
+    form.querySelector("[data-guest-name]").addEventListener("keydown",e=>{if(e.key==="Enter")save();});
+  });
+  // 검색: 입력마다 풀만 다시 그리면 좋지만 구조 단순화를 위해 전체 재렌더 + 포커스 복원.
+  const qIn=document.getElementById("rdQ");
+  if(qIn){
+    qIn.oninput=()=>{rdState.q=qIn.value;rdState.qFocus=true;renderRaid();};
+    if(rdState.qFocus){qIn.focus();const L=qIn.value.length;try{qIn.setSelectionRange(L,L);}catch(e){}rdState.qFocus=false;}
+  }
+  // 풀 카드: 클릭 → 빈 파티에 편성/제외 토글, 드래그 → 특정 파티에 배치.
+  root.querySelectorAll("[data-rdkey]").forEach(card=>{
+    card.onclick=()=>{
+      if(!canEdit)return;
+      if(card.classList.contains("applied"))rdRemoveChar(card.dataset.rdkey);
+      else rdAddChar(card.dataset.rdkey,null);
+    };
+    if(canEdit)card.addEventListener("dragstart",e=>{
+      e.dataTransfer.setData("text/plain",card.dataset.rdkey);
+      e.dataTransfer.effectAllowed="move";
+      card.classList.add("dragging");
+    });
+    card.addEventListener("dragend",()=>card.classList.remove("dragging"));
+  });
+  // 편성 칩: 파티 간 이동 드래그 + × 제외.
+  root.querySelectorAll("[data-rd-drag]").forEach(chip=>{
+    chip.addEventListener("dragstart",e=>{
+      e.dataTransfer.setData("text/plain",chip.dataset.rdDrag);
+      e.dataTransfer.effectAllowed="move";
+      chip.classList.add("dragging");
+    });
+    chip.addEventListener("dragend",()=>chip.classList.remove("dragging"));
+  });
+  root.querySelectorAll("[data-rd-rm]").forEach(b=>b.onclick=e=>{e.stopPropagation();rdRemoveChar(b.dataset.rdRm);});
+  root.querySelectorAll("[data-rd-drop]").forEach(zone=>{
+    zone.addEventListener("dragover",e=>{e.preventDefault();e.dataTransfer.dropEffect="move";zone.classList.add("over");});
+    zone.addEventListener("dragleave",()=>zone.classList.remove("over"));
+    zone.addEventListener("drop",async e=>{
+      e.preventDefault();zone.classList.remove("over");
+      const key=e.dataTransfer.getData("text/plain");if(!key)return;
+      const idx=parseInt(zone.dataset.rdDrop,10);
+      const cur=await RaidStore.get(rdState.openId);if(!cur)return;
+      if(cur.members.some(m=>m.key===key))rdMoveChar(key,idx);
+      else rdAddChar(key,idx);
+    });
+  });
+  // 편성 칩을 왼쪽 풀로 끌어놓으면 제외.
+  const poolZone=root.querySelector("[data-rd-pool]");
+  if(poolZone&&canEdit){
+    poolZone.addEventListener("dragover",e=>e.preventDefault());
+    poolZone.addEventListener("drop",e=>{
+      e.preventDefault();
+      const key=e.dataTransfer.getData("text/plain");
+      if(key)rdRemoveChar(key);
+    });
+  }
+}
+
+async function renderRaid(){
+  const root=document.getElementById("raidRoot"); if(!root)return;
+  if(rdState.openId)await renderRaidDetail(root);
+  else await renderRaidList(root);
+}
+function initRaid(){
+  on("rdModalCancel","click",rdCloseCreate);
+  on("rdModalCreate","click",rdCreate);
+  document.getElementById("rdModal").addEventListener("click",e=>{if(e.target.id==="rdModal")rdCloseCreate();});
+  renderRaid();
+}
+
 renderTabs();
 initSkillTip();
 initScreen();
@@ -4308,12 +4986,16 @@ boot();
   initHomework();
   initMyChars();
   initParty();
+  initRaid();
   await refreshAdminState();
-  // 딥링크 라우팅: ?party=<id> 가 있으면 파티 상세를, 없으면 #<탭> 해시로 해당 탭을 연다.
+  // 딥링크 라우팅: ?party=<id>/?raid=<id> 가 있으면 해당 상세를, 없으면 #<탭> 해시로 탭을 연다.
   const sharedPartyId=new URLSearchParams(location.search).get("party");
+  const sharedRaidId=new URLSearchParams(location.search).get("raid");
   const hashId=location.hash.slice(1);
   if(sharedPartyId&&await PartyStore.get(sharedPartyId)){
     showView("party"); ptState.openId=sharedPartyId; renderParty();
+  }else if(sharedRaidId&&await RaidStore.get(sharedRaidId)){
+    showView("raid"); rdState.openId=sharedRaidId; renderRaid();
   }else{
     // 해시가 유효하면 그 탭을, 아니면 현재 기본 탭을 연다(URL 해시도 함께 설정됨).
     showView(hashId&&ROUTE_IDS.has(hashId)?hashId:(document.querySelector(".view.active")?.id?.replace(/^view-/,"")||"mychar"));

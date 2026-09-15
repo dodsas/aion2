@@ -536,7 +536,7 @@ def api_char_item(q):
 # 클라이언트가 localStorage 대신 사용하는 서버 저장소. 값은 JSON 그대로 보관한다.
 # 인증이 없으므로 현재는 배포 인스턴스 전체가 공유하는 단일 데이터셋이다(소규모 길드용).
 ALLOWED_KV = {
-    "mychars", "mychar_groups", "parties",
+    "mychars", "mychar_groups", "parties", "raids",
     "homework_presets", "homework_chars", "op_cfg", "own", "dungeon_catalog", "bookmarks",
 }
 
