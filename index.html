@@ -1136,6 +1136,11 @@
   .rd-pos-row{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px}
   .rd-pos-row .rl{flex-shrink:0;width:74px;color:var(--dim);font-weight:800;font-size:11.5px}
   .rd-pos-row select{flex:1;min-width:0;padding:5px 6px;border-radius:7px;border:1px solid var(--etched);background:#101a24;color:var(--txt);font:700 11.5px/1.2 inherit;font-family:inherit}
+  /* 영구동토 택틱 선택 콤보박스 */
+  .rd-pf-tactic{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12px}
+  .rd-pf-tactic .rl{flex-shrink:0;color:var(--dim);font-weight:800;font-size:11.5px}
+  .rd-pf-tactic select{min-width:0;padding:5px 8px;border-radius:7px;border:1px solid var(--etched);background:#101a24;color:var(--txt);font:700 11.5px/1.2 inherit;font-family:inherit}
+  .rd-pf-tactic b{color:var(--gold);font-weight:900}
   .rd-pos-name{font-weight:800} .rd-pos-name.none{color:var(--dim);font-weight:600}
   /* 공략 공유: 네임드별 얇은 테두리 그룹(1넴/2-1넴/2-2넴) 안에 복사 버튼 + 문구 미리보기 */
   .rd-strat-groups{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
@@ -4477,7 +4482,26 @@ const RD_TEAM_COUNT=2;    // 공대 구성은 항상 1파티·2파티 고정
 // positions[].hot = 난이도 높은 자리 — 잘하는(숙련) 인원 위주 배치를 강조 표시한다.
 // 저장은 r.missions[msKey][posKey][slotKey]=charKey.
 const WC_SLOTS=()=>[{key:"watcher",label:"주시자",icon:"👁"},{key:"wedge",label:"쐐기담당",icon:"🔻"}];
-const PF_SLOTS=()=>[{key:"a",label:"담당 1",icon:"🧊"},{key:"b",label:"담당 2",icon:"🧊"},{key:"c",label:"담당 3",icon:"🧊"}];
+const PF_SLOTS=n=>Array.from({length:n},(_,i)=>({key:"abcd"[i],label:`담당 ${i+1}`,icon:"🧊"}));
+// 영구동토 택틱: 방위별 인원 수(1시는 항상 탱커 1명 고정). 콤보박스로 선택, 저장은 r.pfTactic.
+const PF_TACTICS={
+  "1333":{opt:"1333 — 11·5·7시 3명 + 1시 탱커",counts:{"11":3,"5":3,"7":3},
+          note:"11시·5시·7시 각 3명 + 1시 탱커 1명 · ⭐ 11시·5시는 잘하는 인원 위주로 배치"},
+  "1414":{opt:"1414 — 11·5시 4명 + 1시 탱커·7시 1명",counts:{"11":4,"5":4,"7":1},
+          note:"11시·5시 각 4명 + 1시 탱커 1명 + 7시 1명 · ⭐ 11시·5시는 잘하는 인원 위주로 배치"},
+};
+const PF_DEFAULT_TACTIC="1414";
+const pfTacticOf=r=>PF_TACTICS[r?.pfTactic]?r.pfTactic:PF_DEFAULT_TACTIC;
+const pfMission=t=>{
+  const c=PF_TACTICS[t].counts;
+  return {key:"permafrost", types:["bitan"], label:"영구동토", icon:"🧊", note:PF_TACTICS[t].note,
+   positions:[
+     {key:"11",label:"11시",icon:"🕚",team:null,hot:true,slots:PF_SLOTS(c["11"])},
+     {key:"1", label:"1시", icon:"🕐",team:null,slots:[{key:"tank",label:"탱커",icon:"🛡️",role:"tank"}]},
+     {key:"5", label:"5시", icon:"🕔",team:null,hot:true,slots:PF_SLOTS(c["5"])},
+     {key:"7", label:"7시", icon:"🕖",team:null,slots:PF_SLOTS(c["7"])},
+   ]};
+};
 const RD_MISSIONS=[
   {key:"winter_core", types:["bitan"], label:"겨울의핵(쐐기)", icon:"❄️",
    note:"시계방향 11시 → 1시 → 5시 → 7시 · 1파티: 11시·7시 / 2파티: 1시·5시",
@@ -4487,16 +4511,8 @@ const RD_MISSIONS=[
      {key:"5", label:"5시", icon:"🕔",team:1,slots:WC_SLOTS()},
      {key:"7", label:"7시", icon:"🕖",team:0,slots:WC_SLOTS()},
    ]},
-  {key:"permafrost", types:["bitan"], label:"영구동토", icon:"🧊",
-   note:"11시·5시·7시 각 3명 + 1시 탱커 1명 · ⭐ 11시·5시는 잘하는 인원 위주로 배치",
-   positions:[
-     {key:"11",label:"11시",icon:"🕚",team:null,hot:true,slots:PF_SLOTS()},
-     {key:"1", label:"1시", icon:"🕐",team:null,slots:[{key:"tank",label:"탱커",icon:"🛡️",role:"tank"}]},
-     {key:"5", label:"5시", icon:"🕔",team:null,hot:true,slots:PF_SLOTS()},
-     {key:"7", label:"7시", icon:"🕖",team:null,slots:PF_SLOTS()},
-   ]},
 ];
-const rdMissionsFor=r=>RD_MISSIONS.filter(ms=>!ms.types||ms.types.includes(r?.type));
+const rdMissionsFor=r=>[...RD_MISSIONS,pfMission(pfTacticOf(r))].filter(ms=>!ms.types||ms.types.includes(r?.type));
 function rdNormalize(r){
   if(!r||typeof r!=="object")return r;
   if(!RAID_TYPES.some(t=>t.key===r.type))r.type=RAID_TYPES[0].key;
@@ -4507,6 +4523,7 @@ function rdNormalize(r){
   const defMinIl=rdType(r.type).minItemLv||0;
   r.minItemLv=Number.isFinite(+r.minItemLv)&&+r.minItemLv>=0?Math.floor(+r.minItemLv):defMinIl;
   delete r.minCp;   // 구(전투력 컷) 필드 폐기 — 템레벨 컷으로 대체
+  r.pfTactic=pfTacticOf(r);   // 영구동토 택틱 (미지정·구버전은 기본 택틱)
   if(!Array.isArray(r.members))r.members=[];
   const seen=new Set();
   r.members=r.members.filter(m=>{
@@ -4523,6 +4540,8 @@ function rdNormalize(r){
     ms.positions.forEach(pos=>{
       const slot=board[pos.key];
       if(!slot||typeof slot!=="object"){delete board[pos.key];return;}
+      // 택틱 변경 등으로 사라진 자리의 지정은 해제한다.
+      Object.keys(slot).forEach(k=>{if(!pos.slots.some(sl=>sl.key===k))delete slot[k];});
       pos.slots.forEach(sl=>{
         const key=slot[sl.key]; if(!key)return;
         const m=r.members.find(x=>x.key===key);
@@ -4619,6 +4638,7 @@ async function rdUpdate(id,patch){   // 헤더의 날짜/시간 인라인 편집
   if(patch.date!=null&&/^\d{4}-\d{2}-\d{2}$/.test(patch.date))r.date=patch.date;
   if(patch.time!=null)r.time=ptTime(patch.time);
   if(patch.minItemLv!=null)r.minItemLv=Math.max(0,Math.floor(+patch.minItemLv||0));
+  if(patch.pfTactic!=null&&PF_TACTICS[patch.pfTactic])r.pfTactic=patch.pfTactic;
   await RaidStore.upsert(r); renderRaid();
 }
 // 공팟(외부) 인원: 앱에 등록 안 된 사람을 이름·직업만으로 1회성 추가한다. 정보 조회 없음.
@@ -4672,15 +4692,23 @@ function rdStratLines(r){
   const board=k=>(r.missions||{})[k]||{};
   const nameOf=k=>r.members.find(m=>m.key===k)?.name||"?";
   const lines=[{key:"boss1",group:"1넴",label:"냉기구술",text:"냉기구술: 1왼2오. 메인탱 6>12 서브탱 9>3",ok:true,missing:[]}];
+  // 시계 방위 → 화살표(복사 문구에 포함되는 텍스트, 8방향)
+  const CLOCK_ARROW={"12시":"↑","1시":"↗","3시":"→","5시":"↘","6시":"↓","7시":"↙","9시":"←","11시":"↖"};
   if(wc){
     const b=board("winter_core");
-    [["watcher","주시자"],["wedge","쐐기"]].forEach(([slotKey,lab])=>{
-      const parts=[],missing=[];
-      wc.positions.forEach(p=>{
-        const k=(b[p.key]||{})[slotKey];
-        if(k)parts.push(`[${p.label}] ${nameOf(k)}`); else missing.push(p.label);
+    // 같은 담당이 넴별로 다른 방위에서 수행: 2-1넴 = 9·12·3·6시, 2-2넴 = 11·1·5·7시(임무판 기준)
+    const WC_ALT={"11":"9시","1":"12시","5":"3시","7":"6시"};
+    [["1","2-1넴",p=>WC_ALT[p.key]||p.label],["2","2-2넴",p=>p.label]].forEach(([ver,grp,posLab])=>{
+      [["watcher","주시자"],["wedge","쐐기"]].forEach(([slotKey,lab])=>{
+        const parts=[],missing=[];
+        wc.positions.forEach(p=>{
+          const k=(b[p.key]||{})[slotKey];
+          const pl=posLab(p);
+          if(k)parts.push(`[${pl}${CLOCK_ARROW[pl]||""}] ${nameOf(k)}`); else missing.push(p.label);   // 미지정 안내는 임무판 기준(원래 방위)
+        });
+        // 복사 문구에는 2-1/2-2 접두어를 넣지 않는다 — 버튼 라벨로만 구분.
+        lines.push({key:`wc${ver}_${slotKey}`,group:grp,label:`2-${ver} 겨울의핵-${lab}`,text:`겨울의핵-${lab} : ${parts.join(" ")}`,ok:!missing.length,missing});
       });
-      lines.push({key:"wc_"+slotKey,group:"2-1넴",label:`겨울의핵-${lab}`,text:`겨울의핵-${lab} : ${parts.join(" ")}`,ok:!missing.length,missing});
     });
   }
   if(pf){
@@ -4690,7 +4718,7 @@ function rdStratLines(r){
       const pos=pf.positions.find(p=>p.key===pk); if(!pos)return;
       const names=pos.slots.map(sl=>(b[pk]||{})[sl.key]).filter(Boolean).map(nameOf);
       if(names.length<pos.slots.length)missing.push(pos.label);
-      parts.push([`[${pos.label}]`,...names].join(" "));
+      parts.push([`[${pos.label}${CLOCK_ARROW[pos.label]||""}]`,...names].join(" "));
     });
     lines.push({key:"pf",group:"2-2넴",label:"영구동토",text:`영구동토 : ${parts.join("  ")}`,ok:!missing.length,missing});
   }
@@ -4741,6 +4769,13 @@ function rdMissionHtml(r,canEdit){
     const assigned=new Set();
     ms.positions.forEach(p=>p.slots.forEach(sl=>{const k=(board[p.key]||{})[sl.key];if(k)assigned.add(k);}));
     h+=`<details class="rd-mission"${rdState.msOpen[ms.key]===false?'':' open'} data-ms="${ms.key}"><summary class="rd-mission-h">${ms.icon} ${ms.label}<span>${esc(ms.note||"")}</span></summary>`;
+    // 영구동토: 택틱(방위별 인원 구성) 선택 콤보박스 — 공대장만 변경 가능.
+    if(ms.key==="permafrost"){
+      const cur=pfTacticOf(r);
+      h+=`<div class="rd-pf-tactic"><span class="rl">🧭 택틱</span>${canEdit
+        ?`<select id="rdPfTactic">${Object.entries(PF_TACTICS).map(([t,v])=>`<option value="${t}"${t===cur?' selected':''}>${esc(v.opt)}</option>`).join("")}</select>`
+        :`<b>${esc(PF_TACTICS[cur].opt)}</b>`}</div>`;
+    }
     const posCard=pos=>{
       const slotVals=board[pos.key]||{};
       // 파티 지정형은 해당 파티만, 파티 무관형은 전체 인원(1파티→2파티, 전투력순)에서 고른다.
@@ -4894,6 +4929,18 @@ async function renderRaidDetail(root){
   if(timeIn)timeIn.onchange=()=>rdUpdate(r.id,{time:timeIn.value});
   const minIlIn=document.getElementById("rdEditMinIl");
   if(minIlIn)minIlIn.onchange=()=>rdUpdate(r.id,{minItemLv:minIlIn.value});
+  // 영구동토 택틱 변경: 새 택틱에 없는 자리의 기존 지정이 있으면 확인 후 해제.
+  const pfSel=document.getElementById("rdPfTactic");
+  if(pfSel)pfSel.onchange=()=>{
+    const next=pfMission(pfSel.value), bd=(r.missions||{}).permafrost||{};
+    let lost=0;
+    Object.entries(bd).forEach(([pk,slot])=>{
+      const pos=next.positions.find(p=>p.key===pk);
+      Object.keys(slot||{}).forEach(k=>{if(slot[k]&&(!pos||!pos.slots.some(sl=>sl.key===k)))lost++;});
+    });
+    if(lost&&!confirm(`택틱을 바꾸면 사라지는 자리의 지정 ${lost}건이 해제됩니다. 계속할까요?`)){pfSel.value=pfTacticOf(r);return;}
+    rdUpdate(r.id,{pfTactic:pfSel.value});
+  };
   // 임무판 접기/펼치기 상태 보관 (재렌더 시 유지)
   root.querySelectorAll("details.rd-mission[data-ms]").forEach(d=>{
     d.addEventListener("toggle",()=>{rdState.msOpen[d.dataset.ms]=d.open;});
