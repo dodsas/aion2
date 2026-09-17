@@ -615,8 +615,11 @@
   .mc-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 60%,var(--line))}
   .mc-card .ico{width:44px;height:44px}
   .mc-card .nm{font-weight:800;letter-spacing:-.15px}
-  .mc-card .mc-cp{display:inline-block;margin-left:7px;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:900;vertical-align:middle;white-space:nowrap;
+  .mc-card .mc-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+  .mc-card .mc-cp{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:900;white-space:nowrap;
                   background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line))}
+  .mc-card .mc-il{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:900;white-space:nowrap;
+                  background:color-mix(in srgb,var(--teal) 15%,transparent);color:var(--teal);border:1px solid color-mix(in srgb,var(--teal) 40%,var(--line))}
   .mc-card .sub{color:var(--dim);font-size:11.5px;margin-top:2px}
   /* 모바일: 우측 상단 닫기 버튼 자리 확보 */
   .mc-card .mc-body-c{min-width:0;flex:1;padding-right:42px}
@@ -695,7 +698,8 @@
   .mc-card .mc-cpline{margin-top:5px;color:var(--dim)}
   .mc-card .mc-cpline .l{font-size:11px;font-weight:700}
   .mc-card .mc-cpline b{color:var(--gold);font-weight:900;font-size:17px;margin:0 8px 0 3px;font-variant-numeric:tabular-nums}
-  .mc-card .mc-cpline .ab{color:var(--teal);font-weight:700;font-size:12px}
+  .mc-card .mc-cpline .il{white-space:nowrap}     /* 좁으면 '템레벨 ○○' 통째로 줄바꿈 */
+  .mc-card .mc-cpline .il b{color:var(--teal)}
   .mc-card .mc-region{color:var(--dim);font-size:12px;margin-top:3px}
   .mc-card .mc-title{color:var(--gold);font-size:12.5px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 
@@ -712,7 +716,7 @@
     .mc-card .ico{width:150px;height:150px;border-radius:13px;object-fit:cover;border:1px solid var(--gold);
                   box-shadow:0 0 0 3px rgba(143,240,208,.12),0 14px 30px -14px #000,0 0 30px -22px var(--gold)}
     .mc-card .nm{font-size:18px}
-    .mc-card .mc-cp{display:none}                 /* 전투력은 mc-cpline 으로 */
+    .mc-card .mc-pills{display:none}              /* 전투력·템레벨은 mc-cpline 으로 */
     .mc-card .sub{display:none}                    /* 모바일 요약줄 숨김 */
     .mc-card .mc-meta{display:block}
     .mc-card .mc-cpline{display:block}
@@ -3091,9 +3095,10 @@ function renderMyChars(){
         <button class="mc-del" data-del="${esc(c.key)}" title="캐릭터 제거" aria-label="${esc(c.name)} 제거">×</button>
         <img class="ico" src="${c.img||''}" ${oe}>
         <div class="mc-body-c">
-          <div class="nm">${esc(c.name)}<span class="mc-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span></div>
+          <div class="nm">${esc(c.name)}</div>
+          <div class="mc-pills"><span class="mc-cp" title="전투력">${classMark(c)} ${cpShort(c.cp)??'–'}</span>${c.itemLv!=null?`<span class="mc-il" title="아이템레벨">템 ${fmt(c.itemLv)}</span>`:''}</div>
           <div class="mc-meta"><span class="badge ${c.race===1?'elyos':'asmo'}">${raceKo}</span>${metaBits}</div>
-          <div class="mc-cpline"><span class="l">전투력</span> <b>${cpShort(c.cp)??'–'}</b>${c.abyssRank!=null?`<span class="ab">어비스 ${fmt(c.abyssRank)}위</span>`:''}</div>
+          <div class="mc-cpline"><span class="l">전투력</span> <b>${cpShort(c.cp)??'–'}</b>${c.itemLv!=null?`<span class="il"><span class="l">템레벨</span> <b>${fmt(c.itemLv)}</b></span>`:''}</div>
           <div class="mc-region">${regionBits}</div>
           ${c.title?`<div class="mc-title">🏵️ ${esc(c.title)}</div>`:''}
           <div class="sub">Lv.${c.level??'?'} · ${esc(c.serverName||'')} · ${raceKo}</div>
