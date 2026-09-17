@@ -4483,25 +4483,31 @@ const RD_TEAM_COUNT=2;    // 공대 구성은 항상 1파티·2파티 고정
 // 저장은 r.missions[msKey][posKey][slotKey]=charKey.
 const WC_SLOTS=()=>[{key:"watcher",label:"주시자",icon:"👁"},{key:"wedge",label:"쐐기담당",icon:"🔻"}];
 const PF_SLOTS=n=>Array.from({length:n},(_,i)=>({key:"abcd"[i],label:`담당 ${i+1}`,icon:"🧊"}));
-// 영구동토 택틱: 방위별 인원 수(1시는 항상 탱커 1명 고정). 콤보박스로 선택, 저장은 r.pfTactic.
+const PF_TANK=()=>({key:"tank",label:"탱커",icon:"🛡️",role:"tank"});
+// 영구동토 택틱: 방위별 구성. 콤보박스로 선택, 저장은 r.pfTactic.
+// positions[].fixed = 인원 지정 없이 고정 문구(예: "1파티")로만 안내하는 위치.
 const PF_TACTICS={
-  "1333":{opt:"1333 — 11·5·7시 3명 + 1시 탱커",counts:{"11":3,"5":3,"7":3},
-          note:"11시·5시·7시 각 3명 + 1시 탱커 1명 · ⭐ 11시·5시는 잘하는 인원 위주로 배치"},
-  "1414":{opt:"1414 — 11·5시 4명 + 1시 탱커·7시 1명",counts:{"11":4,"5":4,"7":1},
-          note:"11시·5시 각 4명 + 1시 탱커 1명 + 7시 1명 · ⭐ 11시·5시는 잘하는 인원 위주로 배치"},
+  "1333":{opt:"1333 — 11·5·7시 3명 + 1시 탱커",
+          note:"11시·5시·7시 각 3명 + 1시 탱커 1명 · ⭐ 11시·5시는 잘하는 인원 위주로 배치",
+          positions:()=>[
+            {key:"11",label:"11시",icon:"🕚",team:null,hot:true,slots:PF_SLOTS(3)},
+            {key:"1", label:"1시", icon:"🕐",team:null,slots:[PF_TANK()]},
+            {key:"5", label:"5시", icon:"🕔",team:null,hot:true,slots:PF_SLOTS(3)},
+            {key:"7", label:"7시", icon:"🕖",team:null,slots:PF_SLOTS(3)},
+          ]},
+  "1414":{opt:"1414 — 11시 1파티·5시 2파티 + 1시 탱커·7시 1명",
+          note:"11시 1파티 · 5시 2파티 · 1시 탱커 1명 · 7시 1명",
+          positions:()=>[
+            {key:"11",label:"11시",icon:"🕚",team:null,fixed:"1파티",slots:[]},
+            {key:"1", label:"1시", icon:"🕐",team:null,slots:[PF_TANK()]},
+            {key:"5", label:"5시", icon:"🕔",team:null,fixed:"2파티",slots:[]},
+            {key:"7", label:"7시", icon:"🕖",team:null,slots:PF_SLOTS(1)},
+          ]},
 };
 const PF_DEFAULT_TACTIC="1414";
 const pfTacticOf=r=>PF_TACTICS[r?.pfTactic]?r.pfTactic:PF_DEFAULT_TACTIC;
-const pfMission=t=>{
-  const c=PF_TACTICS[t].counts;
-  return {key:"permafrost", types:["bitan"], label:"영구동토", icon:"🧊", note:PF_TACTICS[t].note,
-   positions:[
-     {key:"11",label:"11시",icon:"🕚",team:null,hot:true,slots:PF_SLOTS(c["11"])},
-     {key:"1", label:"1시", icon:"🕐",team:null,slots:[{key:"tank",label:"탱커",icon:"🛡️",role:"tank"}]},
-     {key:"5", label:"5시", icon:"🕔",team:null,hot:true,slots:PF_SLOTS(c["5"])},
-     {key:"7", label:"7시", icon:"🕖",team:null,slots:PF_SLOTS(c["7"])},
-   ]};
-};
+const pfMission=t=>({key:"permafrost", types:["bitan"], label:"영구동토", icon:"🧊",
+  note:PF_TACTICS[t].note, positions:PF_TACTICS[t].positions()});
 const RD_MISSIONS=[
   {key:"winter_core", types:["bitan"], label:"겨울의핵(쐐기)", icon:"❄️",
    note:"시계방향 11시 → 1시 → 5시 → 7시 · 1파티: 11시·7시 / 2파티: 1시·5시",
@@ -4716,9 +4722,11 @@ function rdStratLines(r){
     const parts=[],missing=[];
     ["1","11","5","7"].forEach(pk=>{                 // 요청된 나열 순서: 1시 → 11시 → 5시 → 7시
       const pos=pf.positions.find(p=>p.key===pk); if(!pos)return;
+      const head=`[${pos.label}${CLOCK_ARROW[pos.label]||""}]`;
+      if(pos.fixed){parts.push(`${head} ${pos.fixed}`);return;}   // 고정 문구 위치(예: 1414의 11시=1파티)
       const names=pos.slots.map(sl=>(b[pk]||{})[sl.key]).filter(Boolean).map(nameOf);
       if(names.length<pos.slots.length)missing.push(pos.label);
-      parts.push([`[${pos.label}${CLOCK_ARROW[pos.label]||""}]`,...names].join(" "));
+      parts.push([head,...names].join(" "));
     });
     lines.push({key:"pf",group:"2-2넴",label:"영구동토",text:`영구동토 : ${parts.join("  ")}`,ok:!missing.length,missing});
   }
@@ -4782,6 +4790,8 @@ function rdMissionHtml(r,canEdit){
       const pool=pos.team!=null?(teams[pos.team]||[])
         :r.members.slice().sort((a,b)=>a.team-b.team||((b.cp??-1)-(a.cp??-1)));
       let ph=`<div class="rd-pos${pos.hot?' hot':''}"><div class="rd-pos-h">${pos.icon} ${pos.label}${pos.hot?'<span class="rd-hot">⭐ 잘하는 인원</span>':''}</div>`;
+      // 고정 문구 위치: 인원 지정 없이 담당 파티만 안내한다.
+      if(pos.fixed)ph+=`<div class="rd-pos-row"><span class="rd-pos-name">👥 ${esc(pos.fixed)} 전원</span></div>`;
       pos.slots.forEach(sl=>{
         const cur=slotVals[sl.key]||"";
         if(canEdit){
