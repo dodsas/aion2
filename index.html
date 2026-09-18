@@ -1123,7 +1123,6 @@
   .rd-pos-team-h{flex:0 0 84px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;border-radius:9px;
         background:color-mix(in srgb,var(--gold) 10%,#0d1a17);border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line))}
   .rd-pos-team-h b{color:var(--gold);font-size:15px;font-weight:900;letter-spacing:-.3px}
-  .rd-pos-team-h span{color:var(--dim);font-size:10.5px;font-weight:800}
   .rd-pos-pair{flex:1;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .rd-pos-pair.quad{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
   .rd-pos{padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:#0f151c}
@@ -4473,6 +4472,7 @@ function initParty(){
 // minItemLv: 편성 풀 노출 기준 최소 템레벨(캐릭터 상세의 아이템레벨과 동일 값).
 const RAID_TYPES=[
   {key:"bitan", label:"비탄", color:"var(--g7)", icon:"🥀", minItemLv:5800},
+  {key:"muspel", label:"무스펠", color:"var(--g5)", icon:"🔥", minItemLv:5800},
 ];
 const rdType=k=>RAID_TYPES.find(t=>t.key===k)||RAID_TYPES[0];
 const RD_TEAM_MAX=5;      // 파티당 최대 인원
@@ -4482,7 +4482,7 @@ const RD_TEAM_COUNT=2;    // 공대 구성은 항상 1파티·2파티 고정
 // positions[].hot = 난이도 높은 자리 — 잘하는(숙련) 인원 위주 배치를 강조 표시한다.
 // 저장은 r.missions[msKey][posKey][slotKey]=charKey.
 const WC_SLOTS=()=>[{key:"watcher",label:"주시자",icon:"👁"},{key:"wedge",label:"쐐기담당",icon:"🔻"}];
-const PF_SLOTS=n=>Array.from({length:n},(_,i)=>({key:"abcd"[i],label:`담당 ${i+1}`,icon:"🧊"}));
+const PF_SLOTS=(n,icon="🧊")=>Array.from({length:n},(_,i)=>({key:"abcd"[i],label:`담당 ${i+1}`,icon}));
 const PF_TANK=()=>({key:"tank",label:"탱커",icon:"🛡️",role:"tank"});
 // 영구동토 택틱: 방위별 구성. 콤보박스로 선택, 저장은 r.pfTactic.
 // positions[].fixed = 인원 지정 없이 고정 문구(예: "1파티")로만 안내하는 위치.
@@ -4508,6 +4508,9 @@ const PF_DEFAULT_TACTIC="1414";
 const pfTacticOf=r=>PF_TACTICS[r?.pfTactic]?r.pfTactic:PF_DEFAULT_TACTIC;
 const pfMission=t=>({key:"permafrost", types:["bitan"], label:"영구동토", icon:"🧊",
   note:PF_TACTICS[t].note, positions:PF_TACTICS[t].positions()});
+const SIG_SLOT=()=>[{key:"s",label:"담당",icon:"🚦"}];
+// 드리블 자리: 첫 자리(담당 1)가 실제 드리블 담당 — 라벨·복사 문구에 구분 표시.
+const DR_SLOTS=(n,icon)=>PF_SLOTS(n,icon).map((sl,i)=>i?sl:{...sl,label:"드리블",icon:"⚽"});
 const RD_MISSIONS=[
   {key:"winter_core", types:["bitan"], label:"겨울의핵(쐐기)", icon:"❄️",
    note:"시계방향 11시 → 1시 → 5시 → 7시 · 1파티: 11시·7시 / 2파티: 1시·5시",
@@ -4516,6 +4519,29 @@ const RD_MISSIONS=[
      {key:"1", label:"1시", icon:"🕐",team:1,slots:WC_SLOTS()},
      {key:"5", label:"5시", icon:"🕔",team:1,slots:WC_SLOTS()},
      {key:"7", label:"7시", icon:"🕖",team:0,slots:WC_SLOTS()},
+   ]},
+  // ── 무스펠 ──
+  // 드리블: 색깔별 구슬 운반. 전체 인원에서 지정(파티 무관).
+  {key:"dribble", types:["muspel"], label:"드리블", icon:"⚽",
+   note:"🔴 9시→12시 2명 · 3시→3시 3명 / 🟢 12시→9시 2명 · 6시→6시 3명",
+   positions:[
+     {key:"r912",label:"9시→12시", icon:"🔴",team:null,slots:DR_SLOTS(2,"🔴")},
+     {key:"r33", label:"3시→3시",  icon:"🔴",team:null,slots:DR_SLOTS(3,"🔴")},
+     {key:"g129",label:"12시→9시", icon:"🟢",team:null,slots:DR_SLOTS(2,"🟢")},
+     {key:"g66", label:"6시→6시",  icon:"🟢",team:null,slots:DR_SLOTS(3,"🟢")},
+   ]},
+  // 신호등: 8명 8방향, 파티별 담당 구역. ⚡ 자동 지정으로 파티 편성 순서대로 초기 배치.
+  {key:"signal", types:["muspel"], label:"신호등", icon:"🚦",
+   note:"8명 8방향 · 1파티 7·9·11·12시 / 2파티 1·3·5·6시 — ⚡ 자동 지정으로 편성 순서대로 배치",
+   positions:[
+     {key:"7", label:"7시", icon:"🕖",team:0,slots:SIG_SLOT()},
+     {key:"9", label:"9시", icon:"🕘",team:0,slots:SIG_SLOT()},
+     {key:"11",label:"11시",icon:"🕚",team:0,slots:SIG_SLOT()},
+     {key:"12",label:"12시",icon:"🕛",team:0,slots:SIG_SLOT()},
+     {key:"1", label:"1시", icon:"🕐",team:1,slots:SIG_SLOT()},
+     {key:"3", label:"3시", icon:"🕒",team:1,slots:SIG_SLOT()},
+     {key:"5", label:"5시", icon:"🕔",team:1,slots:SIG_SLOT()},
+     {key:"6", label:"6시", icon:"🕕",team:1,slots:SIG_SLOT()},
    ]},
 ];
 const rdMissionsFor=r=>[...RD_MISSIONS,pfMission(pfTacticOf(r))].filter(ms=>!ms.types||ms.types.includes(r?.type));
@@ -4690,6 +4716,21 @@ async function rdAssignMission(msKey,posKey,slotKey,charKey){
   }
   await RaidStore.upsert(r); renderRaid();
 }
+// 신호등 자동 지정: 파티 편성 순서대로 1파티 7→9→11→12시, 2파티 1→3→5→6시를 채운다(기존 지정은 덮어씀).
+async function rdSignalAuto(id){
+  const r=await RaidStore.get(id); if(!r)return;
+  if(!rdCanEdit(r)){alert("임무 지정은 공대장(공대를 만든 그룹)만 할 수 있습니다.");return;}
+  const ms=rdMissionsFor(r).find(x=>x.key==="signal"); if(!ms)return;
+  const prev=(r.missions||{}).signal||{};
+  if(Object.values(prev).some(s=>s&&s.s)&&!confirm("신호등의 기존 지정을 모두 덮어씁니다. 계속할까요?"))return;
+  const teams=rdTeams(r), board={};
+  [0,1].forEach(ti=>{
+    const poss=ms.positions.filter(p=>p.team===ti);
+    (teams[ti]||[]).slice(0,poss.length).forEach((m,i)=>{board[poss[i].key]={s:m.key};});
+  });
+  (r.missions=r.missions||{}).signal=board;
+  await RaidStore.upsert(r); renderRaid();
+}
 // 공략 공유 문구: 단계별로 채팅창에 붙여넣을 한 줄 텍스트를 만든다.
 // ok=false(임무 미완료)면 복사 대신 미지정 위치를 알려준다. 1넴은 고정 멘트라 항상 복사 가능.
 function rdStratLines(r){
@@ -4697,7 +4738,8 @@ function rdStratLines(r){
   const wc=missions.find(x=>x.key==="winter_core"), pf=missions.find(x=>x.key==="permafrost");
   const board=k=>(r.missions||{})[k]||{};
   const nameOf=k=>r.members.find(m=>m.key===k)?.name||"?";
-  const lines=[{key:"boss1",group:"1넴",label:"냉기구술",text:"냉기구술: 1왼2오. 메인탱 6>12 서브탱 9>3",ok:true,missing:[]}];
+  const lines=[];
+  if(r.type==="bitan")lines.push({key:"boss1",group:"1넴",label:"냉기구술",text:"냉기구술: 1왼2오. 메인탱 6>12 서브탱 9>3",ok:true,missing:[]});
   // 시계 방위 → 화살표(복사 문구에 포함되는 텍스트, 8방향)
   const CLOCK_ARROW={"12시":"↑","1시":"↗","3시":"→","5시":"↘","6시":"↓","7시":"↙","9시":"←","11시":"↖"};
   if(wc){
@@ -4729,6 +4771,32 @@ function rdStratLines(r){
       parts.push([head,...names].join(" "));
     });
     lines.push({key:"pf",group:"2-2넴",label:"영구동토",text:`영구동토 : ${parts.join("  ")}`,ok:!missing.length,missing});
+  }
+  // ── 무스펠: 드리블(빨강/초록 한 줄씩) + 신호등(8방향 한 줄) ──
+  const dr=missions.find(x=>x.key==="dribble");
+  if(dr){
+    const b=board("dribble");
+    [["빨강",["r912","r33"]],["초록",["g129","g66"]]].forEach(([lab,keys])=>{
+      const parts=[],missing=[];
+      keys.forEach(pk=>{
+        const pos=dr.positions.find(p=>p.key===pk); if(!pos)return;
+        // 담당 1(key "a")이 드리블 담당 — 이름 뒤에 (드리블) 표기. 예: 꼭징(드리블) 보리뚜
+        const names=pos.slots.map(sl=>{const k=(b[pk]||{})[sl.key];return k?nameOf(k)+(sl.key==="a"?"(드리블)":""):null;}).filter(Boolean);
+        if(names.length<pos.slots.length)missing.push(pos.label);
+        parts.push([`[${pos.label}]`,...names].join(" "));
+      });
+      lines.push({key:"dr_"+lab,group:"드리블",label:`드리블-${lab}`,text:`드리블-${lab} : ${parts.join("  ")}`,ok:!missing.length,missing});
+    });
+  }
+  const sg=missions.find(x=>x.key==="signal");
+  if(sg){
+    const b=board("signal");
+    const parts=[],missing=[];
+    sg.positions.forEach(pos=>{
+      const k=(b[pos.key]||{}).s;
+      if(k)parts.push(`[${pos.label}${CLOCK_ARROW[pos.label]||""}] ${nameOf(k)}`); else missing.push(pos.label);
+    });
+    lines.push({key:"sig",group:"신호등",label:"신호등",text:`신호등 : ${parts.join(" ")}`,ok:!missing.length,missing});
   }
   return lines;
 }
@@ -4784,6 +4852,10 @@ function rdMissionHtml(r,canEdit){
         ?`<select id="rdPfTactic">${Object.entries(PF_TACTICS).map(([t,v])=>`<option value="${t}"${t===cur?' selected':''}>${esc(v.opt)}</option>`).join("")}</select>`
         :`<b>${esc(PF_TACTICS[cur].opt)}</b>`}</div>`;
     }
+    // 신호등: 자동 지정 버튼 — 파티 편성 순서대로 8방향을 채운다.
+    if(ms.key==="signal"&&canEdit){
+      h+=`<div class="rd-pf-tactic"><button type="button" class="rd-strat-btn" id="rdSigAuto">⚡ 자동 지정</button><span class="rl">1파티→7·9·11·12시 / 2파티→1·3·5·6시 편성 순서대로 채웁니다</span></div>`;
+    }
     const posCard=pos=>{
       const slotVals=board[pos.key]||{};
       // 파티 지정형은 해당 파티만, 파티 무관형은 전체 인원(1파티→2파티, 전투력순)에서 고른다.
@@ -4812,7 +4884,7 @@ function rdMissionHtml(r,canEdit){
       // 파티 지정형: 파티별 한 줄씩 (겨울의핵 — 1파티 11·7시 / 2파티 1·5시)
       [...new Set(ms.positions.map(p=>p.team))].forEach(ti=>{
         const poss=ms.positions.filter(p=>p.team===ti);
-        h+=`<div class="rd-pos-team"><div class="rd-pos-team-h"><b>${ti+1}파티</b><span>${poss.map(p=>p.label).join(" · ")}</span></div><div class="rd-pos-pair">${poss.map(posCard).join("")}</div></div>`;
+        h+=`<div class="rd-pos-team"><div class="rd-pos-team-h"><b>${ti+1}파티</b></div><div class="rd-pos-pair">${poss.map(posCard).join("")}</div></div>`;
       });
     }else{
       // 파티 무관형: 전체 인원에서 지정 (영구동토 — 시계방향 4방향 카드)
@@ -4951,6 +5023,9 @@ async function renderRaidDetail(root){
     if(lost&&!confirm(`택틱을 바꾸면 사라지는 자리의 지정 ${lost}건이 해제됩니다. 계속할까요?`)){pfSel.value=pfTacticOf(r);return;}
     rdUpdate(r.id,{pfTactic:pfSel.value});
   };
+  // 신호등 자동 지정 버튼
+  const sigBtn=document.getElementById("rdSigAuto");
+  if(sigBtn)sigBtn.onclick=()=>rdSignalAuto(r.id);
   // 임무판 접기/펼치기 상태 보관 (재렌더 시 유지)
   root.querySelectorAll("details.rd-mission[data-ms]").forEach(d=>{
     d.addEventListener("toggle",()=>{rdState.msOpen[d.dataset.ms]=d.open;});
