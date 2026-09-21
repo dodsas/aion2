@@ -4732,14 +4732,18 @@ async function rdSignalAuto(id){
   await RaidStore.upsert(r); renderRaid();
 }
 // 공략 공유 문구: 단계별로 채팅창에 붙여넣을 한 줄 텍스트를 만든다.
-// ok=false(임무 미완료)면 복사 대신 미지정 위치를 알려준다. 1넴은 고정 멘트라 항상 복사 가능.
+// ok=false(임무 미완료)면 복사 대신 미지정 위치를 알려준다. 1넴은 탱커 이름만 채워 넣는 멘트라 항상 복사 가능.
 function rdStratLines(r){
   const missions=rdMissionsFor(r);
   const wc=missions.find(x=>x.key==="winter_core"), pf=missions.find(x=>x.key==="permafrost");
   const board=k=>(r.missions||{})[k]||{};
   const nameOf=k=>r.members.find(m=>m.key===k)?.name||"?";
   const lines=[];
-  if(r.type==="bitan")lines.push({key:"boss1",group:"1넴",label:"냉기구술",text:"냉기구술: 1왼2오. 메인탱 6>12 서브탱 9>3",ok:true,missing:[]});
+  if(r.type==="bitan"){
+    // 메인탱=1파티 탱커, 서브탱=2파티 탱커 이름으로 표기. 탱커 미편성이면 역할명으로 대체.
+    const tankOf=(ti,fb)=>r.members.find(m=>m.team===ti&&rdRoleOfMember(m)==="tank")?.name||fb;
+    lines.push({key:"boss1",group:"1넴",label:"냉기구술",text:`냉기구술: 1왼(9>12)2오(3>6). ${tankOf(0,"메인탱")} 6>12 ${tankOf(1,"서브탱")} 9>3`,ok:true,missing:[]});
+  }
   // 시계 방위 → 화살표(복사 문구에 포함되는 텍스트, 8방향)
   const CLOCK_ARROW={"12시":"↑","1시":"↗","3시":"→","5시":"↘","6시":"↓","7시":"↙","9시":"←","11시":"↖"};
   if(wc){
@@ -4752,25 +4756,26 @@ function rdStratLines(r){
         wc.positions.forEach(p=>{
           const k=(b[p.key]||{})[slotKey];
           const pl=posLab(p);
-          if(k)parts.push(`[${pl}${CLOCK_ARROW[pl]||""}] ${nameOf(k)}`); else missing.push(p.label);   // 미지정 안내는 임무판 기준(원래 방위)
+          // 붙여넣기 가독성 피드백 반영: "[9시←] 이름" 대신 "이름(9시)" 형식, 구분자는 " / ".
+          if(k)parts.push(`${nameOf(k)}(${pl})`); else missing.push(p.label);   // 미지정 안내는 임무판 기준(원래 방위)
         });
         // 복사 문구에는 2-1/2-2 접두어를 넣지 않는다 — 버튼 라벨로만 구분.
-        lines.push({key:`wc${ver}_${slotKey}`,group:grp,label:`2-${ver} 겨울의핵-${lab}`,text:`겨울의핵-${lab} : ${parts.join(" ")}`,ok:!missing.length,missing});
+        lines.push({key:`wc${ver}_${slotKey}`,group:grp,label:`2-${ver} 겨울의핵-${lab}`,text:`겨울의핵-${lab} : ${parts.join(" / ")}`,ok:!missing.length,missing});
       });
     });
   }
   if(pf){
     const b=board("permafrost");
     const parts=[],missing=[];
-    ["1","11","5","7"].forEach(pk=>{                 // 요청된 나열 순서: 1시 → 11시 → 5시 → 7시
+    ["11","1","7","5"].forEach(pk=>{                 // 요청된 나열 순서: 11시 → 1시 → 7시 → 5시
       const pos=pf.positions.find(p=>p.key===pk); if(!pos)return;
-      const head=`[${pos.label}${CLOCK_ARROW[pos.label]||""}]`;
-      if(pos.fixed){parts.push(`${head} ${pos.fixed}`);return;}   // 고정 문구 위치(예: 1414의 11시=1파티)
+      // 겨울의핵과 동일한 "이름(방위)" 형식 — 여러 명이면 이름을 공백으로 묶고 방위는 한 번만.
+      if(pos.fixed){parts.push(`${pos.fixed}(${pos.label})`);return;}   // 고정 문구 위치(예: 1414의 11시=1파티)
       const names=pos.slots.map(sl=>(b[pk]||{})[sl.key]).filter(Boolean).map(nameOf);
       if(names.length<pos.slots.length)missing.push(pos.label);
-      parts.push([head,...names].join(" "));
+      parts.push(`${names.join(" ")}(${pos.label})`);
     });
-    lines.push({key:"pf",group:"2-2넴",label:"영구동토",text:`영구동토 : ${parts.join("  ")}`,ok:!missing.length,missing});
+    lines.push({key:"pf",group:"2-2넴",label:"영구동토",text:`영구동토 : ${parts.join(" / ")}`,ok:!missing.length,missing});
   }
   // ── 무스펠: 드리블(빨강/초록 한 줄씩) + 신호등(8방향 한 줄) ──
   const dr=missions.find(x=>x.key==="dribble");
