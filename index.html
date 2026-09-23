@@ -1156,7 +1156,7 @@
   .rd-strat-btn.all{color:var(--teal);border-color:color-mix(in srgb,var(--teal) 50%,var(--line));
         background:linear-gradient(180deg,color-mix(in srgb,var(--teal) 12%,#0c1620),#0b1218)}
   .rd-strat-prev{display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-radius:9px;border:1px dashed var(--etched);background:rgba(255,255,255,.02)}
-  .rd-strat-prev .row{font-size:12px;font-weight:600;color:var(--txt);word-break:break-all}
+  .rd-strat-prev .row{font-size:12px;font-weight:600;color:var(--txt);word-break:break-all;white-space:pre-line}
   .rd-strat-prev .row.off{color:var(--dim)}
   .rd-strat-prev .row i{font-style:normal;color:var(--danger);font-weight:800;font-size:11px;margin-left:4px}
   .rd-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;align-items:start}
@@ -4742,7 +4742,7 @@ function rdStratLines(r){
   if(r.type==="bitan"){
     // 메인탱=1파티 탱커, 서브탱=2파티 탱커 이름으로 표기. 탱커 미편성이면 역할명으로 대체.
     const tankOf=(ti,fb)=>r.members.find(m=>m.team===ti&&rdRoleOfMember(m)==="tank")?.name||fb;
-    lines.push({key:"boss1",group:"1넴",label:"냉기구술",text:`냉기구술: 1왼(9>12)2오(3>6). ${tankOf(0,"메인탱")} 6>12 ${tankOf(1,"서브탱")} 9>3`,ok:true,missing:[]});
+    lines.push({key:"boss1",group:"1넴",label:"냉기구술",text:`냉기구술: 1왼(12>9)2오(3>6). ${tankOf(0,"메인탱")} 6>12 ${tankOf(1,"서브탱")} 9>3`,ok:true,missing:[]});
   }
   // 시계 방위 → 화살표(복사 문구에 포함되는 텍스트, 8방향)
   const CLOCK_ARROW={"12시":"↑","1시":"↗","3시":"→","5시":"↘","6시":"↓","7시":"↙","9시":"←","11시":"↖"};
@@ -4775,7 +4775,16 @@ function rdStratLines(r){
       if(names.length<pos.slots.length)missing.push(pos.label);
       parts.push(`${names.join(" ")}(${pos.label})`);
     });
-    lines.push({key:"pf",group:"2-2넴",label:"영구동토",text:`영구동토 : ${parts.join(" / ")}`,ok:!missing.length,missing});
+    // 눈보라 공략 — 지정 여부와 무관한 고정 멘트라 항상 복사 가능.
+    lines.push({key:"pf_blizzard",group:"2-2넴",label:"눈보라",text:"눈보라 : 1~4번 기둥 순서대로. 2번째 눈보라때만 1파티는 5번 기둥 사용.",ok:true,missing:[]});
+    lines.push({key:"pf",group:"2-2넴",label:"파도",text:`파도(${pfTacticOf(r)}) : ${parts.join(" / ")}`,ok:!missing.length,missing});
+    // 파도 진행 상세 설명 — 지정 여부와 무관한 고정 멘트라 항상 복사 가능.
+    // 게임 채팅은 한 줄씩만 붙여넣어져 단계별 버튼으로 나눠 제공한다.
+    [
+      "1) 11시 5시 모두 4명 다 붙어서 응집체 녹이고 파도 대상자도 응집체에 붙어서 대기 (파도 터지기전)",
+      "2) 메인탱(1시)은 11시 끌기, 서브탱(7시) 5시 끌기, 끌린 직후 파도 대상자는 본대안쓸리게 빼기 (1파도)",
+      "3) 7시 응집체 모여서 녹여주고 1시에서 7시 모두 끌기. 파도 대상자는 본대안쓸리게 빼기 (2파도)",
+    ].forEach((text,i)=>lines.push({key:`pf_detail${i+1}`,group:"2-2넴",label:`파도 상세 ${i+1}`,text,ok:true,missing:[]}));
   }
   // ── 무스펠: 드리블(빨강/초록 한 줄씩) + 신호등(8방향 한 줄) ──
   const dr=missions.find(x=>x.key==="dribble");
