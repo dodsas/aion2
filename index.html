@@ -1162,6 +1162,18 @@
   .rd-strat-prev .row{font-size:12px;font-weight:600;color:var(--txt);word-break:break-all;white-space:pre-line}
   .rd-strat-prev .row.off{color:var(--dim)}
   .rd-strat-prev .row i{font-style:normal;color:var(--danger);font-weight:800;font-size:11px;margin-left:4px}
+  /* 공략 템플릿 인라인 수정: ✏️(수정)/↺(원복) 미니 버튼. 편집 중엔 템플릿 텍스트만 입력창,
+     가변 영역(이름·지정 결과)은 🔒 잠금 칩으로 표시해 못 건드리게 한다. */
+  .rd-strat-prev .row i.ed{color:var(--teal)}
+  .rd-strat-mini{margin-left:4px;padding:1px 6px;border-radius:6px;cursor:pointer;font-size:11px;line-height:1.4;
+        color:var(--dim);border:1px solid var(--etched);background:rgba(255,255,255,.03);vertical-align:1px}
+  .rd-strat-mini:hover{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
+  .rd-strat-prev .row.editing{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .rd-strat-in{min-width:0;max-width:100%;padding:5px 8px;border-radius:7px;border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));
+        background:#0b1410;color:var(--txt);font:600 12px/1.4 inherit;font-family:inherit}
+  .rd-strat-in:focus{outline:none;border-color:var(--gold)}
+  .rd-strat-lock{padding:5px 8px;border-radius:7px;border:1px dashed var(--etched);background:rgba(110,216,245,.05);
+        color:var(--teal);font-size:12px;font-weight:600;white-space:pre-wrap;word-break:break-all;cursor:not-allowed;max-width:100%}
   .rd-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;align-items:start}
   .rd-cpsum{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--dim);white-space:nowrap}
   .pt-tm-chip .pt-memx{margin-left:auto;flex-shrink:0}
@@ -4678,6 +4690,18 @@ async function rdUpdate(id,patch){   // 헤더의 날짜/시간 인라인 편집
   if(patch.time!=null)r.time=ptTime(patch.time);
   if(patch.minItemLv!=null)r.minItemLv=Math.max(0,Math.floor(+patch.minItemLv||0));
   if(patch.pfTactic!=null&&PF_TACTICS[patch.pfTactic])r.pfTactic=patch.pfTactic;
+  // 공략 템플릿 수정본: {문구key:{세그먼트idx:교체 텍스트}}. 문자열만 보관하고 빈 맵은 버린다.
+  // 앞뒤 공백이 구분자 역할을 하므로 trim 하지 않는다.
+  if(patch.stratOverrides!=null){
+    const o={};
+    Object.entries(patch.stratOverrides).forEach(([k,m])=>{
+      if(!m||typeof m!=="object")return;
+      const mm={};
+      Object.entries(m).forEach(([i,v])=>{if(/^\d+$/.test(i)&&typeof v==="string")mm[i]=v.slice(0,300);});
+      if(Object.keys(mm).length)o[k]=mm;
+    });
+    r.stratOverrides=o;
+  }
   await RaidStore.upsert(r); renderRaid();
 }
 // 공팟(외부) 인원: 앱에 등록 안 된 사람을 이름·직업만으로 1회성 추가한다. 정보 조회 없음.
@@ -4746,10 +4770,12 @@ function rdStratLines(r){
   const board=k=>(r.missions||{})[k]||{};
   const nameOf=k=>r.members.find(m=>m.key===k)?.name||"?";
   const lines=[];
+  // 문구 = 세그먼트 배열. t(템플릿 텍스트)는 공대장이 수정 가능, v(가변 영역: 편성·임무 지정 결과)는 항상 자동 생성.
+  const T=v=>({t:"t",v}), V=v=>({t:"v",v});
   if(r.type==="bitan"){
     // 메인탱=1파티 탱커, 서브탱=2파티 탱커 이름으로 표기. 탱커 미편성이면 역할명으로 대체.
     const tankOf=(ti,fb)=>r.members.find(m=>m.team===ti&&rdRoleOfMember(m)==="tank")?.name||fb;
-    lines.push({key:"boss1",group:"1넴",label:"냉기구술",text:`냉기구술: 1왼(12>9)2오(3>6). ${tankOf(0,"메인탱")} 6>12 ${tankOf(1,"서브탱")} 9>3`,ok:true,missing:[]});
+    lines.push({key:"boss1",group:"1넴",label:"냉기구술",segs:[T("냉기구술: 1왼(12>9)2오(3>6). "),V(tankOf(0,"메인탱")),T(" 6>12 "),V(tankOf(1,"서브탱")),T(" 9>3")],ok:true,missing:[]});
   }
   // 시계 방위 → 화살표(복사 문구에 포함되는 텍스트, 8방향)
   const CLOCK_ARROW={"12시":"↑","1시":"↗","3시":"→","5시":"↘","6시":"↓","7시":"↙","9시":"←","11시":"↖"};
@@ -4767,7 +4793,7 @@ function rdStratLines(r){
           if(k)parts.push(`${nameOf(k)}(${pl})`); else missing.push(p.label);   // 미지정 안내는 임무판 기준(원래 방위)
         });
         // 복사 문구에는 2-1/2-2 접두어를 넣지 않는다 — 버튼 라벨로만 구분.
-        lines.push({key:`wc${ver}_${slotKey}`,group:grp,label:`2-${ver} 겨울의핵-${lab}`,text:`겨울의핵-${lab} : ${parts.join(" / ")}`,ok:!missing.length,missing});
+        lines.push({key:`wc${ver}_${slotKey}`,group:grp,label:`2-${ver} 겨울의핵-${lab}`,segs:[T(`겨울의핵-${lab} : `),V(parts.join(" / "))],ok:!missing.length,missing});
       });
     });
   }
@@ -4783,15 +4809,15 @@ function rdStratLines(r){
       parts.push(`${names.join(" ")}(${pos.label})`);
     });
     // 눈보라 공략 — 지정 여부와 무관한 고정 멘트라 항상 복사 가능.
-    lines.push({key:"pf_blizzard",group:"2-2넴",label:"눈보라",text:"눈보라 : 1~4번 기둥 순서대로. 2번째 눈보라때만 1파티는 5번 기둥 사용.",ok:true,missing:[]});
-    lines.push({key:"pf",group:"2-2넴",label:"파도",text:`파도(${pfTacticOf(r)}) : ${parts.join(" / ")}`,ok:!missing.length,missing});
+    lines.push({key:"pf_blizzard",group:"2-2넴",label:"눈보라",segs:[T("눈보라 : 1~4번 기둥 순서대로. 2번째 눈보라때만 1파티는 5번 기둥 사용.")],ok:true,missing:[]});
+    lines.push({key:"pf",group:"2-2넴",label:"파도",segs:[T("파도("),V(pfTacticOf(r)),T(") : "),V(parts.join(" / "))],ok:!missing.length,missing});
     // 파도 진행 상세 설명 — 지정 여부와 무관한 고정 멘트라 항상 복사 가능.
     // 게임 채팅은 한 줄씩만 붙여넣어져 단계별 버튼으로 나눠 제공한다.
     [
       "1) 11시 5시 모두 4명 다 붙어서 응집체 녹이고 파도 대상자도 응집체에 붙어서 대기 (파도 터지기전)",
       "2) 메인탱(1시)은 11시 끌기, 서브탱(7시) 5시 끌기, 끌린 직후 파도 대상자는 본대안쓸리게 빼기 (1파도)",
       "3) 7시 응집체 모여서 녹여주고 1시에서 7시 모두 끌기. 파도 대상자는 본대안쓸리게 빼기 (2파도)",
-    ].forEach((text,i)=>lines.push({key:`pf_detail${i+1}`,group:"2-2넴",label:`파도 상세 ${i+1}`,text,ok:true,missing:[]}));
+    ].forEach((text,i)=>lines.push({key:`pf_detail${i+1}`,group:"2-2넴",label:`파도 상세 ${i+1}`,segs:[T(text)],ok:true,missing:[]}));
   }
   // ── 무스펠: 드리블(빨강/초록 한 줄씩) + 신호등(8방향 한 줄) ──
   const dr=missions.find(x=>x.key==="dribble");
@@ -4806,7 +4832,7 @@ function rdStratLines(r){
         if(names.length<pos.slots.length)missing.push(pos.label);
         parts.push([`[${pos.label}]`,...names].join(" "));
       });
-      lines.push({key:"dr_"+lab,group:"드리블",label:`드리블-${lab}`,text:`드리블-${lab} : ${parts.join("  ")}`,ok:!missing.length,missing});
+      lines.push({key:"dr_"+lab,group:"드리블",label:`드리블-${lab}`,segs:[T(`드리블-${lab} : `),V(parts.join("  "))],ok:!missing.length,missing});
     });
   }
   const sg=missions.find(x=>x.key==="signal");
@@ -4817,8 +4843,20 @@ function rdStratLines(r){
       const k=(b[pos.key]||{}).s;
       if(k)parts.push(`[${pos.label}${CLOCK_ARROW[pos.label]||""}] ${nameOf(k)}`); else missing.push(pos.label);
     });
-    lines.push({key:"sig",group:"신호등",label:"신호등",text:`신호등 : ${parts.join(" ")}`,ok:!missing.length,missing});
+    lines.push({key:"sig",group:"신호등",label:"신호등",segs:[T("신호등 : "),V(parts.join(" "))],ok:!missing.length,missing});
   }
+  // 템플릿 수정본 적용: stratOverrides[lineKey][segIdx]가 있으면 해당 템플릿 세그먼트만 교체.
+  // 가변 영역(v)은 항상 자동 생성 값을 유지하므로 편성·지정이 바뀌어도 문구가 따라간다.
+  const ov=r.stratOverrides||{};
+  lines.forEach(l=>{
+    const o=(ov[l.key]&&typeof ov[l.key]==="object")?ov[l.key]:{};
+    l.edited=false;
+    l.segs.forEach((s,i)=>{
+      s.def=s.v;   // 원복용 기본 문구 보존
+      if(s.t==="t"&&typeof o[i]==="string"){s.v=o[i];l.edited=true;}
+    });
+    l.text=l.segs.map(s=>s.v).join("");
+  });
   return lines;
 }
 // 캐릭터 key → 임무 배지("👁 11시" 등) 목록. 편성 칩에 붙여 한눈에 보이게 한다.
@@ -5025,7 +5063,7 @@ async function renderRaidDetail(root){
       const items=strat.filter(s=>s.group===g);
       return `<div class="rd-strat-group"><div class="gh">${esc(g)}</div>
         <div class="rd-strat">${items.map(s=>`<button type="button" class="rd-strat-btn${s.ok?'':' off'}" data-strat="${s.key}"${s.ok?'':` title="임무 미지정: ${esc(s.missing.join(", "))}"`}>📋 ${esc(s.label)}</button>`).join("")}</div>
-        <div class="rd-strat-prev">${items.map(s=>`<div class="row${s.ok?'':' off'}">${esc(s.text)}${s.ok?'':` <i>미지정: ${esc(s.missing.join(", "))}</i>`}</div>`).join("")}</div>
+        <div class="rd-strat-prev">${items.map(s=>`<div class="row${s.ok?'':' off'}" data-strat-row="${esc(s.key)}">${esc(s.text)}${s.ok?'':` <i>미지정: ${esc(s.missing.join(", "))}</i>`}${s.edited?` <i class="ed">수정됨</i>`:''}${canEdit?` <button type="button" class="rd-strat-mini" data-strat-edit="${esc(s.key)}" title="문구 수정">✏️</button>${s.edited?`<button type="button" class="rd-strat-mini" data-strat-reset="${esc(s.key)}" title="자동 생성 문구로 되돌리기">↺</button>`:''}`:''}</div>`).join("")}</div>
       </div>`;
     }).join("")}</div>`;
   html+=`</div></div>`;
@@ -5081,6 +5119,42 @@ async function renderRaidDetail(root){
     const old=b.textContent;
     b.textContent="✔ 복사됨"; b.classList.add("done");
     setTimeout(()=>{ b.textContent=old; b.classList.remove("done"); },1200);
+  });
+  // 공략 템플릿 수정: ✏️ → 템플릿 텍스트만 입력창으로 바뀌고, 가변 영역(이름·지정 결과)은 잠금 표시.
+  // 저장 시 기본 문구와 달라진 세그먼트만 stratOverrides에 남긴다(빈 값·기본값과 동일 → 원복).
+  root.querySelectorAll("[data-strat-edit]").forEach(b=>b.onclick=()=>{
+    const key=b.dataset.stratEdit, row=root.querySelector(`[data-strat-row="${CSS.escape(key)}"]`);
+    const it=strat.find(x=>x.key===key); if(!row||!it)return;
+    row.classList.add("editing");
+    row.innerHTML=it.segs.map((s,i)=>s.t==="t"
+      ?`<input class="rd-strat-in" data-seg="${i}" maxlength="300" autocomplete="off" spellcheck="false">`
+      :`<span class="rd-strat-lock" title="자동 생성 영역 — 편성·임무 지정에 따라 채워집니다">🔒${esc(s.v)}</span>`).join("")
+      +`<button type="button" class="rd-strat-mini" data-strat-ok title="저장">💾</button>
+        <button type="button" class="rd-strat-mini" data-strat-no title="취소">✕</button>`;
+    const fit=inp=>{inp.style.width=`calc(${Math.max(2,[...inp.value].length)}ch + 20px)`;};
+    row.querySelectorAll("input").forEach(inp=>{
+      inp.value=it.segs[+inp.dataset.seg].v;
+      fit(inp); inp.oninput=()=>fit(inp);
+      inp.addEventListener("keydown",e=>{if(e.key==="Enter")commit(); if(e.key==="Escape")renderRaid();});
+    });
+    const commit=()=>{
+      const cur={...(r.stratOverrides||{})}, m={};
+      row.querySelectorAll("input").forEach(inp=>{
+        const i=+inp.dataset.seg, v=inp.value;
+        if(v!==""&&v!==it.segs[i].def)m[i]=v;
+      });
+      if(Object.keys(m).length)cur[key]=m; else delete cur[key];
+      rdUpdate(r.id,{stratOverrides:cur});
+    };
+    row.querySelector("[data-strat-ok]").onclick=commit;
+    row.querySelector("[data-strat-no]").onclick=()=>renderRaid();
+    row.querySelector("input")?.focus();
+  });
+  root.querySelectorAll("[data-strat-reset]").forEach(b=>b.onclick=()=>{
+    if(!confirm("수정한 문구를 버리고 기본 문구로 되돌릴까요?"))return;
+    const cur={...(r.stratOverrides||{})};
+    delete cur[b.dataset.stratReset];
+    rdUpdate(r.id,{stratOverrides:cur});
   });
   // 공팟 인원 추가: 버튼으로 폼 토글, 이름+역할만 입력해 바로 편성.
   root.querySelectorAll("[data-guest-btn]").forEach(b=>b.onclick=e=>{
