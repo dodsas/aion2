@@ -1043,6 +1043,9 @@
   .pt-tm-poolh,.pt-tm-teamh{display:flex;align-items:center;gap:6px;font-weight:900;font-size:12.5px;color:var(--gold);margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
   .pt-tm-poolh b,.pt-tm-teamh b{color:var(--gold);font-weight:900}
   .pt-tm-teamh.over,.pt-tm-team.over .pt-tm-teamh b{color:var(--danger)}
+  /* 임시파티(자리 교체용 대기 공간): 점선 테두리로 실제 파티와 구분 */
+  .pt-tm-team.tmp{border-style:dashed;background:rgba(255,255,255,.015)}
+  .pt-tm-team.tmp .pt-tm-teamh,.pt-tm-team.tmp .pt-tm-teamh b{color:var(--dim)}
   .pt-tm-role{margin-bottom:6px}
   .pt-tm-role:last-child{margin-bottom:0}
   .pt-tm-roleh{display:block;font-size:10.5px;font-weight:800;color:var(--dim);margin:4px 0 4px;letter-spacing:.3px}
@@ -4561,7 +4564,9 @@ function rdNormalize(r){
   r.members=r.members.filter(m=>{
     if(!m||!m.key||seen.has(m.key))return false;
     seen.add(m.key);
-    m.team=Math.min(RD_TEAM_COUNT-1,Math.max(0,parseInt(m.team,10)||0));
+    // team=-1 은 "임시파티"(자리 교체용 대기 공간) — 정원·파티 번호에 포함되지 않는다.
+    const t=parseInt(m.team,10);
+    m.team=t===-1?-1:Math.min(RD_TEAM_COUNT-1,Math.max(0,t||0));
     return true;
   });
   // 임무 지정 정리: 공대에서 빠졌거나 담당 파티가 바뀐 캐릭터의 지정은 자동 해제한다.
@@ -4640,10 +4645,11 @@ async function rdAddChar(key,teamIdx){
   if(r.members.some(m=>m.key===key))return;
   const teams=rdTeams(r);
   let t=teamIdx;
-  if(t==null||!Number.isInteger(t)||t<0||t>=r.teamCount){
+  // t=-1 은 임시파티(대기 공간) — 정원 제한 없음.
+  if(t==null||!Number.isInteger(t)||t<-1||t>=r.teamCount){
     t=teams.findIndex(list=>list.length<RD_TEAM_MAX);
     if(t<0){alert(`모든 파티가 가득 찼습니다 (파티당 ${RD_TEAM_MAX}명).`);return;}
-  }else if(teams[t].length>=RD_TEAM_MAX){alert(`${t+1}파티 정원(${RD_TEAM_MAX}명)을 초과할 수 없습니다.`);return;}
+  }else if(t>=0&&teams[t].length>=RD_TEAM_MAX){alert(`${t+1}파티 정원(${RD_TEAM_MAX}명)을 초과할 수 없습니다.`);return;}
   r.members.push({key:c.key,characterId:c.characterId,serverId:c.serverId,name:c.name,img:c.img,cp:c.cp,itemLv:c.itemLv,
     race:c.race,serverName:c.serverName,level:c.level,className:c.className,group:c.group||"",team:t});
   await RaidStore.upsert(r); renderRaid();
@@ -4659,8 +4665,9 @@ async function rdMoveChar(key,teamIdx){
   const r=await RaidStore.get(rdState.openId); if(!r)return;
   if(!rdCanEdit(r))return;
   const m=r.members.find(x=>x.key===key);
-  if(!m||m.team===teamIdx||!Number.isInteger(teamIdx)||teamIdx<0||teamIdx>=r.teamCount)return;
-  if(r.members.filter(x=>x.team===teamIdx).length>=RD_TEAM_MAX){alert(`${teamIdx+1}파티 정원(${RD_TEAM_MAX}명)을 초과할 수 없습니다.`);return;}
+  // teamIdx=-1 은 임시파티(대기 공간) — 정원 검사 없이 이동 가능.
+  if(!m||m.team===teamIdx||!Number.isInteger(teamIdx)||teamIdx<-1||teamIdx>=r.teamCount)return;
+  if(teamIdx>=0&&r.members.filter(x=>x.team===teamIdx).length>=RD_TEAM_MAX){alert(`${teamIdx+1}파티 정원(${RD_TEAM_MAX}명)을 초과할 수 없습니다.`);return;}
   m.team=teamIdx;
   await RaidStore.upsert(r); renderRaid();
 }
@@ -4885,7 +4892,7 @@ function rdMissionHtml(r,canEdit){
           const opts=pool.filter(m=>m.key===cur||(!assigned.has(m.key)&&(!sl.role||rdRoleOfMember(m)===sl.role)));
           ph+=`<div class="rd-pos-row"><span class="rl">${sl.icon} ${sl.label}</span>
             <select data-mis="${ms.key}|${pos.key}|${sl.key}"><option value="">— 미지정 —</option>
-            ${opts.map(m=>`<option value="${esc(m.key)}"${m.key===cur?' selected':''}>${RD_ROLE_ICON[rdRoleOfMember(m)]} ${esc(m.name)}${m.className?` (${esc(m.className)})`:m.guest?' (공팟)':''}${pos.team==null?` · ${m.team+1}팟`:''}</option>`).join("")}
+            ${opts.map(m=>`<option value="${esc(m.key)}"${m.key===cur?' selected':''}>${RD_ROLE_ICON[rdRoleOfMember(m)]} ${esc(m.name)}${m.className?` (${esc(m.className)})`:m.guest?' (공팟)':''}${pos.team==null?(m.team<0?' · 임시':` · ${m.team+1}팟`):''}</option>`).join("")}
             </select></div>`;
         }else{
           const m=r.members.find(x=>x.key===cur);
@@ -5001,7 +5008,15 @@ async function renderRaidDetail(root){
       </div>`:''}
       ${list.length?rdRoleBlock(list,canEdit,tagMap):`<div class="pt-empty" style="padding:8px">${canEdit?'여기로 캐릭터를 끌어놓거나 왼쪽에서 클릭하세요':'아직 편성된 캐릭터가 없습니다'}</div>`}
     </div>`;
-  }).join("")}</div>`;
+  }).join("")}${(()=>{
+    // 임시파티: 자리 교체용 대기 공간. 공팟 인원도 삭제 없이 잠시 빼두고 다시 배치할 수 있다.
+    const tmp=r.members.filter(m=>m.team===-1);
+    if(!canEdit&&!tmp.length)return "";
+    return `<div class="pt-tm-team tmp"${canEdit?' data-rd-drop="-1"':''}>
+      <div class="pt-tm-teamh">🅿 임시파티 <b>${tmp.length}</b><span class="rd-cpsum">자리 바꿀 인원을 잠시 옮겨두는 곳</span></div>
+      ${tmp.length?rdRoleBlock(tmp,canEdit,tagMap):`<div class="pt-empty" style="padding:8px">파티 자리를 바꿀 때 인원을 여기로 끌어놓았다가 다시 배치하세요</div>`}
+    </div>`;
+  })()}</div>`;
   html+=rdMissionHtml(r,canEdit);
   // 공략 공유: 네임드(1넴/2-1넴/2-2넴)별 그룹 박스 안에 복사 버튼 + 문구 미리보기.
   const strat=rdStratLines(r);
