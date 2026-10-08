@@ -4538,12 +4538,12 @@ const RD_MISSIONS=[
   // ── 무스펠 ──
   // 드리블: 색깔별 구슬 운반. 전체 인원에서 지정(파티 무관).
   {key:"dribble", types:["muspel"], label:"드리블", icon:"⚽",
-   note:"🔴 9시→12시 2명 · 3시→3시 3명 / 🟢 12시→9시 2명 · 6시→6시 3명",
+   note:"🔴 9시>12시 2명 · 3시>3시 3명 / 🟢 12시>9시 2명 · 6시>6시 3명",
    positions:[
-     {key:"r912",label:"9시→12시", icon:"🔴",team:null,slots:DR_SLOTS(2,"🔴")},
-     {key:"r33", label:"3시→3시",  icon:"🔴",team:null,slots:DR_SLOTS(3,"🔴")},
-     {key:"g129",label:"12시→9시", icon:"🟢",team:null,slots:DR_SLOTS(2,"🟢")},
-     {key:"g66", label:"6시→6시",  icon:"🟢",team:null,slots:DR_SLOTS(3,"🟢")},
+     {key:"r912",label:"9시>12시", icon:"🔴",team:null,slots:DR_SLOTS(2,"🔴")},
+     {key:"r33", label:"3시>3시",  icon:"🔴",team:null,slots:DR_SLOTS(3,"🔴")},
+     {key:"g129",label:"12시>9시", icon:"🟢",team:null,slots:DR_SLOTS(2,"🟢")},
+     {key:"g66", label:"6시>6시",  icon:"🟢",team:null,slots:DR_SLOTS(3,"🟢")},
    ]},
   // 신호등: 8명 8방향, 파티별 담당 구역. ⚡ 자동 지정으로 파티 편성 순서대로 초기 배치.
   {key:"signal", types:["muspel"], label:"신호등", icon:"🚦",
@@ -4777,8 +4777,6 @@ function rdStratLines(r){
     const tankOf=(ti,fb)=>r.members.find(m=>m.team===ti&&rdRoleOfMember(m)==="tank")?.name||fb;
     lines.push({key:"boss1",group:"1넴",label:"냉기구술",segs:[T("냉기구술: 1왼(12>9)2오(3>6). "),V(tankOf(0,"메인탱")),T(" 6>12 "),V(tankOf(1,"서브탱")),T(" 9>3")],ok:true,missing:[]});
   }
-  // 시계 방위 → 화살표(복사 문구에 포함되는 텍스트, 8방향)
-  const CLOCK_ARROW={"12시":"↑","1시":"↗","3시":"→","5시":"↘","6시":"↓","7시":"↙","9시":"←","11시":"↖"};
   if(wc){
     const b=board("winter_core");
     // 같은 담당이 넴별로 다른 방위에서 수행: 2-1넴 = 9·12·3·6시, 2-2넴 = 11·1·5·7시(임무판 기준)
@@ -4841,9 +4839,10 @@ function rdStratLines(r){
     const parts=[],missing=[];
     sg.positions.forEach(pos=>{
       const k=(b[pos.key]||{}).s;
-      if(k)parts.push(`[${pos.label}${CLOCK_ARROW[pos.label]||""}] ${nameOf(k)}`); else missing.push(pos.label);
+      // 겨울의핵과 동일한 "이름(방위)" 형식 — 화살표 기호는 게임 채팅 가독성 피드백으로 제거.
+      if(k)parts.push(`${nameOf(k)}(${pos.label})`); else missing.push(pos.label);
     });
-    lines.push({key:"sig",group:"신호등",label:"신호등",segs:[T("신호등 : "),V(parts.join(" "))],ok:!missing.length,missing});
+    lines.push({key:"sig",group:"신호등",label:"신호등",segs:[T("신호등 : "),V(parts.join(" / "))],ok:!missing.length,missing});
   }
   // 템플릿 수정본 적용: stratOverrides[lineKey][segIdx]가 있으면 해당 템플릿 세그먼트만 교체.
   // 가변 영역(v)은 항상 자동 생성 값을 유지하므로 편성·지정이 바뀌어도 문구가 따라간다.
