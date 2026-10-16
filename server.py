@@ -538,6 +538,7 @@ def api_char_item(q):
 ALLOWED_KV = {
     "mychars", "mychar_groups", "parties", "raids",
     "homework_presets", "homework_chars", "op_cfg", "own", "dungeon_catalog", "bookmarks",
+    "analysis",   # 분석 탭: 요구딜량 기준 + 날짜별 딜 기록
 }
 
 # 숙제 던전 기준표. app_kv[dungeon_catalog]에 저장해 배포 환경에서도 하나의 DB 데이터로
