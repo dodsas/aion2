@@ -1482,10 +1482,8 @@
     <h3>공대 만들기</h3>
     <label>콘텐츠</label>
     <div id="rdTypeSel" class="pt-typesel"></div>
-    <label style="margin-top:13px">날짜</label>
-    <input id="rdDate" type="date">
-    <label style="margin-top:13px">시작 시간</label>
-    <input id="rdTime" type="time" value="21:00">
+    <label style="margin-top:13px">공대 이름</label>
+    <input id="rdTitle" maxlength="40" placeholder="예: 매주 가는 길드공대" autocomplete="off" spellcheck="false">
     <label style="margin-top:13px">최소 템레벨 (예: 5800)</label>
     <input id="rdMinIl" type="number" min="0" step="100" value="5800">
     <div class="pt-capnote">구성 <b>1파티 · 2파티</b> 고정 · 파티당 <b>5명</b> · 최대 <b>10명</b> · 최소 템레벨 미만 캐릭터는 편성 목록에서 숨겨집니다</div>
@@ -1797,7 +1795,7 @@ async function adminDeleteAction(group,action){
 const TABS=[
   {id:"mychar", label:"🗂️ 캐릭"},
   // {id:"char",  label:"🧝 캐릭터"},   // 기능 유지, 탭만 숨김 (검색은 내 캐릭터 탭으로 이관)
-  {id:"party", label:"🛡️ 파티"},
+  // {id:"party", label:"🛡️ 파티"},   // 기능 유지, 탭만 숨김 (공대 탭으로 일원화)
   {id:"raid", label:"⚔️ 공대"},
   {id:"arcana", label:"🔮 아르카나", compactLabel:"🔮 카드"},
   {id:"bookmarks", label:"🔖 즐찾"},
@@ -4945,7 +4943,8 @@ function rdNormalize(r){
   if(!r||typeof r!=="object")return r;
   if(!RAID_TYPES.some(t=>t.key===r.type))r.type=RAID_TYPES[0].key;
   if(typeof r.creatorGroup!=="string")r.creatorGroup="";
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date||""))r.date=ptYmd(new Date());
+  if(typeof r.title!=="string")r.title="";   // 공대 이름 — 비면 "<콘텐츠> 공대"로 표시
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date||""))r.date=ptYmd(new Date());   // 구버전 호환용(화면 미사용)
   r.time=ptTime(r.time);
   r.teamCount=RD_TEAM_COUNT;   // 과거에 저장된 값이 있어도 고정 구성으로 강제
   const defMinIl=rdType(r.type).minItemLv||0;
@@ -4996,7 +4995,7 @@ const rdCanEdit=r=>isAdmin||(!!r?.creatorGroup&&r.creatorGroup===effectiveGroup(
 const rdMax=r=>r.teamCount*RD_TEAM_MAX;
 // 파티(팀)별 멤버 배열. 인덱스 = 팀 번호(0..teamCount-1).
 const rdTeams=r=>{const t=Array.from({length:r.teamCount},()=>[]);r.members.forEach(m=>{if(t[m.team])t[m.team].push(m);});return t;};
-const rdWd=d=>PT_WD[ptParse(d).getDay()];
+const rdTitleOf=r=>(r.title||"").trim()||`${rdType(r.type).label} 공대`;
 
 // 공대 만들기 모달
 function rdOpenCreate(){
@@ -5007,18 +5006,17 @@ function rdOpenCreate(){
   sel.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{rdNewType=b.dataset.t;
     sel.querySelectorAll(".pt-typebtn").forEach(x=>x.classList.toggle("on",x.dataset.t===rdNewType));
     document.getElementById("rdMinIl").value=rdType(rdNewType).minItemLv||0;});
-  document.getElementById("rdDate").value=ptYmd(new Date());
-  document.getElementById("rdTime").value="21:00";
+  document.getElementById("rdTitle").value="";
   document.getElementById("rdMinIl").value=rdType(rdNewType).minItemLv||0;
   document.getElementById("rdModal").classList.add("on");
+  document.getElementById("rdTitle").focus();
 }
 function rdCloseCreate(){document.getElementById("rdModal").classList.remove("on");}
 async function rdCreate(){
-  const date=document.getElementById("rdDate").value||ptYmd(new Date());
-  const time=ptTime(document.getElementById("rdTime").value);
+  const title=document.getElementById("rdTitle").value.trim();
   const minItemLv=Math.max(0,Math.floor(+document.getElementById("rdMinIl").value||0));
   const id="r"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-  await RaidStore.upsert(rdNormalize({id,type:rdNewType,creatorGroup:effectiveGroup(),date,time,minItemLv,teamCount:RD_TEAM_COUNT,
+  await RaidStore.upsert(rdNormalize({id,type:rdNewType,creatorGroup:effectiveGroup(),title,minItemLv,teamCount:RD_TEAM_COUNT,
     createdAt:new Date().toISOString(),members:[]}));
   rdCloseCreate();
   rdState.type=rdNewType; rdState.openId=id; rdState.q="";
@@ -5064,11 +5062,10 @@ async function rdMoveChar(key,teamIdx){
   m.team=teamIdx;
   await RaidStore.upsert(r); renderRaid();
 }
-async function rdUpdate(id,patch){   // 헤더의 날짜/시간 인라인 편집 공통 저장
+async function rdUpdate(id,patch){   // 헤더의 이름/템렙 인라인 편집 공통 저장
   const r=await RaidStore.get(id); if(!r)return;
   if(!rdCanEdit(r))return;
-  if(patch.date!=null&&/^\d{4}-\d{2}-\d{2}$/.test(patch.date))r.date=patch.date;
-  if(patch.time!=null)r.time=ptTime(patch.time);
+  if(patch.title!=null)r.title=String(patch.title).trim().slice(0,40);
   if(patch.minItemLv!=null)r.minItemLv=Math.max(0,Math.floor(+patch.minItemLv||0));
   if(patch.pfTactic!=null&&PF_TACTICS[patch.pfTactic])r.pfTactic=patch.pfTactic;
   // 공략 템플릿 수정본: {문구key:{세그먼트idx:교체 텍스트}}. 문자열만 보관하고 빈 맵은 버린다.
@@ -5367,7 +5364,7 @@ function rdPoolHtml(r,canEdit){
 
 async function renderRaidList(root){
   const raids=(await RaidStore.all()).filter(x=>x.type===rdState.type)
-    .sort((a,b)=>a.date.localeCompare(b.date)||ptTime(a.time).localeCompare(ptTime(b.time))||(a.createdAt||"").localeCompare(b.createdAt||""));
+    .sort((a,b)=>(a.createdAt||"").localeCompare(b.createdAt||""));   // 만든 순서대로
   const T=rdType(rdState.type);
   let html=`<div class="pt-head"><h2>⚔️ 공대</h2><span class="spacer"></span><button class="btn" id="rdNew">＋ 공대 만들기</button></div>`;
   html+=`<div class="rd-tabs">${RAID_TYPES.map(t=>`<button type="button" class="pt-typebtn${t.key===rdState.type?' on':''}" data-rdt="${t.key}" style="--c:${t.color}">${t.icon} ${t.label}</button>`).join("")}</div>`;
@@ -5377,8 +5374,8 @@ async function renderRaidList(root){
   }else{
     html+=`<div class="pt-list">${raids.map(x=>`<div class="pt-rc" data-open="${x.id}" style="--c:${T.color}">
         ${rdCanEdit(x)?`<button class="pt-rcx" data-delc="${x.id}" title="삭제">✕</button>`:""}
-        <div class="t">${T.icon} ${T.label} 공대</div>
-        <div class="meta"><span class="pt-expected">${ptMd(x.date)}(${rdWd(x.date)}) ${x.time} 시작</span>공대장 ${esc(x.creatorGroup||"?")}${x.minItemLv?` · 템렙 ${fmt(x.minItemLv)}+`:''}</div>
+        <div class="t">${T.icon} ${esc(rdTitleOf(x))}</div>
+        <div class="meta">공대장 ${esc(x.creatorGroup||"?")}${x.minItemLv?` · 템렙 ${fmt(x.minItemLv)}+`:''}</div>
         <div class="bars"><div class="bar">인원 <b>${x.members.length}</b>/${rdMax(x)}</div></div>
       </div>`).join("")}</div>`;
   }
@@ -5397,14 +5394,14 @@ async function renderRaidDetail(root){
   const r=await RaidStore.get(rdState.openId);
   if(!r){ rdState.openId=null; return renderRaidList(root); }
   const T=rdType(r.type), canEdit=rdCanEdit(r), teams=rdTeams(r);
-  logAccess("raid_detail",`${T.label} ${ptMd(r.date)} ${r.time}`);
+  logAccess("raid_detail",`${T.label} ${rdTitleOf(r)}`);
   let html=`<div class="pt-head">
     <button class="hw-mini" id="rdBack">← 목록</button>
-    <h2><span class="pt-dot" style="color:${T.color}"></span>${T.icon} ${T.label} 공대</h2>`;
+    <h2><span class="pt-dot" style="color:${T.color}"></span>${T.icon} ${esc(rdTitleOf(r))}</h2>`;
   if(canEdit){
-    html+=`<span class="rd-edit"><input id="rdEditDate" type="date" value="${esc(r.date)}"><input id="rdEditTime" type="time" value="${esc(r.time)}"><label title="최소 템레벨">템렙<input id="rdEditMinIl" type="number" min="0" step="100" value="${r.minItemLv||0}" style="width:80px">+</label></span>`;
-  }else{
-    html+=`<strong class="pt-detail-time">${ptMd(r.date)}(${rdWd(r.date)}) ${r.time} 시작</strong>${r.minItemLv?`<span class="pt-cap">템레벨 <b>${fmt(r.minItemLv)}+</b></span>`:''}`;
+    html+=`<span class="rd-edit"><input id="rdEditTitle" maxlength="40" value="${esc(r.title||"")}" placeholder="공대 이름 (예: 매주 가는 길드공대)" style="width:220px" autocomplete="off" spellcheck="false"><label title="최소 템레벨">템렙<input id="rdEditMinIl" type="number" min="0" step="100" value="${r.minItemLv||0}" style="width:80px">+</label></span>`;
+  }else if(r.minItemLv){
+    html+=`<span class="pt-cap">템레벨 <b>${fmt(r.minItemLv)}+</b></span>`;
   }
   html+=`<span class="pt-sub">공대장 <b style="color:var(--gold)">${esc(r.creatorGroup||"?")}</b></span>
     <span class="pt-cap${r.members.length>rdMax(r)?' over':''}">인원 <b>${r.members.length}</b>/${rdMax(r)}</span>
@@ -5413,7 +5410,7 @@ async function renderRaidDetail(root){
   </div>`;
   html+=`<div class="pt-detail">`;
   html+=`<div class="pt-pool" data-rd-pool>${rdPoolHtml(r,canEdit)}</div>`;
-  html+=`<div class="pt-main"><div class="pt-sech">파티 편성 <span class="hint">${canEdit?'왼쪽 캐릭터를 클릭하거나 파티로 드래그 · ×로 제외':''}</span><b class="pt-starttime">${ptMd(r.date)}(${rdWd(r.date)}) ${r.time} 시작</b></div>`;
+  html+=`<div class="pt-main"><div class="pt-sech">파티 편성 <span class="hint">${canEdit?'왼쪽 캐릭터를 클릭하거나 파티로 드래그 · ×로 제외':''}</span></div>`;
   const tagMap=rdMissionTags(r);
   html+=`<div class="rd-teams">${teams.map((list,i)=>{
     const over=list.length>RD_TEAM_MAX;
@@ -5453,10 +5450,8 @@ async function renderRaidDetail(root){
   on("rdBack","click",()=>{rdState.openId=null;rdState.q="";renderRaid();});
   const delBtn=document.getElementById("rdDel");
   if(delBtn)delBtn.onclick=async()=>{if(confirm("이 공대를 삭제할까요?")&&await rdDeleteRaid(r.id)){rdState.openId=null;renderRaid();}};
-  const dateIn=document.getElementById("rdEditDate");
-  if(dateIn)dateIn.onchange=()=>rdUpdate(r.id,{date:dateIn.value});
-  const timeIn=document.getElementById("rdEditTime");
-  if(timeIn)timeIn.onchange=()=>rdUpdate(r.id,{time:timeIn.value});
+  const titleIn=document.getElementById("rdEditTitle");
+  if(titleIn)titleIn.onchange=()=>rdUpdate(r.id,{title:titleIn.value});
   const minIlIn=document.getElementById("rdEditMinIl");
   if(minIlIn)minIlIn.onchange=()=>rdUpdate(r.id,{minItemLv:minIlIn.value});
   // 영구동토 택틱 변경: 새 택틱에 없는 자리의 기존 지정이 있으면 확인 후 해제.
