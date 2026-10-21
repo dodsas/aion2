@@ -492,7 +492,10 @@
   .bookmark-list{display:grid;gap:8px;margin-top:12px}.bookmark-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#111923;min-width:0}
   .bookmark-item .bk-main{min-width:0;flex:1}.bookmark-item .bk-name{display:block;color:var(--txt);font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bookmark-item .bk-url{display:block;color:var(--dim);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}.bookmark-item .bk-open{width:28px;height:28px;display:grid;place-items:center;flex:0 0 28px;border:1px solid var(--etched);border-radius:7px;background:#0b1016;overflow:hidden;text-decoration:none}.bookmark-item .bk-open img{width:18px;height:18px;object-fit:contain}.bookmark-item .bk-open img:not([hidden])+.fallback{display:none}.bookmark-item .bk-open .fallback{color:var(--gold);font-size:15px}.bookmark-empty{padding:34px 12px;text-align:center;color:var(--dim);border:1px dashed var(--etched);border-radius:8px}
   /* 분석 탭: 요구딜량 기준 설정 + 날짜별 딜 기록 테이블 */
-  .an-root{max-width:1100px;margin:0 auto;padding:24px 28px;width:100%}
+  /* 루트는 브라우저 전체 폭 — 단, 기록 테이블(.an-tablewrap)만 전폭을 쓰고
+     나머지(설정·인원·바 등)는 기존처럼 1044px(=1100-패딩56)로 중앙 정렬한다. */
+  .an-root{margin:0 auto;padding:24px 28px;width:100%}
+  .an-root>:not(.an-tablewrap){max-width:1044px;margin-inline:auto}
   .an-head{margin-bottom:14px}.an-head h2{margin:0;font-size:22px}.an-head p{margin:4px 0 0;color:var(--dim);font-size:12px}
   .an-box{margin-bottom:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:linear-gradient(180deg,var(--slot-hi),var(--slot))}
   summary.an-sum{cursor:pointer;user-select:none;list-style:none;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-weight:900;font-size:13px;color:var(--gold)}
@@ -528,10 +531,16 @@
   .an-bar .t{font-weight:900;font-size:13px;color:var(--gold)}
   .an-bar .an-range{color:var(--dim);font-size:11.5px;font-weight:800}
   .an-bar .an-pg[disabled]{opacity:.35;cursor:default}
+  /* 표시 날짜 수 설정("최근 N개") — an-cfg 입력과 같은 톤의 소형 입력 */
+  .an-bar .an-win{display:flex;align-items:center;gap:5px;color:var(--dim);font-size:11.5px;font-weight:800}
+  .an-bar .an-win input{width:42px;padding:6px;border-radius:7px;border:1px solid var(--etched);background:#101a24;color:var(--txt);font:700 12px/1.2 inherit;font-family:inherit;text-align:center}
+  .an-bar .an-win input:focus{border-color:var(--gold);outline:none}
   .an-bar input[type=date]{padding:6px 8px;border-radius:7px;border:1px solid var(--etched);background:#101a24;color:var(--txt);font:700 12px/1.2 inherit;font-family:inherit}
-  .an-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.015)}
-  .an-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
-  .an-table th,.an-table td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:right}
+  /* 래퍼는 표 내용 폭만큼만(가운데 정렬) — 화면이 넓어도 열이 억지로 안 벌어지고,
+     내용이 화면보다 넓으면 기존처럼 가로 스크롤. */
+  .an-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.015);width:fit-content;max-width:100%;margin-inline:auto}
+  .an-table{border-collapse:collapse;font-size:12.5px;min-width:520px}
+  .an-table th,.an-table td{padding:7px 6px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:right}
   .an-table th{font-size:11px;color:var(--dim);letter-spacing:.3px;background:rgba(255,255,255,.025)}
   .an-table th:first-child,.an-table td:first-child{text-align:left;position:sticky;left:0;background:#101720}
   .an-table thead th:first-child{background:#141d27}
@@ -542,15 +551,16 @@
   .an-left.pos{color:var(--teal)} .an-left.neg{color:#ff7b7b}
   /* 날짜별 3개 서브컬럼(데미지·남는딜·증감): 내용 폭만큼만 차지, 우측정렬로 1의 자리 정렬 */
   .an-table{font-variant-numeric:tabular-nums}
-  .an-table .nv{padding-left:44px;padding-right:3px}   /* 날짜 그룹 사이 넓은 공백으로 일자 구분 */
-  .an-table .nl{padding-left:6px;padding-right:6px}
-  .an-table .ndf{padding-left:4px}
+  .an-table .nv{padding-left:12px;padding-right:3px}   /* 일자 구분은 구분선·배경 틴트가 담당 — 공백 최소화 */
+  .an-table .nl{padding-left:5px;padding-right:5px}
+  .an-table .ndf{padding-left:3px}
   .an-table td.nv{font-weight:800}
   .an-table tr>th.sub{font-size:10px;color:var(--dim);padding-top:2px;padding-bottom:6px;text-align:right;position:static;background:rgba(255,255,255,.025)}
-  .an-table .gs{border-left:1px dashed var(--line2)}   /* 날짜 그룹 구분선 */
-  /* 날짜 그룹 교차 배경(홀수 번째 날짜 열) — 일자 경계를 확실히 구분 */
-  .an-table td.dga{background:rgba(148,233,208,.045)}
-  .an-table tr>th.dga{background:rgba(148,233,208,.08)}
+  /* 날짜 그룹 구분선 — 주(날짜) 경계가 한눈에 보이게 굵은 실선 */
+  .an-table .gs{border-left:2px solid color-mix(in srgb,var(--teal) 30%,var(--line2))}
+  /* 날짜 그룹 교차 배경(홀수 번째 날짜 열) — 진한 틴트로 주간 블록을 확실히 구분 */
+  .an-table td.dga{background:rgba(148,233,208,.09)}
+  .an-table tr>th.dga{background:rgba(148,233,208,.16)}
   /* 날짜 헤더: 날짜는 가운데, 수정(✏️)·저장/취소/삭제 버튼은 오른쪽 끝 */
   .an-table th .dh{display:flex;align-items:center;justify-content:center;position:relative;min-height:16px}
   .an-table th .dh .dt{font-weight:900}
@@ -1900,8 +1910,8 @@ function renderBookmarks(){
 const AN_ROLES={deal:{label:"딜러",icon:"⚔️"},guard:{label:"수호",icon:"🛡️"},chant:{label:"호법",icon:"📯"},heal:{label:"치유",icon:"✚"}};
 const anRoleOfClass=cls=>cls==="수호성"?"guard":cls==="호법성"?"chant":cls==="치유성"?"heal":"deal";
 const anId=()=>globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
-// 새(빈) 분석의 기본 설정 — 정원 10인, 치유2·수호1·호법2.
-const anBlank=name=>({id:anId(),name,bossHp:3_000_000_000,timeSec:390,partySize:10,counts:{heal:2,guard:1,chant:2},members:[],days:[]});
+// 새(빈) 분석의 기본 설정 — 정원 10인, 치유2·수호1·호법2. dayWin = 테이블에 보여줄 최근 날짜(주) 수.
+const anBlank=name=>({id:anId(),name,bossHp:3_000_000_000,timeSec:390,partySize:10,counts:{heal:2,guard:1,chant:2},dayWin:2,members:[],days:[]});
 // 샘플 분석은 딜 분석 시트(비탄) 그대로. 시트의 '첫사랑퀸'은 등록 캐릭명 '첫사람퀸'으로 반영.
 const AN_SAMPLE=()=>({
   id:"bitan-hard", name:"비탄 어려움 가자",
@@ -1929,6 +1939,8 @@ function anNorm(a){
   if(!(+a.timeSec>0))a.timeSec=d.timeSec;
   if(!(+a.partySize>0))a.partySize=d.partySize;
   a.partySize=Math.max(1,Math.floor(+a.partySize));
+  // 표시 날짜 수: 1~26 범위로 보정, 미지정(구버전)은 기본 2.
+  a.dayWin=Number.isFinite(+a.dayWin)&&+a.dayWin>=1?Math.min(26,Math.floor(+a.dayWin)):d.dayWin;
   a.counts=Object.assign({},d.counts,a.counts&&typeof a.counts==="object"?a.counts:{});
   delete a.counts.deal; delete a.req;   // 구버전 필드 정리 — 딜러 수·요구딜량은 모두 자동 계산
   ["heal","guard","chant"].forEach(k=>{a.counts[k]=Math.max(0,Math.floor(+a.counts[k]||0));});
@@ -2009,19 +2021,19 @@ function renderAnalysis(){
   const last=days.length?days[days.length-1]:null;
   // 정렬: 마지막(최신) 등록 날짜의 딜 내림차순 — 기록 없는 인원은 아래.
   const members=a.members.slice().sort((x,y)=>((last?.dmg[y.name])??-1)-((last?.dmg[x.name])??-1));
-  // 날짜 컬럼은 최근 2건만. 기본은 항상 최신 2개(왼쪽이 과거), ◀ 과거 / ▶ 최신 쪽으로 창 이동.
-  const AN_DAY_WIN=2;
-  const maxOff=Math.max(0,days.length-AN_DAY_WIN);
+  // 날짜 컬럼은 최근 win건만(분석별 설정 a.dayWin). 기본은 항상 최신 쪽(왼쪽이 과거), ◀ 과거 / ▶ 최신 쪽으로 창 이동.
+  const win=a.dayWin||2;
+  const maxOff=Math.max(0,days.length-win);
   anState.dayOffset=Math.min(Math.max(0,anState.dayOffset||0),maxOff);
   if(anState.editDate){   // 입력 중인 날짜는 항상 창 안에 보이게 이동
     const i=days.findIndex(d=>d.date===anState.editDate);
     if(i>=0){
       if(i>=days.length-anState.dayOffset)anState.dayOffset=days.length-1-i;
-      if(i<days.length-AN_DAY_WIN-anState.dayOffset)anState.dayOffset=Math.min(maxOff,days.length-AN_DAY_WIN-i);
+      if(i<days.length-win-anState.dayOffset)anState.dayOffset=Math.min(maxOff,days.length-win-i);
     }
   }
   const off=anState.dayOffset;
-  const visDays=days.slice(Math.max(0,days.length-AN_DAY_WIN-off),days.length-off);
+  const visDays=days.slice(Math.max(0,days.length-win-off),days.length-off);
   // 셀 표기: 윗줄 데미지, 아랫줄 ▲▼직전 기록 대비 증감 / ±남는딜(요구딜량 대비).
   const diffHtml=df=>df==null?`<span class="an-diff na">—</span>`
     :df>0?`<span class="an-diff up">▲${fmt(df)}</span>`
@@ -2049,11 +2061,11 @@ function renderAnalysis(){
     <div class="an-mem">${members.map(m=>`<span class="an-mem-chip">${AN_ROLES[m.role].icon} ${esc(m.name)}<span style="color:var(--dim);font-size:10.5px">${AN_ROLES[m.role].label}</span><button type="button" class="x" data-an-del="${esc(m.name)}" title="제외">×</button></span>`).join("")||`<span class="an-empty" style="flex:1">인원이 없습니다. 아래에서 추가하세요.</span>`}</div>
     <div class="an-add" style="flex-direction:column;align-items:stretch"><input id="anAddQ" placeholder="캐릭 이름 입력 — 첫 글자부터 자동 추천 (등록된 캐릭만)" autocomplete="off" spellcheck="false"><div class="an-addlist" id="anAddList"></div></div>
   </details>`;
-  // 날짜 추가 바 + ◀/▶ 페이저(4개 이상일 때) + 기록 테이블
-  const pager=days.length>AN_DAY_WIN
+  // 날짜 추가 바 + 표시 개수 설정 + ◀/▶ 페이저(표시 수보다 많을 때) + 기록 테이블
+  const pager=days.length>win
     ?`<button type="button" class="hw-mini an-pg" id="anPrevDays"${off>=maxOff?" disabled":""} title="이전(과거) 날짜">◀</button><span class="an-range">${anMd(visDays[0].date)} ~ ${anMd(visDays[visDays.length-1].date)} / 총 ${days.length}일</span><button type="button" class="hw-mini an-pg" id="anNextDays"${off<=0?" disabled":""} title="다음(최신) 날짜">▶</button>`
     :"";
-  h+=`<div class="an-bar"><span class="t">📅 날짜별 딜 기록</span>${pager}<span class="spacer" style="flex:1"></span><input type="date" id="anNewDate" value="${ptYmd(new Date())}"><button type="button" class="hw-mini" id="anAddDay">＋ 날짜 추가</button></div>`;
+  h+=`<div class="an-bar"><span class="t">📅 날짜별 딜 기록</span><label class="an-win" title="테이블에 보여줄 최근 날짜 수 (예: 4 = 최근 4주)">최근 <input id="anDayWin" inputmode="numeric" value="${win}">개</label>${pager}<span class="spacer" style="flex:1"></span><input type="date" id="anNewDate" value="${ptYmd(new Date())}"><button type="button" class="hw-mini" id="anAddDay">＋ 날짜 추가</button></div>`;
   if(!days.length){
     h+=`<div class="an-empty">기록된 날짜가 없습니다. <b>＋ 날짜 추가</b>로 그날의 딜을 입력하세요.</div>`;
   }else{
@@ -2108,6 +2120,12 @@ function renderAnalysis(){
   const anCurOf=its=>its.find(x=>x.id===anState.curId)||its[0];
   const pgPrev=root.querySelector("#anPrevDays"); if(pgPrev)pgPrev.onclick=()=>{anState.dayOffset=Math.min(maxOff,anState.dayOffset+1);renderAnalysis();};
   const pgNext=root.querySelector("#anNextDays"); if(pgNext)pgNext.onclick=()=>{anState.dayOffset=Math.max(0,anState.dayOffset-1);renderAnalysis();};
+  // 표시 날짜 수 변경 — 분석별로 저장되며, 바꾸면 항상 최신 쪽부터 다시 보여준다.
+  const winIn=root.querySelector("#anDayWin"); if(winIn)winIn.addEventListener("change",()=>{
+    const its=anAll(), b=anCurOf(its); if(!b)return;
+    b.dayWin=Math.min(26,Math.max(1,anNum(winIn.value)||2));
+    anState.dayOffset=0; anSave(its); renderAnalysis();
+  });
   const keepOpen=()=>{anState.cfgOpen=root.querySelector("#anCfgBox")?.open||false;anState.memOpen=root.querySelector("#anMemBox")?.open||false;};
   root.querySelectorAll("#anCfgBox,#anMemBox").forEach(x=>x.addEventListener("toggle",keepOpen));
   const saveCfg=()=>{
@@ -5160,7 +5178,8 @@ function rdStratLines(r){
     // 같은 담당이 넴별로 다른 방위에서 수행: 2-1넴 = 9·12·3·6시, 2-2넴 = 11·1·5·7시(임무판 기준)
     const WC_ALT={"11":"9시","1":"12시","5":"3시","7":"6시"};
     [["1","2-1넴",p=>WC_ALT[p.key]||p.label],["2","2-2넴",p=>p.label]].forEach(([ver,grp,posLab])=>{
-      [["watcher","주시자"],["wedge","쐐기"]].forEach(([slotKey,lab])=>{
+      // 2-2넴은 주시자 공략을 쓰지 않아 쐐기 문구만 만든다. 주시자는 2-1넴 전용.
+      [["watcher","주시자"],["wedge","쐐기"]].filter(([slotKey])=>ver==="1"||slotKey!=="watcher").forEach(([slotKey,lab])=>{
         const parts=[],missing=[];
         wc.positions.forEach(p=>{
           const k=(b[p.key]||{})[slotKey];
@@ -5184,16 +5203,11 @@ function rdStratLines(r){
       if(names.length<pos.slots.length)missing.push(pos.label);
       parts.push(`${names.join(" ")}(${pos.label})`);
     });
-    // 눈보라 공략 — 지정 여부와 무관한 고정 멘트라 항상 복사 가능.
-    lines.push({key:"pf_blizzard",group:"2-2넴",label:"눈보라",segs:[T("눈보라 : 1~4번 기둥 순서대로. 2번째 눈보라때만 1파티는 5번 기둥 사용.")],ok:true,missing:[]});
     lines.push({key:"pf",group:"2-2넴",label:"파도",segs:[T("파도("),V(pfTacticOf(r)),T(") : "),V(parts.join(" / "))],ok:!missing.length,missing});
     // 파도 진행 상세 설명 — 지정 여부와 무관한 고정 멘트라 항상 복사 가능.
-    // 게임 채팅은 한 줄씩만 붙여넣어져 단계별 버튼으로 나눠 제공한다.
-    [
-      "1) 11시 5시 모두 4명 다 붙어서 응집체 녹이고 파도 대상자도 응집체에 붙어서 대기 (파도 터지기전)",
-      "2) 메인탱(1시)은 11시 끌기, 서브탱(7시) 5시 끌기, 끌린 직후 파도 대상자는 본대안쓸리게 빼기 (1파도)",
-      "3) 7시 응집체 모여서 녹여주고 1시에서 7시 모두 끌기. 파도 대상자는 본대안쓸리게 빼기 (2파도)",
-    ].forEach((text,i)=>lines.push({key:`pf_detail${i+1}`,group:"2-2넴",label:`파도 상세 ${i+1}`,segs:[T(text)],ok:true,missing:[]}));
+    // 키를 pf_detail(구 pf_detail1~3과 다름)로 둬서 과거 저장된 수정본이 새 문구를 덮지 않게 한다.
+    lines.push({key:"pf_detail",group:"2-2넴",label:"파도 상세",
+      segs:[T("1414 신뇌사 파도대상자도 붙어서 녹이세요. 5시 7시 11시 모두 응집체 녹이고 각자 시간으로 채팅하기 ex) 55556 77777 111111")],ok:true,missing:[]});
   }
   // ── 무스펠: 드리블(구슬 경로별 한 줄씩 — 복사 총 4번) + 신호등(8방향 한 줄) ──
   const dr=missions.find(x=>x.key==="dribble");
