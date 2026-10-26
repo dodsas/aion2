@@ -1447,7 +1447,7 @@
 <section class="view" id="view-arcana">
   <div class="arc-root" id="arcanaRoot"></div>
 </section>
-<!-- 즐겨찾기: 현재 그룹에서 자주 보는 외부 링크를 저장 -->
+<!-- 즐겨찾기: 자주 보는 외부 링크를 저장 (현재는 모든 그룹 공용 — 스크립트 BOOKMARK_SHARED 참고) -->
 <section class="view" id="view-bookmarks">
   <div class="bookmark-root" id="bookmarkRoot"></div>
 </section>
@@ -1888,17 +1888,37 @@ document.getElementById("tabs").addEventListener("scroll",()=>requestAnimationFr
 window.addEventListener("resize",syncTabPager);
 
 // ── 즐겨찾기 ─────────────────────────────────────────────────────
-// 즐겨찾기는 그룹별로 분리해 저장한다. 링크는 http(s)만 허용해 외부 URL 실행을 제한한다.
+// 즐겨찾기는 모든 그룹이 공용으로 쓴다(BOOKMARK_SHARED). 저장 구조는 그룹별 분리
+// ({키:[링크]})를 그대로 유지하므로, 추후 다시 그룹별로 나누려면 BOOKMARK_SHARED 만
+// false 로 바꾸면 된다(각 그룹의 예전 데이터는 보존됨). 공용 최초 전환 시에는
+// 기준 그룹(보리)에 있던 링크를 공용 키로 복사해 시작한다.
+// 링크는 http(s)만 허용해 외부 URL 실행을 제한한다.
+const BOOKMARK_SHARED=true;               // false → 예전처럼 그룹별 저장으로 복귀
+const BOOKMARK_SHARED_KEY="__shared__";   // 공용 즐겨찾기가 저장되는 키(그룹명과 충돌 방지)
+const BOOKMARK_SEED_GROUP="보리";          // 공용 전환 시 초기 데이터를 가져올 기준 그룹
 function bookmarkStore(){const v=sbGet("bookmarks",{});return v&&typeof v==="object"&&!Array.isArray(v)?v:{};}
-function bookmarkList(){const group=effectiveGroup();return group&&Array.isArray(bookmarkStore()[group])?bookmarkStore()[group]:[];}
-function saveBookmarkList(items){const group=effectiveGroup();if(!group)return;const all=bookmarkStore();all[group]=items;sbSave("bookmarks",all);}
+// 현재 모드에서 즐겨찾기를 읽고 쓸 키 — 공용이면 고정 키, 그룹별이면 현재 그룹명.
+function bookmarkKey(){return BOOKMARK_SHARED?BOOKMARK_SHARED_KEY:effectiveGroup();}
+function bookmarkList(){
+  const all=bookmarkStore();
+  // 공용 키가 아직 없으면 기준 그룹(보리) 데이터를 복사해 이관(원본은 그대로 둔다)
+  if(BOOKMARK_SHARED&&!Array.isArray(all[BOOKMARK_SHARED_KEY])&&Array.isArray(all[BOOKMARK_SEED_GROUP])){
+    all[BOOKMARK_SHARED_KEY]=[...all[BOOKMARK_SEED_GROUP]];
+    sbSave("bookmarks",all);
+  }
+  const k=bookmarkKey();
+  return k&&Array.isArray(all[k])?all[k]:[];
+}
+function saveBookmarkList(items){const k=bookmarkKey();if(!k)return;const all=bookmarkStore();all[k]=items;sbSave("bookmarks",all);}
 function validBookmarkUrl(raw){try{const u=new URL((raw||"").trim());return /^https?:$/.test(u.protocol)?u:null;}catch(e){return null;}}
 function bookmarkIconUrl(url){try{const u=new URL(url);return `${u.origin}/favicon.ico`;}catch(e){return "";}}
 function renderBookmarks(){
   const root=document.getElementById("bookmarkRoot");if(!root)return;
   const group=effectiveGroup(),items=bookmarkList();
-  if(!group){root.innerHTML=`<div class="bookmark-head"><h2>🔖 즐겨찾기</h2><p>자주 보는 링크를 현재 그룹별로 저장합니다.</p></div><div class="bookmark-empty">먼저 🗂️ 캐릭 탭에서 내 그룹을 선택하세요.</div>`;return;}
-  root.innerHTML=`<div class="bookmark-head"><h2>🔖 즐겨찾기</h2><p><b>${esc(group)}</b> 그룹에서 저장한 링크입니다.</p></div><form class="bookmark-form" id="bookmarkForm"><input id="bookmarkTitle" maxlength="80" placeholder="제목 (선택)"><input id="bookmarkUrl" type="url" required maxlength="1500" placeholder="https:// 링크 주소" inputmode="url"><button class="btn" type="submit">저장</button></form><div class="bookmark-list">${items.length?items.map(x=>`<div class="bookmark-item"><a class="bk-open" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(x.title||x.url)} 열기"><img src="${esc(bookmarkIconUrl(x.url))}" alt="" onerror="this.hidden=true"><span class="fallback" aria-hidden="true">↗</span></a><div class="bk-main"><a class="bk-name" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title||x.url)}</a><span class="bk-url">${esc(x.url)}</span></div><button class="hw-mini" type="button" data-bookmark-delete="${esc(x.id)}">삭제</button></div>`).join(""):`<div class="bookmark-empty">저장한 링크가 없습니다. 자주 보는 공략·통계·게시글을 추가하세요.</div>`}</div>`;
+  // 그룹별 모드에서만 그룹 선택이 필요하다(공용 모드는 그룹과 무관하게 동작).
+  if(!BOOKMARK_SHARED&&!group){root.innerHTML=`<div class="bookmark-head"><h2>🔖 즐겨찾기</h2><p>자주 보는 링크를 현재 그룹별로 저장합니다.</p></div><div class="bookmark-empty">먼저 🗂️ 캐릭 탭에서 내 그룹을 선택하세요.</div>`;return;}
+  const headDesc=BOOKMARK_SHARED?`모든 그룹이 함께 쓰는 공용 링크입니다.`:`<b>${esc(group)}</b> 그룹에서 저장한 링크입니다.`;
+  root.innerHTML=`<div class="bookmark-head"><h2>🔖 즐겨찾기</h2><p>${headDesc}</p></div><form class="bookmark-form" id="bookmarkForm"><input id="bookmarkTitle" maxlength="80" placeholder="제목 (선택)"><input id="bookmarkUrl" type="url" required maxlength="1500" placeholder="https:// 링크 주소" inputmode="url"><button class="btn" type="submit">저장</button></form><div class="bookmark-list">${items.length?items.map(x=>`<div class="bookmark-item"><a class="bk-open" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(x.title||x.url)} 열기"><img src="${esc(bookmarkIconUrl(x.url))}" alt="" onerror="this.hidden=true"><span class="fallback" aria-hidden="true">↗</span></a><div class="bk-main"><a class="bk-name" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title||x.url)}</a><span class="bk-url">${esc(x.url)}</span></div><button class="hw-mini" type="button" data-bookmark-delete="${esc(x.id)}">삭제</button></div>`).join(""):`<div class="bookmark-empty">저장한 링크가 없습니다. 자주 보는 공략·통계·게시글을 추가하세요.</div>`}</div>`;
   root.querySelector("#bookmarkForm").onsubmit=e=>{e.preventDefault();const url=validBookmarkUrl(root.querySelector("#bookmarkUrl").value);if(!url){alert("http:// 또는 https:// 링크만 저장할 수 있습니다.");return;}const title=root.querySelector("#bookmarkTitle").value.trim()||url.hostname;const id=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;saveBookmarkList([{id,title,url:url.href},...bookmarkList()]);renderBookmarks();};
   root.querySelectorAll("[data-bookmark-delete]").forEach(b=>b.onclick=()=>{saveBookmarkList(bookmarkList().filter(x=>x.id!==b.dataset.bookmarkDelete));renderBookmarks();});
 }
