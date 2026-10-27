@@ -773,6 +773,37 @@
   .mc-card.main{border-color:color-mix(in srgb,var(--gold) 50%,var(--line))}
   .mc-crown{position:absolute;top:5px;left:8px;font-size:13px;z-index:2}
 
+  /* 내 캐릭터 탭 · 주간 일정 달력 (월~일 · 토=파랑, 일=빨강 · 오늘 강조) */
+  .mc-week{margin:var(--mc-outer) var(--mc-outer) 0;background:linear-gradient(180deg,#17222d,#101720);
+           border:1px solid var(--line);border-radius:8px;padding:11px 12px;box-shadow:var(--shadow),var(--hl)}
+  .mc-week-head{font-size:12px;color:var(--dim);font-weight:800;margin-bottom:9px}
+  .mc-week-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+  .mc-wday{border:1px solid var(--line);border-radius:7px;background:linear-gradient(180deg,#141d26,#0f151c);padding:7px 8px;min-height:76px}
+  .mc-wday.today{border-color:var(--gold);box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 30%,transparent)}
+  .mc-wday-h{display:flex;align-items:center;justify-content:space-between;gap:4px;font-weight:900;font-size:12.5px;margin-bottom:5px}
+  .mc-wday-h .tdy{font-size:9.5px;color:var(--gold);font-weight:800;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);border-radius:99px;padding:1px 6px;white-space:nowrap}
+  .mc-wday.sat .mc-wday-h{color:#7fb8ff}   /* 토요일 */
+  .mc-wday.sun .mc-wday-h{color:#ff8d8d}   /* 일요일 */
+  .mc-wevt{display:flex;gap:5px;align-items:baseline;font-size:11px;line-height:1.45;padding:1px 0}
+  .mc-wevt b{color:var(--gold);font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mc-wevt span{min-width:0;overflow-wrap:anywhere}
+  .mc-wevt.none{color:var(--dim)}
+  .mc-week:empty{display:none}   /* 서버 데이터 로딩 전 빈 카드 숨김 */
+  /* 다음에 진행될 일정(오늘 요일 한정) 강조 */
+  .mc-wevt.next{background:color-mix(in srgb,var(--gold) 13%,transparent);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);border-radius:6px;padding:2px 6px;margin:1px -3px}
+  .mc-wevt .nx{font-style:normal;font-size:9px;font-weight:900;color:#04110d;background:var(--gold);border-radius:99px;padding:1px 5px;margin-left:auto;white-space:nowrap}
+  /* 운영자 편집 */
+  .mc-wevt.editable{cursor:pointer;border-radius:6px}
+  .mc-wevt.editable:hover{background:color-mix(in srgb,var(--gold) 8%,transparent)}
+  .mc-wevt.editable:hover span{color:var(--gold)}
+  .mc-wadd{margin-top:4px;width:100%;padding:2px 0;font-size:10.5px;font-weight:800;border-radius:6px;border:1px dashed var(--etched);background:none;color:var(--dim);cursor:pointer;font-family:inherit}
+  .mc-wadd:hover{border-color:var(--gold);color:var(--gold)}
+  .mc-wform{display:flex;flex-direction:column;gap:4px;margin:3px 0;padding:6px;border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));border-radius:7px;background:#101822;width:100%}
+  .mc-wform input{padding:5px 7px;border-radius:5px;border:1px solid var(--etched);background:#111923;color:var(--txt);font-size:11px;width:100%;font-family:inherit}
+  .mc-wform input:focus{border-color:var(--gold);outline:none}
+  .mc-wform-btns{display:flex;gap:4px;justify-content:flex-end}
+  .mc-wdel{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+
   /* 정보 라인(직업·전투력·지역·칭호): 기본 숨김(모바일 요약), PC 미디어쿼리에서 노출 */
   .mc-card .mc-meta,.mc-card .mc-cpline,.mc-card .mc-region,.mc-card .mc-title{display:none}
   .mc-card .mc-meta{color:var(--dim);font-size:12px;font-weight:600;margin-top:5px;line-height:1.5}
@@ -850,6 +881,12 @@
     .mc-preset{min-width:0;width:100%}
     #view-mychar{--mc-outer:14px}
     .mc-top{grid-template-columns:1fr;margin:var(--mc-outer) var(--mc-outer) 10px;padding:0}
+    /* 주간 일정: 좁은 화면은 7열 대신 요일별 한 줄 리스트로 */
+    .mc-week-grid{grid-template-columns:1fr;gap:4px}
+    .mc-wday{min-height:0;display:flex;gap:10px;align-items:baseline;padding:6px 9px}
+    .mc-wday-h{margin-bottom:0;min-width:40px;flex-shrink:0}
+    .mc-wday-evts{display:flex;flex-wrap:wrap;gap:1px 12px;flex:1;min-width:0;align-items:baseline}
+    .mc-wadd{width:auto;padding:2px 9px;margin-top:0}
     .hw-char{grid-template-columns:40px 1fr;gap:8px}
     .hw-char .hw-dungeon-row,.hw-char .hw-sanct{grid-column:1/-1}
     /* iPhone 14 폭에서도 권장 판수 카드는 오른쪽 두 행을 유지한다. */
@@ -1335,6 +1372,8 @@
 
 <!-- 내 캐릭터 탭 · 메인 (그룹=신원 · 캐릭터 검색/등록 · 그룹 관리) -->
 <section class="view active" id="view-mychar">
+  <!-- 요일별 고정 스케줄 달력 (스크립트 WEEK_SCHEDULE 에서 렌더링) -->
+  <div class="mc-week" id="mcWeekSchedule"></div>
   <div class="mc-top">
     <!-- 현재 그룹(=나): 변경 버튼을 눌렀을 때만 그룹 검색을 연다. -->
     <div class="mc-ident">
@@ -1635,10 +1674,10 @@ async function j(u){const r=await fetch(u,{credentials:"same-origin",headers:aut
 // 캐시(SB)에 채우고(sbLoad) 쓰기는 캐시 갱신 + 서버 저장(디바운스)로 처리한다(sbSave).
 // 서버 접속 실패 시 localStorage 로 폴백해 오프라인에서도 계속 동작한다.
 const SB={};
-const SB_KEYS=["mychars","mychar_groups","parties","raids","homework_chars","arcana_plans","op_cfg","own","bookmarks","analysis"];
+const SB_KEYS=["mychars","mychar_groups","parties","raids","homework_chars","arcana_plans","op_cfg","own","bookmarks","analysis","week_schedule"];
 // 서버 키 → (구버전) localStorage 키. 기존 사용자의 로컬 데이터를 자동 이관하는 데도 쓴다.
 const SB_LEGACY={mychars:"aion2_mychars",mychar_groups:"aion2_mychar_groups",parties:"aion2_parties",raids:"aion2_raids",
-  homework_chars:"aion2_homework_chars",arcana_plans:"aion2_arcana_plans",op_cfg:"aion2_operator_cfg",own:"aion2_own",bookmarks:"aion2_bookmarks",analysis:"aion2_analysis"};
+  homework_chars:"aion2_homework_chars",arcana_plans:"aion2_arcana_plans",op_cfg:"aion2_operator_cfg",own:"aion2_own",bookmarks:"aion2_bookmarks",analysis:"aion2_analysis",week_schedule:"aion2_week_schedule"};
 function sbLocal(k){try{const s=localStorage.getItem(SB_LEGACY[k]);return s?JSON.parse(s):null;}catch(e){return null;}}
 function sbGet(k,def){return SB[k]==null?def:SB[k];}
 let sbTimers={};
@@ -1705,6 +1744,7 @@ async function refreshAdminState(){
   if(typeof renderTabs==="function")renderTabs();
   if(typeof renderGroupDeleteAction==="function")renderGroupDeleteAction();
   if(typeof renderMyChars==="function")renderMyChars();
+  if(typeof renderWeekSchedule==="function")renderWeekSchedule();   // 운영자 수정 버튼 노출 갱신
 }
 
 // 접속 로그: 탭 방문(및 파티 상세 열람)을 서버에 기록. 같은 이벤트가 60초 내에 반복되면
@@ -1886,6 +1926,83 @@ document.getElementById("tabPagePrev").onclick=()=>moveTabPage(-1);
 document.getElementById("tabPageNext").onclick=()=>moveTabPage(1);
 document.getElementById("tabs").addEventListener("scroll",()=>requestAnimationFrame(syncTabPager),{passive:true});
 window.addEventListener("resize",syncTabPager);
+
+// ── 내 캐릭터 탭 · 주간 일정 달력 ──────────────────────────────────
+// 요일별 스케줄. 시간은 모두 오후 기준(표기 생략)이며 내부 저장은 "H:MM" 형식.
+// 서버 저장소(week_schedule)에 보관하고 값이 없으면 아래 기본값을 쓴다.
+// 운영자(관리자)는 항목 클릭=수정/삭제, 요일별 ＋버튼=추가(시간·내용 분리 입력)가 가능하다.
+const WEEK_DAYS=["월","화","수","목","금","토","일"];
+const WEEK_SCHEDULE_DEFAULT=[
+  [],
+  [{t:"10:00",name:"균열지대"}],
+  [{t:"9:00",name:"침식"},{t:"9:50",name:"아티쟁"},{t:"10:15",name:"어비스보스"},{t:"10:30",name:"비탄 어려움"}],
+  [{t:"10:00",name:"균열지대"}],
+  [{t:"10:30",name:"나흐마"}],
+  [{t:"9:50",name:"아티쟁"},{t:"10:15",name:"어비스보스"}],
+  [{t:"9:00",name:"무스펠 어려움"},{t:"10:30",name:"나흐마"}],
+];
+let weekEdit=null;   // 열려 있는 수정 폼 위치 {day, index} — index -1 은 신규 추가
+const weekTimeMin=t=>{const [h,m]=String(t).split(":").map(Number);return (h%12+12)*60+(m||0);};  // 오후 기준 → 그날의 분
+// 어떤 형식으로 입력해도 항상 "00시 00분"(2자리) 형태로 표시한다. 예: 9시 → 09시 00분
+const weekTimeLabel=t=>{const [h,m]=String(t).split(":").map(Number);return `${String(h).padStart(2,"0")}시 ${String(m||0).padStart(2,"0")}분`;};
+// "10:30" / "10시 30분" / "9시" 입력을 "H:MM" 로 정규화. 형식이 아니면 null.
+function weekParseTime(raw){
+  const m=/^\s*(\d{1,2})\s*(?:[:시]\s*(\d{1,2})?)?\s*분?\s*$/.exec(raw||"");
+  if(!m)return null;
+  const h=+m[1],min=+(m[2]||0);
+  if(h<1||h>12||min>59)return null;
+  return `${h}:${String(min).padStart(2,"0")}`;
+}
+function weekSchedule(){
+  const v=sbGet("week_schedule",null);
+  const days=Array.isArray(v)&&v.length===7?v:WEEK_SCHEDULE_DEFAULT.map(d=>d.map(e=>({...e})));
+  return days.map(d=>(Array.isArray(d)?d.filter(e=>e&&e.t&&e.name):[]).slice().sort((a,b)=>weekTimeMin(a.t)-weekTimeMin(b.t)));
+}
+function saveWeekSchedule(days){sbSave("week_schedule",days);}
+// 서버 저장 시각과 동일한 KST 기준 현재 요일(월=0)·분 — 기기 시간대가 달라도 동작.
+function weekNowKST(){
+  const d=new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Seoul"}));
+  return {day:(d.getDay()+6)%7,min:d.getHours()*60+d.getMinutes()};
+}
+function renderWeekSchedule(){
+  const root=document.getElementById("mcWeekSchedule"); if(!root)return;
+  const days=weekSchedule(),now=weekNowKST();
+  // 오늘 요일에서 현재 시간 이후 가장 가까운 일정 = '다음' 강조 대상
+  const nextIdx=days[now.day].findIndex(e=>weekTimeMin(e.t)>=now.min);
+  const form=(day,idx,e)=>`<div class="mc-wform"><input data-week-time placeholder="시간 (예: 10시 30분)" value="${esc(e?weekTimeLabel(e.t):"")}" autocomplete="off"><input data-week-name placeholder="내용" maxlength="40" value="${esc(e?.name||"")}" autocomplete="off"><div class="mc-wform-btns"><button class="hw-mini" data-week-save="${day}:${idx}" type="button">저장</button>${idx>=0?`<button class="hw-mini mc-wdel" data-week-del="${day}:${idx}" type="button">삭제</button>`:""}<button class="hw-mini" data-week-cancel type="button">취소</button></div></div>`;
+  root.innerHTML=`<div class="mc-week-head">📅 주간 일정</div><div class="mc-week-grid">${WEEK_DAYS.map((name,day)=>{
+    const adding=weekEdit?.day===day&&weekEdit?.index===-1;
+    const cells=days[day].map((e,i)=>weekEdit?.day===day&&weekEdit?.index===i?form(day,i,e)
+      :`<div class="mc-wevt${day===now.day&&i===nextIdx?" next":""}${isAdmin?" editable":""}"${isAdmin?` data-week-edit="${day}:${i}" role="button" tabindex="0" title="클릭해서 수정"`:""}><b>${weekTimeLabel(e.t)}</b><span>${esc(e.name)}</span>${day===now.day&&i===nextIdx?'<i class="nx">다음</i>':""}</div>`).join("");
+    return `<div class="mc-wday${day===5?" sat":""}${day===6?" sun":""}${day===now.day?" today":""}"><div class="mc-wday-h"><span>${name}</span>${day===now.day?'<span class="tdy">오늘</span>':""}</div><div class="mc-wday-evts">${cells||(adding?"":'<div class="mc-wevt none">–</div>')}${adding?form(day,-1):""}${isAdmin&&!adding?`<button class="mc-wadd" data-week-add="${day}" type="button" title="일정 추가">＋ 추가</button>`:""}</div></div>`;
+  }).join("")}</div>`;
+  if(!isAdmin)return;
+  const open=(day,index)=>{weekEdit={day,index};renderWeekSchedule();root.querySelector("[data-week-time]")?.focus();};
+  root.querySelectorAll("[data-week-edit]").forEach(b=>{
+    const go=()=>{const [d,i]=b.dataset.weekEdit.split(":").map(Number);open(d,i);};
+    b.onclick=go; b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}};
+  });
+  root.querySelectorAll("[data-week-add]").forEach(b=>b.onclick=()=>open(+b.dataset.weekAdd,-1));
+  root.querySelector("[data-week-cancel]")?.addEventListener("click",()=>{weekEdit=null;renderWeekSchedule();});
+  root.querySelectorAll("[data-week-save]").forEach(b=>b.onclick=()=>{
+    const [d,i]=b.dataset.weekSave.split(":").map(Number);
+    const t=weekParseTime(root.querySelector("[data-week-time]").value);
+    const name=root.querySelector("[data-week-name]").value.trim();
+    if(!t){alert("시간은 '10시 30분' 또는 '10:30' 형식으로 입력하세요. (오후 기준)");return;}
+    if(!name){alert("내용을 입력하세요.");return;}
+    const days2=weekSchedule();
+    if(i>=0)days2[d][i]={t,name}; else days2[d].push({t,name});
+    days2[d].sort((a,b)=>weekTimeMin(a.t)-weekTimeMin(b.t));   // 시간순 정렬 유지
+    saveWeekSchedule(days2);weekEdit=null;renderWeekSchedule();
+  });
+  root.querySelectorAll("[data-week-del]").forEach(b=>b.onclick=()=>{
+    const [d,i]=b.dataset.weekDel.split(":").map(Number);
+    const days2=weekSchedule();days2[d].splice(i,1);
+    saveWeekSchedule(days2);weekEdit=null;renderWeekSchedule();
+  });
+}
+// '다음' 강조가 시간이 지나면 자동으로 넘어가도록 1분마다 갱신(수정 폼이 열려 있으면 건너뜀).
+setInterval(()=>{if(!weekEdit)renderWeekSchedule();},60_000);
 
 // ── 즐겨찾기 ─────────────────────────────────────────────────────
 // 즐겨찾기는 모든 그룹이 공용으로 쓴다(BOOKMARK_SHARED). 저장 구조는 그룹별 분리
