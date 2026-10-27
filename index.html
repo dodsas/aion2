@@ -573,6 +573,21 @@
   .an-th-btn{border:0;background:none;cursor:pointer;font-size:11px;padding:1px 3px;color:var(--dim)}
   .an-th-btn:hover{color:var(--gold)}
   .an-empty{padding:30px 12px;text-align:center;color:var(--dim);border:1px dashed var(--etched);border-radius:8px}
+  /* 분석 · 날짜별 딜 라인 차트 */
+  .an-lgs{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+  .an-lg{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);background:#121a23;color:var(--txt);font:700 11px/1 inherit;font-family:inherit;cursor:pointer}
+  .an-lg:hover{border-color:var(--gold)}
+  .an-lg i{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
+  .an-lg.off{opacity:.38}
+  .an-chartwrap{position:relative}
+  .an-chartwrap svg{width:100%;height:auto;display:block}
+  .an-ch-txt{fill:var(--dim);font-size:11px;font-weight:700}
+  .an-ch-lbl{fill:#c3cdd4;font-size:11px;font-weight:800}
+  .an-tip{position:absolute;top:8px;pointer-events:none;background:#0d141c;border:1px solid var(--etched);border-radius:7px;padding:7px 10px;font-size:11px;box-shadow:var(--shadow-lg);z-index:5;min-width:150px;display:none}
+  .an-tip .d{color:var(--dim);font-weight:800;margin-bottom:4px}
+  .an-tip .r{display:flex;align-items:center;gap:6px;padding:1px 0;white-space:nowrap}
+  .an-tip .r i{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .an-tip .r b{margin-left:auto;padding-left:10px;font-variant-numeric:tabular-nums}
   .hw-preset{min-width:360px;background:linear-gradient(180deg,#17222d,#101720);border:1px solid var(--line);border-radius:8px;padding:10px;box-shadow:var(--shadow),var(--hl)}
   .hw-preset .top{display:grid;grid-template-columns:1fr auto;gap:7px;margin-bottom:7px}
   .hw-preset .bottom{display:grid;grid-template-columns:1fr auto auto;gap:7px}
@@ -1656,6 +1671,7 @@ const GRADE={1:"일반",2:"희귀",3:"전승",4:"유일",5:"영웅",6:"신화",7
 const fmt=n=>n==null?"–":n.toLocaleString("ko-KR");
 const fmtFull=n=>n==null?"–":Math.floor(n).toLocaleString("ko-KR");
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 const img=f=>f?("/"+f):"";
 let META={}, curCode=null, debounce=null;
 // 보유량: 아이템 코드별 사용자가 가진 수량. 서버 저장소(SB)에서 부팅 시 로드된다.
@@ -1751,6 +1767,8 @@ async function refreshAdminState(){
   if(typeof renderGroupDeleteAction==="function")renderGroupDeleteAction();
   if(typeof renderMyChars==="function")renderMyChars();
   if(typeof renderWeekSchedule==="function")renderWeekSchedule();   // 운영자 수정 버튼 노출 갱신
+  // 즐겨찾기 삭제 버튼은 관리자 여부에 따라 달라지므로, 보고 있는 중이면 다시 그린다.
+  if(document.querySelector("#view-bookmarks.active")&&typeof renderBookmarks==="function")renderBookmarks();
 }
 
 // 접속 로그: 탭 방문(및 파티 상세 열람)을 서버에 기록. 같은 이벤트가 60초 내에 반복되면
@@ -1963,7 +1981,8 @@ function weekParseTime(raw){
   return `${h}:${String(min).padStart(2,"0")}`;
 }
 function weekSchedule(){
-  const v=sbGet("week_schedule",null);
+  // 서버 캐시(SB)가 아직 비어 있으면(부팅 직후) 로컬 캐시로 즉시 그린다.
+  const v=sbGet("week_schedule",null)??sbLocal("week_schedule");
   const days=Array.isArray(v)&&v.length===7?v:WEEK_SCHEDULE_DEFAULT.map(d=>d.map(e=>({...e})));
   return days.map(d=>(Array.isArray(d)?d.filter(e=>e&&e.t&&e.name):[]).slice().sort((a,b)=>weekTimeMin(a.t)-weekTimeMin(b.t)));
 }
@@ -2018,6 +2037,9 @@ function renderWeekSchedule(){
 }
 // '다음' 강조가 시간이 지나면 자동으로 넘어가도록 1분마다 갱신(수정 폼이 열려 있으면 건너뜀).
 setInterval(()=>{if(!weekEdit)renderWeekSchedule();},60_000);
+// 첫 화면: 서버 응답을 기다리지 않고 로컬 캐시(없으면 기본값)로 즉시 렌더링.
+// 이후 sbLoad 완료·관리자 세션 확인 시점에 각각 최신 데이터·편집 UI로 다시 그린다.
+renderWeekSchedule();
 
 // ── 즐겨찾기 ─────────────────────────────────────────────────────
 // 즐겨찾기는 모든 그룹이 공용으로 쓴다(BOOKMARK_SHARED). 저장 구조는 그룹별 분리
@@ -2025,6 +2047,8 @@ setInterval(()=>{if(!weekEdit)renderWeekSchedule();},60_000);
 // false 로 바꾸면 된다(각 그룹의 예전 데이터는 보존됨). 공용 최초 전환 시에는
 // 기준 그룹(보리)에 있던 링크를 공용 키로 복사해 시작한다.
 // 링크는 http(s)만 허용해 외부 URL 실행을 제한한다.
+// 삭제는 관리자 또는 작성자(저장 당시의 그룹)만 가능하다. 작성자 정보가 없는
+// 예전 링크는 관리자만 지울 수 있다. (로그인이 없어 그룹 전환으로 우회는 가능 — 실수 방지 수준)
 const BOOKMARK_SHARED=true;               // false → 예전처럼 그룹별 저장으로 복귀
 const BOOKMARK_SHARED_KEY="__shared__";   // 공용 즐겨찾기가 저장되는 키(그룹명과 충돌 방지)
 const BOOKMARK_SEED_GROUP="보리";          // 공용 전환 시 초기 데이터를 가져올 기준 그룹
@@ -2050,8 +2074,8 @@ function renderBookmarks(){
   // 그룹별 모드에서만 그룹 선택이 필요하다(공용 모드는 그룹과 무관하게 동작).
   if(!BOOKMARK_SHARED&&!group){root.innerHTML=`<div class="bookmark-head"><h2>🔖 즐겨찾기</h2><p>자주 보는 링크를 현재 그룹별로 저장합니다.</p></div><div class="bookmark-empty">먼저 🗂️ 캐릭 탭에서 내 그룹을 선택하세요.</div>`;return;}
   const headDesc=BOOKMARK_SHARED?`모든 그룹이 함께 쓰는 공용 링크입니다.`:`<b>${esc(group)}</b> 그룹에서 저장한 링크입니다.`;
-  root.innerHTML=`<div class="bookmark-head"><h2>🔖 즐겨찾기</h2><p>${headDesc}</p></div><form class="bookmark-form" id="bookmarkForm"><input id="bookmarkTitle" maxlength="80" placeholder="제목 (선택)"><input id="bookmarkUrl" type="url" required maxlength="1500" placeholder="https:// 링크 주소" inputmode="url"><button class="btn" type="submit">저장</button></form><div class="bookmark-list">${items.length?items.map(x=>`<div class="bookmark-item"><a class="bk-open" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(x.title||x.url)} 열기"><img src="${esc(bookmarkIconUrl(x.url))}" alt="" onerror="this.hidden=true"><span class="fallback" aria-hidden="true">↗</span></a><div class="bk-main"><a class="bk-name" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title||x.url)}</a><span class="bk-url">${esc(x.url)}</span></div><button class="hw-mini" type="button" data-bookmark-delete="${esc(x.id)}">삭제</button></div>`).join(""):`<div class="bookmark-empty">저장한 링크가 없습니다. 자주 보는 공략·통계·게시글을 추가하세요.</div>`}</div>`;
-  root.querySelector("#bookmarkForm").onsubmit=e=>{e.preventDefault();const url=validBookmarkUrl(root.querySelector("#bookmarkUrl").value);if(!url){alert("http:// 또는 https:// 링크만 저장할 수 있습니다.");return;}const title=root.querySelector("#bookmarkTitle").value.trim()||url.hostname;const id=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;saveBookmarkList([{id,title,url:url.href},...bookmarkList()]);renderBookmarks();};
+  root.innerHTML=`<div class="bookmark-head"><h2>🔖 즐겨찾기</h2><p>${headDesc}</p></div><form class="bookmark-form" id="bookmarkForm"><input id="bookmarkTitle" maxlength="80" placeholder="제목 (선택)"><input id="bookmarkUrl" type="url" required maxlength="1500" placeholder="https:// 링크 주소" inputmode="url"><button class="btn" type="submit">저장</button></form><div class="bookmark-list">${items.length?items.map(x=>`<div class="bookmark-item"><a class="bk-open" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(x.title||x.url)} 열기"><img src="${esc(bookmarkIconUrl(x.url))}" alt="" onerror="this.hidden=true"><span class="fallback" aria-hidden="true">↗</span></a><div class="bk-main"><a class="bk-name" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title||x.url)}</a><span class="bk-url">${esc(x.url)}</span></div>${(isAdmin||(x.group&&x.group===group))?`<button class="hw-mini" type="button" data-bookmark-delete="${esc(x.id)}">삭제</button>`:""}</div>`).join(""):`<div class="bookmark-empty">저장한 링크가 없습니다. 자주 보는 공략·통계·게시글을 추가하세요.</div>`}</div>`;
+  root.querySelector("#bookmarkForm").onsubmit=e=>{e.preventDefault();const url=validBookmarkUrl(root.querySelector("#bookmarkUrl").value);if(!url){alert("http:// 또는 https:// 링크만 저장할 수 있습니다.");return;}const title=root.querySelector("#bookmarkTitle").value.trim()||url.hostname;const id=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;saveBookmarkList([{id,title,url:url.href,group:effectiveGroup()||""},...bookmarkList()]);renderBookmarks();};
   root.querySelectorAll("[data-bookmark-delete]").forEach(b=>b.onclick=()=>{saveBookmarkList(bookmarkList().filter(x=>x.id!==b.dataset.bookmarkDelete));renderBookmarks();});
 }
 
@@ -2132,7 +2156,77 @@ function anCalc(a){
 }
 const anNum=s=>{const n=parseFloat(String(s??"").replace(/[^\d.-]/g,""));return Number.isFinite(n)?Math.round(n):0;};
 const anMd=d=>d.slice(5).replace("-","/");   // "2026-10-08" → "10/08"
-const anState={curId:null,editDate:null,pendingDate:null,cfgOpen:false,memOpen:false,dayOffset:0};
+const anState={curId:null,editDate:null,pendingDate:null,cfgOpen:false,memOpen:false,dayOffset:0,chartOpen:true,chartHide:new Set()};
+// ── 분석 · 날짜별 딜 라인 차트 ─────────────────────────────────────
+// 테이블에 표시 중인 날짜 창(visDays)을 그대로 라인 차트로 보여준다.
+// 색은 dataviz 검증(다크 표면 #121820, CVD·대비 전 항목 통과)을 거친 8색 팔레트를
+// a.members 등록 순서로 고정 배정해, 정렬·숨김이 바뀌어도 인원별 색이 유지된다.
+// 9번째 인원부터는 회색이며 범례·툴팁으로 식별한다. 딜러 요구딜량은 점선 기준선.
+const AN_CHART_COLORS=["#3987e5","#d95926","#199e70","#c98500","#d55181","#008300","#9085e9","#e66767"];
+const AN_CHART_GRAY="#8a97a5";
+const anShort=n=>n>=1e8?`${+(n/1e8).toFixed(1)}억`:n>=1e4?`${Math.round(n/1e4)}만`:fmt(n);
+const anColorOf=(a,name)=>{const i=a.members.findIndex(m=>m.name===name);return i>=0&&i<AN_CHART_COLORS.length?AN_CHART_COLORS[i]:AN_CHART_GRAY;};
+let anChartGeo=null;   // 렌더 때 계산한 좌표·툴팁 데이터(호버 핸들러와 공유)
+function anChartSection(a,c,members,visDays){
+  anChartGeo=null;
+  if(!visDays.length||!members.length)return "";
+  const hide=anState.chartHide;
+  const series=members.map(m=>({name:m.name,color:anColorOf(a,m.name),
+    pts:visDays.map((d,i)=>[i,d.dmg[m.name]]).filter(p=>p[1]!=null)})).filter(s=>s.pts.length);
+  if(!series.length)return "";
+  const shown=series.filter(s=>!hide.has(s.name));
+  const W=940,H=300,padL=56,padT=16,padB=30,padR=shown.length&&shown.length<=4?116:18;
+  const ymax=Math.max(c.reqDeal||0,...shown.flatMap(s=>s.pts.map(p=>p[1])),1)*1.06;
+  const X=i=>visDays.length>1?padL+i*(W-padL-padR)/(visDays.length-1):padL+(W-padL-padR)/2;
+  const Y=v=>padT+(1-v/ymax)*(H-padT-padB);
+  let g="";
+  for(let k=1;k<=4;k++){const y=Y(ymax*k/4);
+    g+=`<line x1="${padL}" x2="${W-padR}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/><text x="${padL-7}" y="${(y+3.5).toFixed(1)}" text-anchor="end" class="an-ch-txt">${anShort(ymax*k/4)}</text>`;}
+  g+=`<line x1="${padL}" x2="${W-padR}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--etched)" stroke-width="1"/>`;
+  visDays.forEach((d,i)=>{g+=`<text x="${X(i).toFixed(1)}" y="${H-9}" text-anchor="middle" class="an-ch-txt">${anMd(d.date)}</text>`;});
+  if(c.reqDeal>0&&c.reqDeal<ymax)g+=`<line x1="${padL}" x2="${W-padR}" y1="${Y(c.reqDeal).toFixed(1)}" y2="${Y(c.reqDeal).toFixed(1)}" stroke="#7d8a97" stroke-width="1" stroke-dasharray="5 4"/><text x="${padL+4}" y="${(Y(c.reqDeal)-5).toFixed(1)}" class="an-ch-txt">딜러 요구 ${anShort(c.reqDeal)}</text>`;
+  g+=`<line id="anChartCx" y1="${padT}" y2="${H-padB}" x1="-10" x2="-10" stroke="var(--etched)" stroke-width="1" visibility="hidden"/>`;
+  shown.forEach(s=>{
+    let dstr="",prev=null;   // 기록이 빠진 날짜는 선을 끊는다(연속 구간만 잇기)
+    s.pts.forEach(p=>{dstr+=`${prev!=null&&p[0]===prev+1?"L":"M"}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)} `;prev=p[0];});
+    g+=`<path d="${dstr.trim()}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    s.pts.forEach(p=>{g+=`<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="3.5" fill="${s.color}" stroke="#121820" stroke-width="2"/>`;});
+    if(shown.length<=4){const lp=s.pts[s.pts.length-1];
+      g+=`<text x="${(X(lp[0])+9).toFixed(1)}" y="${(Y(lp[1])+3.5).toFixed(1)}" class="an-ch-lbl">${esc(s.name)}</text>`;}
+  });
+  anChartGeo={W,xs:visDays.map((d,i)=>X(i)),
+    days:visDays.map(d=>({date:d.date,rows:shown.map(s=>({name:s.name,color:s.color,v:d.dmg[s.name]}))
+      .filter(r=>r.v!=null).sort((x,y)=>y.v-x.v)}))};
+  const legend=series.map(s=>`<button type="button" class="an-lg${hide.has(s.name)?" off":""}" data-an-lg="${esc(s.name)}"><i style="background:${s.color}"></i>${esc(s.name)}</button>`).join("");
+  return `<details class="an-box" id="anChartBox"${anState.chartOpen?" open":""}><summary class="an-sum">📈 차트 <span>표시 중인 날짜(${anMd(visDays[0].date)}~${anMd(visDays[visDays.length-1].date)}) 기준 · 범례 클릭 = 숨김/표시</span></summary>
+    <div class="an-lgs">${legend}</div>
+    <div class="an-chartwrap"><svg id="anChartSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="날짜별 딜 기록 라인 차트">${g}</svg><div class="an-tip" id="anChartTip"></div></div>
+  </details>`;
+}
+function anBindChart(root){
+  const box=root.querySelector("#anChartBox"); if(!box)return;
+  box.addEventListener("toggle",()=>{anState.chartOpen=box.open;});
+  root.querySelectorAll("[data-an-lg]").forEach(b=>b.onclick=()=>{
+    const s=anState.chartHide;
+    s.has(b.dataset.anLg)?s.delete(b.dataset.anLg):s.add(b.dataset.anLg);
+    renderAnalysis();
+  });
+  const svg=root.querySelector("#anChartSvg"),tip=root.querySelector("#anChartTip"),cx=root.querySelector("#anChartCx");
+  if(!svg||!tip||!cx)return;
+  svg.addEventListener("mousemove",ev=>{
+    const geo=anChartGeo; if(!geo)return;
+    const r=svg.getBoundingClientRect(),gx=(ev.clientX-r.left)*(geo.W/r.width);
+    let bi=0; geo.xs.forEach((x,i)=>{if(Math.abs(x-gx)<Math.abs(geo.xs[bi]-gx))bi=i;});
+    const d=geo.days[bi];
+    cx.setAttribute("x1",geo.xs[bi]);cx.setAttribute("x2",geo.xs[bi]);cx.setAttribute("visibility","visible");
+    tip.innerHTML=`<div class="d">${anMd(d.date)}</div>`+(d.rows.length
+      ?d.rows.map(rw=>`<div class="r"><i style="background:${rw.color}"></i>${esc(rw.name)}<b>${fmt(rw.v)}</b></div>`).join("")
+      :`<div class="r">기록 없음</div>`);
+    tip.style.display="block";
+    tip.style.left=Math.min(Math.max(0,(geo.xs[bi]/geo.W)*r.width+12),r.width-176)+"px";
+  });
+  svg.addEventListener("mouseleave",()=>{tip.style.display="none";cx.setAttribute("visibility","hidden");});
+}
 function renderAnalysis(){
   const root=document.getElementById("analysisRoot"); if(!root)return;
   const items=anAll();
@@ -2142,7 +2236,7 @@ function renderAnalysis(){
   const tabs=`<div class="an-tabs">${items.map(it=>`<button type="button" class="an-tabbtn${cur&&it.id===cur.id?' on':''}" data-an-sel="${esc(it.id)}">${esc(it.name)}</button>`).join("")}<button type="button" class="hw-mini" id="anNew">＋ 새 분석</button>${cur?`<button type="button" class="hw-mini" id="anRename" title="이름 변경">✏️ 이름</button><button type="button" class="hw-mini" id="anDelOne" title="분석 삭제">🗑</button>`:""}</div>`;
   const bindTop=()=>{
     root.querySelectorAll("[data-an-sel]").forEach(b=>b.onclick=()=>{
-      anState.curId=b.dataset.anSel; anState.editDate=null; anState.pendingDate=null; anState.dayOffset=0; renderAnalysis();
+      anState.curId=b.dataset.anSel; anState.editDate=null; anState.pendingDate=null; anState.dayOffset=0; anState.chartHide=new Set(); renderAnalysis();
     });
     const nw=root.querySelector("#anNew"); if(nw)nw.onclick=()=>{
       const name=(prompt("새 분석 이름을 입력하세요. (예: 비탄 어려움 가자)")||"").trim(); if(!name)return;
@@ -2264,10 +2358,12 @@ function renderAnalysis(){
       h+=has?anCellTds(tot,totDiff,totLeft,altCls(i)):`<td colspan="3" class="gs${altCls(i)}"><span class="an-none">–</span></td>`;
     });
     h+=`</tr></tfoot></table></div>`;
+    h+=anChartSection(a,c,members,visDays);   // 표시 중인 데이터 기준 라인 차트
   }
   root.innerHTML=h;
   // ── 이벤트 ──
   bindTop();
+  anBindChart(root);
   // 현재 분석을 전체 목록에서 찾아 고치고 목록째 저장하는 패턴.
   const anCurOf=its=>its.find(x=>x.id===anState.curId)||its[0];
   const pgPrev=root.querySelector("#anPrevDays"); if(pgPrev)pgPrev.onclick=()=>{anState.dayOffset=Math.min(maxOff,anState.dayOffset+1);renderAnalysis();};
@@ -3052,7 +3148,6 @@ const SLOTCAT=[
 const sec=(title,html,note)=>{const s=el("div","sec");
   s.innerHTML=`<h3><span>${title}</span>${note?`<em>${note}</em>`:''}</h3>`+html;return s;};
 const oe=`onerror="this.style.visibility='hidden'"`;
-const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 
 // ══ 스탯 진단(휴리스틱) ══════════════════════════════════════════
 // 근거: 게임 내 스탯 설명(공/방 짝 체계) + 커뮤니티 실험 자료(savetip/fmkorea/inven).
@@ -5787,6 +5882,7 @@ boot();
 // 화면(운영자 설정·숙제·내 캐릭터·파티)을 초기화한다.
 (async ()=>{
   await sbLoad();
+  renderWeekSchedule();   // 서버 저장값 도착 즉시 반영(관리자 확인보다 먼저)
   initSettings();
   initHomework();
   initMyChars();
