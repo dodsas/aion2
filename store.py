@@ -305,12 +305,13 @@ class Store:
             (limit,))]
 
     def job_stats_latest(self, category=None, job=None):
-        """가장 최근 스냅샷의 행들(파싱된 data 포함). category/job 로 필터 가능."""
-        caps = self.job_stats_captures(1)
-        if not caps:
-            return []
-        sql = "SELECT captured_at, job, category, source_updated, data FROM job_stats WHERE captured_at=?"
-        args = [caps[0]]
+        """(job, category)별 가장 최근 행(파싱된 data 포함). category/job 로 필터 가능.
+
+        부분 수집(예: 아르카나만 재수집)이 최신 스냅샷이 되어도 다른 통계가 가려지지
+        않도록, '최신 스냅샷 전체'가 아니라 (job, category) 조합별 최신 행을 고른다."""
+        sql = ("SELECT captured_at, job, category, source_updated, data FROM job_stats "
+               "WHERE id IN (SELECT MAX(id) FROM job_stats GROUP BY job, category)")
+        args = []
         if category:
             sql += " AND category=?"; args.append(category)
         if job:

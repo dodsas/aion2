@@ -1583,7 +1583,7 @@
         </div>
         <div class="hw-grid">
           <div class="hw-box"><label>직업 통계</label><div class="desc">스킬·스티그마·전투력 등 aion2tool 직업 통계입니다. 매일 자동 수집됩니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="jobstats" id="adminCrawlJobstats" type="button">직업 통계 수집</button><span class="hw-note" data-crawl-status="jobstats" aria-live="polite">대기 중</span></div></div>
-          <div class="hw-box"><label>아르카나 옵션</label><div class="desc">직업별 성배·종·거울 등 공개된 아르카나 옵션 풀을 최신화합니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="arcana" id="adminCrawlArcana" type="button">아르카나 옵션 수집</button><span class="hw-note" data-crawl-status="arcana" aria-live="polite">대기 중</span></div></div>
+          <div class="hw-box"><label>아르카나 통계</label><div class="desc">직업별 아르카나 스킬 채용률(전 직업)과 성배·종·거울 옵션 풀을 수집합니다. 전부 수집돼야 완료로 표시됩니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="arcana" id="adminCrawlArcana" type="button">아르카나 수집</button><span class="hw-note" data-crawl-status="arcana" aria-live="polite">대기 중</span></div></div>
           <div class="hw-box"><label>제작 레시피 · 시세</label><div class="desc">제작 공식과 시세를 갱신하고, 현재 스냅샷을 Turso 백업에도 동기화합니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="craft" id="adminCrawlCraft" type="button">제작 데이터 갱신</button><span class="hw-note" data-crawl-status="craft" aria-live="polite">대기 중</span></div></div>
           <div class="hw-box"><label>제작 스냅샷 복원</label><div class="desc">Turso에 보관된 제작 데이터 백업을 서버 캐시에 다시 내려받습니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="restore" id="adminCraftRestore" type="button">백업에서 복원</button><span class="hw-note" data-crawl-status="restore" aria-live="polite">대기 중</span></div></div>
         </div>
@@ -2320,7 +2320,7 @@ function renderArcana(){
     return;
   }
   const data=arcanaStatCache[c.className];
-  if(!data){root.querySelector(".arc-empty").innerHTML=`<b>${esc(c.className||"이 직업")}</b> 아르카나 통계가 없습니다.<br>관리자 설정에서 <b>아르카나 옵션 수집</b>을 실행한 뒤 다시 확인하세요.`;return;}
+  if(!data){root.querySelector(".arc-empty").innerHTML=`<b>${esc(c.className||"이 직업")}</b> 아르카나 통계가 없습니다.<br>관리자 설정에서 <b>아르카나 수집</b>을 실행한 뒤 다시 확인하세요.`;return;}
   if(!Object.hasOwn(arcanaBaseSkillCache,c.key)){
     loadArcanaBaseSkills(c).then(()=>{if(document.querySelector("#view-arcana.active"))renderArcana();});
     return;
@@ -3622,7 +3622,7 @@ function setCrawlCardStatus(kind,state){
   const box=document.querySelector(`[data-crawl-status="${kind}"]`);
   const btn=document.querySelector(`[data-crawl="${kind}"]`);
   if(!box||!btn)return;
-  const defaultText={jobstats:"직업 통계 수집",arcana:"아르카나 옵션 수집",craft:"제작 데이터 갱신",restore:"백업에서 복원"}[kind];
+  const defaultText={jobstats:"직업 통계 수집",arcana:"아르카나 수집",craft:"제작 데이터 갱신",restore:"백업에서 복원"}[kind];
   if(crawlPendingKind===kind||state?.running){
     box.innerHTML=`⏳ <b>수집 진행 중…</b>${crawlElapsed(state)}`;
     btn.textContent="수집 중…";
@@ -3645,7 +3645,7 @@ async function refreshCrawlStatus(){
   const jobDetail=` · 직업 ${job.jobs||0}종 · ${job.rows||0}행${job.last_trigger==="cron"?" (자동)":""}`;
   const craftDetail=craft.message?` · ${esc(craft.message)}`:"";
   const schedule=job.cron?` · 자동 실행: 매일 ${job.cron} · 다음 ${fmtDateTime(job.next_run)}`:"";
-  box.innerHTML=[crawlStatusLine("직업 통계",job,jobDetail)+schedule,crawlStatusLine("아르카나 옵션",arcana,arcana.rows?` · ${arcana.rows}행`:""),crawlStatusLine("제작 데이터",craft,craftDetail)].join("<br>");
+  box.innerHTML=[crawlStatusLine("직업 통계",job,jobDetail)+schedule,crawlStatusLine("아르카나 통계",arcana,arcana.rows?` · ${arcana.rows}행`:""),crawlStatusLine("제작 데이터",craft,craftDetail)].join("<br>");
   const running=!!(job.running||arcana.running||craft.running);
   if(!running)crawlPendingKind=null;
   setCrawlCardStatus("jobstats",job);

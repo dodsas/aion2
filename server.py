@@ -58,13 +58,42 @@ STORE = Store()
 # 운영(Render, Turso)에서는 종전대로 ID/비번 로그인이 필요하다.
 LOCAL_MODE = (STORE.kind == "local")
 
-# 관리자 인증은 환경변수에 둔 단일 계정 + HttpOnly 세션 쿠키로 처리한다.
-# 세션은 서버 메모리에만 유지되므로 서버 재시작 시 자연스럽게 만료된다.
+# 관리자 인증은 환경변수에 둔 단일 계정 + HttpOnly 세션 쿠키/Bearer 토큰으로 처리한다.
+# 한 번 로그인한 기기에서 최대한 유지되도록:
+#   1) 세션을 DB(app_kv)에도 저장해 서버 재시작/재배포에도 살아남고,
+#   2) TTL 기본 30일 + 사용할 때마다 만료를 미루는 슬라이딩 방식이라
+#      TTL 안에 한 번이라도 접속하면 계속 연장된다.
 ADMIN_ID = os.environ.get("ADMIN_ID", "")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
-ADMIN_SESSION_TTL = 8 * 60 * 60
+ADMIN_SESSION_TTL = int(os.environ.get("ADMIN_SESSION_TTL_DAYS", "30")) * 24 * 60 * 60
 ADMIN_SESSIONS: dict[str, float] = {}
 ADMIN_SESSION_LOCK = threading.Lock()
+ADMIN_SESSIONS_KV = "admin_sessions"   # ALLOWED_KV 에 없으므로 /api/store 로는 노출되지 않는다
+_ADMIN_SESSIONS_LOADED = False
+
+
+def _admin_sessions_load_locked():
+    """DB에 저장된 세션을 메모리로 1회 적재(ADMIN_SESSION_LOCK 보유 상태에서 호출)."""
+    global _ADMIN_SESSIONS_LOADED
+    if _ADMIN_SESSIONS_LOADED:
+        return
+    _ADMIN_SESSIONS_LOADED = True
+    try:
+        saved = STORE.kv_get(ADMIN_SESSIONS_KV) or {}
+        now = time.time()
+        ADMIN_SESSIONS.update({t: e for t, e in saved.items()
+                               if isinstance(e, (int, float)) and e > now})
+    except Exception:
+        pass    # 저장소 장애 시에도 로그인 자체는 메모리 세션으로 계속 동작
+
+
+def _admin_sessions_persist_locked():
+    """만료분을 정리해 메모리 세션을 DB에 저장(ADMIN_SESSION_LOCK 보유 상태에서 호출)."""
+    try:
+        now = time.time()
+        STORE.kv_set(ADMIN_SESSIONS_KV, {t: e for t, e in ADMIN_SESSIONS.items() if e > now})
+    except Exception:
+        pass
 
 # 접속 로그 등 표시용 시각은 KST 로 저장한다. 클라이언트가 tz 오프셋을 그대로 잘라 표시하도록
 # isoformat 뒤 "+09:00" 이 붙는 형태 그대로 둔다.
@@ -724,7 +753,8 @@ def api_jobstats(q):
         except Exception:
             rows = []
         _jobstats_cache_put(key, rows)
-    return {"captured_at": rows[0]["captured_at"] if rows else None,
+    # 행마다 수집 시각이 다를 수 있으므로(부분 재수집) 가장 최신 시각을 대표로 쓴다.
+    return {"captured_at": max((r["captured_at"] for r in rows), default=None) if rows else None,
             "count": len(rows), "rows": rows}
 
 
@@ -858,7 +888,10 @@ def _run_jobstats_crawl(trigger="manual"):
 
 
 def _run_arcana_options_crawl():
-    """아르카나 옵션 풀만 빠르게 재수집한다."""
+    """아르카나 통계(직업별 채용률 전 직업 + 옵션 풀)를 재수집한다.
+
+    모든 대상이 수집돼야 완료(성공)로 표시한다. 일부만 성공하면 성공분은 저장하되
+    상태는 실패로 보고해, 아무것도 안 모였는데 '수집 완료'로 보이는 일을 막는다."""
     if not _ARCANA_CRAWL_LOCK.acquire(blocking=False):
         _ARCANA_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=False,
                                    last_error="다른 크롤링이 진행 중입니다.")
@@ -866,12 +899,19 @@ def _run_arcana_options_crawl():
     try:
         _ARCANA_CRAWL_STATE.update(running=True, last_started=_now_kst(), last_error=None)
         captured_at = _now_kst()
-        row = cjs.collect_arcana_options()
-        STORE.job_stats_write(captured_at, [row])
-        _jobstats_cache_clear()
+        jobs, rows, failed = cjs.collect_arcana()
+        if rows:
+            STORE.job_stats_write(captured_at, rows)
+            _jobstats_cache_clear()
+        if failed:
+            err = (f"전체 {len(jobs) + 1}건 중 {len(failed)}건 수집 실패"
+                   f"(성공 {len(rows)}건만 저장): " + " · ".join(failed[:5]))
+            _ARCANA_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=False,
+                                       rows=len(rows), last_error=err)
+            return {"ok": False, "error": err}
         _ARCANA_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=True,
-                                  rows=1, captured_at=captured_at)
-        return {"ok": True, "captured_at": captured_at}
+                                   rows=len(rows), captured_at=captured_at)
+        return {"ok": True, "captured_at": captured_at, "rows": len(rows)}
     except Exception as e:
         _ARCANA_CRAWL_STATE.update(running=False, last_finished=_now_kst(), last_ok=False,
                                   last_error=str(e))
@@ -1031,8 +1071,15 @@ class Handler(BaseHTTPRequestHandler):
             return False
         now = time.time()
         with ADMIN_SESSION_LOCK:
+            _admin_sessions_load_locked()
             expiry = ADMIN_SESSIONS.get(token, 0)
             if expiry > now:
+                # 슬라이딩 연장: 쓸 때마다 만료를 now+TTL 로 미룬다.
+                # DB 쓰기는 하루 이상 연장될 때만 해 저장소 부하를 줄인다.
+                new_expiry = now + ADMIN_SESSION_TTL
+                ADMIN_SESSIONS[token] = new_expiry
+                if new_expiry - expiry > 24 * 60 * 60:
+                    _admin_sessions_persist_locked()
                 return True
             if token:
                 ADMIN_SESSIONS.pop(token, None)
@@ -1130,7 +1177,9 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 token = secrets.token_urlsafe(32)
                 with ADMIN_SESSION_LOCK:
+                    _admin_sessions_load_locked()
                     ADMIN_SESSIONS[token] = time.time() + ADMIN_SESSION_TTL
+                    _admin_sessions_persist_locked()
                 # 쿠키를 저장하지 못하는 웹뷰를 위해 token 을 body 로도 반환한다.
                 self._json({"ok": True, "token": token, "ttl": ADMIN_SESSION_TTL},
                            headers={"Set-Cookie": self._admin_cookie(token, ADMIN_SESSION_TTL)})
@@ -1140,7 +1189,9 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/admin/logout":
             token = self._admin_token_from_request()
             with ADMIN_SESSION_LOCK:
+                _admin_sessions_load_locked()
                 ADMIN_SESSIONS.pop(token, None)
+                _admin_sessions_persist_locked()
             self._json({"ok": True}, headers={"Set-Cookie": self._admin_cookie("", 0)})
             return
         if parsed.path == "/api/delete-requests":

@@ -102,6 +102,42 @@ def collect_arcana_options():
     }
 
 
+def fetch_job_names():
+    """직업 점유율 API에서 직업명 목록만 뽑는다."""
+    share = fetch("/api/statistics?min_power=0&max_power=10000&min_cp2=10000").get("data", {})
+    return [j["job"] for j in share.get("job_stats", []) if j.get("job") and j.get("job") != "-"]
+
+
+def collect_arcana_row(job):
+    """아르카나 탭이 쓰는 직업별 아르카나 스킬 채용률(category=arcana) 1행."""
+    ref = f"{JOBSTATS_REF}/{quote(job)}"
+    ar = fetch(f"/api/stats/arcana-skills?job={quote(job)}", ref)
+    return {"job": job, "category": "arcana", "source_updated": ar.get("last_update"),
+            "data": {"arcana": ar.get("data", {}), "total_rankers": ar.get("total_rankers")}}
+
+
+def collect_arcana(jobs=None):
+    """아르카나 전용 재수집: 직업별 채용률(전 직업) + 옵션 풀.
+
+    반환 (jobs, rows, failed). failed 가 비어 있어야 '전부 수집'이며,
+    호출부(관리자 수집)는 그때만 수집 완료로 표시해야 한다."""
+    jobs = jobs or fetch_job_names()
+    if not jobs:
+        raise RuntimeError("직업 목록을 가져오지 못했습니다.")
+    rows, failed = [], []
+    try:
+        rows.append(collect_arcana_options())
+    except Exception as e:
+        failed.append(f"옵션 풀: {e}")
+    for job in jobs:
+        try:
+            rows.append(collect_arcana_row(job))
+        except Exception as e:
+            failed.append(f"{job}: {e}")
+        time.sleep(0.4)  # 예의상 간격
+    return jobs, rows, failed
+
+
 # ---------- 개별 데이터 정리(normalize) ----------
 def collect():
     """모든 통계를 수집해 (job, category, source_updated, data) 행 리스트로 정리."""
@@ -180,11 +216,7 @@ def collect():
         except Exception as e:
             print(f"  ! {job} overview 실패: {e}")
         try:
-            ar = fetch(f"/api/stats/arcana-skills?job={quote(job)}", ref)
-            rows.append({"job": job, "category": "arcana",
-                         "source_updated": ar.get("last_update"),
-                         "data": {"arcana": ar.get("data", {}),
-                                  "total_rankers": ar.get("total_rankers")}})
+            rows.append(collect_arcana_row(job))
         except Exception as e:
             print(f"  ! {job} arcana 실패: {e}")
         time.sleep(0.4)  # 예의상 간격
