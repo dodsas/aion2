@@ -785,7 +785,7 @@
   .mc-wday.sat .mc-wday-h{color:#7fb8ff}   /* 토요일 */
   .mc-wday.sun .mc-wday-h{color:#ff8d8d}   /* 일요일 */
   .mc-wevt{display:flex;gap:5px;align-items:baseline;font-size:11px;line-height:1.45;padding:1px 0}
-  .mc-wevt b{color:var(--gold);font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mc-wevt b{color:var(--gold);font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}   /* 시간: 기본 민트, 운영자가 일정별 프리셋 색 지정 가능 */
   .mc-wevt span{min-width:0;overflow-wrap:anywhere}
   .mc-wevt.none{color:var(--dim)}
   .mc-week:empty{display:none}   /* 서버 데이터 로딩 전 빈 카드 숨김 */
@@ -803,6 +803,12 @@
   .mc-wform input:focus{border-color:var(--gold);outline:none}
   .mc-wform-btns{display:flex;gap:4px;justify-content:flex-end}
   .mc-wdel{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+  /* 시간 색상 프리셋 스와치 */
+  .mc-wcolors{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .mc-wcolors .lbl{font-size:10px;color:var(--dim);font-weight:800;margin-right:2px}
+  .mc-wcolor{width:17px;height:17px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;flex-shrink:0}
+  .mc-wcolor:hover{border-color:color-mix(in srgb,#fff 55%,transparent)}
+  .mc-wcolor.on{border-color:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.6),0 0 7px rgba(255,255,255,.35)}
 
   /* 정보 라인(직업·전투력·지역·칭호): 기본 숨김(모바일 요약), PC 미디어쿼리에서 노출 */
   .mc-card .mc-meta,.mc-card .mc-cpline,.mc-card .mc-region,.mc-card .mc-title{display:none}
@@ -1941,7 +1947,10 @@ const WEEK_SCHEDULE_DEFAULT=[
   [{t:"9:50",name:"아티쟁"},{t:"10:15",name:"어비스보스"}],
   [{t:"9:00",name:"무스펠 어려움"},{t:"10:30",name:"나흐마"}],
 ];
-let weekEdit=null;   // 열려 있는 수정 폼 위치 {day, index} — index -1 은 신규 추가
+let weekEdit=null;   // 열려 있는 수정 폼 위치 {day, index, color} — index -1 은 신규 추가
+// 시간 색상 프리셋. 일정에 c(키)로 저장하고, 기본(gold)은 저장을 생략한다.
+const WEEK_COLORS={gold:{label:"기본",hex:"#8ff0d0"},amber:{label:"앰버",hex:"#ffd84a"},sky:{label:"하늘",hex:"#6ed8f5"},pink:{label:"핑크",hex:"#ff7f9a"},purple:{label:"보라",hex:"#c6a7ff"},green:{label:"연두",hex:"#79df9e"}};
+const weekColorHex=c=>c&&c!=="gold"&&WEEK_COLORS[c]?WEEK_COLORS[c].hex:"";   // 기본색은 CSS가 담당
 const weekTimeMin=t=>{const [h,m]=String(t).split(":").map(Number);return (h%12+12)*60+(m||0);};  // 오후 기준 → 그날의 분
 // 어떤 형식으로 입력해도 항상 "00시 00분"(2자리) 형태로 표시한다. 예: 9시 → 09시 00분
 const weekTimeLabel=t=>{const [h,m]=String(t).split(":").map(Number);return `${String(h).padStart(2,"0")}시 ${String(m||0).padStart(2,"0")}분`;};
@@ -1969,21 +1978,26 @@ function renderWeekSchedule(){
   const days=weekSchedule(),now=weekNowKST();
   // 오늘 요일에서 현재 시간 이후 가장 가까운 일정 = '다음' 강조 대상
   const nextIdx=days[now.day].findIndex(e=>weekTimeMin(e.t)>=now.min);
-  const form=(day,idx,e)=>`<div class="mc-wform"><input data-week-time placeholder="시간 (예: 10시 30분)" value="${esc(e?weekTimeLabel(e.t):"")}" autocomplete="off"><input data-week-name placeholder="내용" maxlength="40" value="${esc(e?.name||"")}" autocomplete="off"><div class="mc-wform-btns"><button class="hw-mini" data-week-save="${day}:${idx}" type="button">저장</button>${idx>=0?`<button class="hw-mini mc-wdel" data-week-del="${day}:${idx}" type="button">삭제</button>`:""}<button class="hw-mini" data-week-cancel type="button">취소</button></div></div>`;
+  const form=(day,idx,e)=>`<div class="mc-wform"><input data-week-time placeholder="시간 (예: 10시 30분)" value="${esc(e?weekTimeLabel(e.t):"")}" autocomplete="off"><input data-week-name placeholder="내용" maxlength="40" value="${esc(e?.name||"")}" autocomplete="off"><div class="mc-wcolors"><span class="lbl">시간 색</span>${Object.entries(WEEK_COLORS).map(([k,v])=>`<button class="mc-wcolor${(weekEdit?.color||"gold")===k?" on":""}" data-week-color="${k}" type="button" style="background:${v.hex}" title="${v.label}" aria-label="시간 색상 ${v.label}"></button>`).join("")}</div><div class="mc-wform-btns"><button class="hw-mini" data-week-save="${day}:${idx}" type="button">저장</button>${idx>=0?`<button class="hw-mini mc-wdel" data-week-del="${day}:${idx}" type="button">삭제</button>`:""}<button class="hw-mini" data-week-cancel type="button">취소</button></div></div>`;
   root.innerHTML=`<div class="mc-week-head">📅 주간 일정</div><div class="mc-week-grid">${WEEK_DAYS.map((name,day)=>{
     const adding=weekEdit?.day===day&&weekEdit?.index===-1;
     const cells=days[day].map((e,i)=>weekEdit?.day===day&&weekEdit?.index===i?form(day,i,e)
-      :`<div class="mc-wevt${day===now.day&&i===nextIdx?" next":""}${isAdmin?" editable":""}"${isAdmin?` data-week-edit="${day}:${i}" role="button" tabindex="0" title="클릭해서 수정"`:""}><b>${weekTimeLabel(e.t)}</b><span>${esc(e.name)}</span>${day===now.day&&i===nextIdx?'<i class="nx">다음</i>':""}</div>`).join("");
+      :`<div class="mc-wevt${day===now.day&&i===nextIdx?" next":""}${isAdmin?" editable":""}"${isAdmin?` data-week-edit="${day}:${i}" role="button" tabindex="0" title="클릭해서 수정"`:""}><b${weekColorHex(e.c)?` style="color:${weekColorHex(e.c)}"`:""}>${weekTimeLabel(e.t)}</b><span>${esc(e.name)}</span>${day===now.day&&i===nextIdx?'<i class="nx">다음</i>':""}</div>`).join("");
     return `<div class="mc-wday${day===5?" sat":""}${day===6?" sun":""}${day===now.day?" today":""}"><div class="mc-wday-h"><span>${name}</span>${day===now.day?'<span class="tdy">오늘</span>':""}</div><div class="mc-wday-evts">${cells||(adding?"":'<div class="mc-wevt none">–</div>')}${adding?form(day,-1):""}${isAdmin&&!adding?`<button class="mc-wadd" data-week-add="${day}" type="button" title="일정 추가">＋ 추가</button>`:""}</div></div>`;
   }).join("")}</div>`;
   if(!isAdmin)return;
-  const open=(day,index)=>{weekEdit={day,index};renderWeekSchedule();root.querySelector("[data-week-time]")?.focus();};
+  const open=(day,index)=>{weekEdit={day,index,color:(index>=0&&days[day][index]?.c)||"gold"};renderWeekSchedule();root.querySelector("[data-week-time]")?.focus();};
   root.querySelectorAll("[data-week-edit]").forEach(b=>{
     const go=()=>{const [d,i]=b.dataset.weekEdit.split(":").map(Number);open(d,i);};
     b.onclick=go; b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}};
   });
   root.querySelectorAll("[data-week-add]").forEach(b=>b.onclick=()=>open(+b.dataset.weekAdd,-1));
   root.querySelector("[data-week-cancel]")?.addEventListener("click",()=>{weekEdit=null;renderWeekSchedule();});
+  // 색 스와치: 재렌더 없이 선택 상태만 바꿔 입력 중인 시간·내용을 보존한다.
+  root.querySelectorAll("[data-week-color]").forEach(b=>b.onclick=()=>{
+    weekEdit.color=b.dataset.weekColor;
+    root.querySelectorAll("[data-week-color]").forEach(x=>x.classList.toggle("on",x===b));
+  });
   root.querySelectorAll("[data-week-save]").forEach(b=>b.onclick=()=>{
     const [d,i]=b.dataset.weekSave.split(":").map(Number);
     const t=weekParseTime(root.querySelector("[data-week-time]").value);
@@ -1991,7 +2005,8 @@ function renderWeekSchedule(){
     if(!t){alert("시간은 '10시 30분' 또는 '10:30' 형식으로 입력하세요. (오후 기준)");return;}
     if(!name){alert("내용을 입력하세요.");return;}
     const days2=weekSchedule();
-    if(i>=0)days2[d][i]={t,name}; else days2[d].push({t,name});
+    const next={t,name,...(weekEdit?.color&&weekEdit.color!=="gold"?{c:weekEdit.color}:{})};
+    if(i>=0)days2[d][i]=next; else days2[d].push(next);
     days2[d].sort((a,b)=>weekTimeMin(a.t)-weekTimeMin(b.t));   // 시간순 정렬 유지
     saveWeekSchedule(days2);weekEdit=null;renderWeekSchedule();
   });
