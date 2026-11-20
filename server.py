@@ -569,6 +569,7 @@ ALLOWED_KV = {
     "homework_presets", "homework_chars", "op_cfg", "own", "dungeon_catalog", "bookmarks",
     "analysis",        # 분석 탭: 요구딜량 기준 + 날짜별 딜 기록
     "week_schedule",   # 내 캐릭터 탭 주간 일정 달력(운영자 편집)
+    "arcana_plans",    # 아르카나 탭: 캐릭터별 카드 구성 + 반지 액티브 스킬 입력
 }
 
 # 숙제 던전 기준표. app_kv[dungeon_catalog]에 저장해 배포 환경에서도 하나의 DB 데이터로
