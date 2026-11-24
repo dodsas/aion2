@@ -578,7 +578,7 @@ ALLOWED_KV = {
 # ode/kina/engraved_kina 모두 1배 소모 기준으로 저장하고, 화면에서는 2배 소모
 # 값(저장값×2)을 "2배(1배)" 형식으로 함께 표기한다.
 DUNGEON_CATALOG_DEFAULT = {
-    "version": 8,
+    "version": 9,
     "source": "https://www.inven.co.kr/board/aion2/6444/2064",
     "updated_at": "2026-11-23",
     "dungeons": [
@@ -594,6 +594,7 @@ DUNGEON_CATALOG_DEFAULT = {
         {"key": "noiran", "name": "노이란", "variants": [
             {"key": "stage1", "name": "1단계", "level": 0, "item_level": 0, "recommended_cp": 0, "ode": 60, "kina": 0, "engraved_kina": 1_500_000},
             {"key": "stage2", "name": "2단계", "level": 0, "item_level": 0, "recommended_cp": 0, "ode": 60, "kina": 0, "engraved_kina": 1_800_000},
+            {"key": "stage3", "name": "3단계", "level": 0, "item_level": 0, "recommended_cp": 0, "ode": 60, "kina": 0, "engraved_kina": 2_100_000},
         ]},
     ],
 }
