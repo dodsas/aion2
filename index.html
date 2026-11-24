@@ -649,6 +649,17 @@
   .hw-k .s{color:var(--dim);font-size:11px;margin-top:2px}
   .hw-table td,.hw-table th{white-space:nowrap}
   .hw-table td.good{color:var(--gold);font-weight:900}
+  /* 숙제 결과: 모바일 전용 캐릭터별 요약 카드(PC에서는 표만 노출) */
+  .hw-mrows{display:none;gap:8px;margin-top:10px}
+  .hw-mrow{border:1px solid var(--etched);border-radius:8px;background:linear-gradient(180deg,#16222c,#0f151c);padding:10px 12px;box-shadow:var(--shadow)}
+  .hw-mrow.main{border-color:color-mix(in srgb,var(--gold) 42%,var(--line))}
+  .hw-mrow .mr-h{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:9px}
+  .hw-mrow .mr-h b{font-size:13.5px;letter-spacing:-.15px}
+  .hw-mrow .mr-d{color:var(--dim);font-size:11px;margin-left:auto;text-align:right}
+  .hw-mrow .mr-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px 10px}
+  .hw-mrow .mr-grid span{display:block;color:var(--dim);font-size:10px;font-weight:800;margin-bottom:2px}
+  .hw-mrow .mr-grid b{font-size:12.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .hw-mrow .mr-grid b.gold{color:var(--gold);font-weight:900}
   .hw-note{color:var(--dim);font-size:11.5px;line-height:1.7;margin-top:12px}
 
   /* 숙제 · 수기 계산 카드 */
@@ -913,32 +924,28 @@
     .mc-wadd{width:auto;padding:2px 9px;margin-top:0}
     .hw-char{grid-template-columns:40px 1fr;gap:8px}
     .hw-char .hw-dungeon-row,.hw-char .hw-sanct{grid-column:1/-1}
+    /* 성역·초월 선택 줄: 터치하기 쉽게 간격·체크박스 확대 */
+    .hw-sanct{gap:8px 14px;padding:9px 0}
+    .hw-sanct input{width:17px;height:17px}
     /* iPhone 14 폭에서도 권장 판수 카드는 오른쪽 두 행을 유지한다. */
     .hw-mc-work{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"inputs hero" "preset hero" "break break";gap:8px}
     .hw-mc-inputs input{width:100%;min-width:0}
     .hw-mc-hero{width:auto;min-width:0;padding:10px 12px}
     .hw-mc-hero .num{font-size:34px}
-    /* 숙제 결과표는 핵심 정보만 남겨 가로 스크롤 없이 본다. */
-    .hw-table{table-layout:fixed;font-size:11px}
-    .hw-table th,.hw-table td{padding:8px 5px;white-space:normal;overflow-wrap:anywhere}
-    .hw-table th:nth-child(2),.hw-table td:nth-child(2),
-    .hw-table th:nth-child(5),.hw-table td:nth-child(5),
-    .hw-table th:nth-child(6),.hw-table td:nth-child(6),
-    .hw-table th:nth-child(7),.hw-table td:nth-child(7),
-    .hw-table th:nth-child(8),.hw-table td:nth-child(8),
-    .hw-table th:nth-child(10),.hw-table td:nth-child(10),
-    .hw-table th:nth-child(12),.hw-table td:nth-child(12){display:none}
-    /* 난이도·하루 판수는 짧은 값만 차지하게 하고, 던전명은 한 줄로 충분히 확보한다. */
-    .hw-table th:nth-child(1){width:15%}
-    .hw-table th:nth-child(3),.hw-table td:nth-child(3){width:34%;white-space:nowrap;overflow-wrap:normal}
-    .hw-table th:nth-child(4){width:12%}
-    .hw-table th:nth-child(9){width:14%}
-    .hw-table th:nth-child(11){width:25%}
-    /* 모바일도 한 줄 유지: 가로 스크롤 */
-    .hw-kpi{gap:8px;overflow-x:auto;padding-bottom:4px}
-    .hw-k{flex:0 0 auto;min-width:118px;padding:10px}
-    .hw-k.sm{min-width:96px}
-    .hw-k .v{font-size:17px}
+    /* 숙제 결과표는 모바일에서 캐릭터별 요약 카드로 대체한다. */
+    .hw-table{display:none}
+    .hw-mrows{display:grid}
+    /* 모바일 노출 순서: 현황 → 캐릭터 설정 → 수기 계산 (PC는 DOM 순서 유지) */
+    #hwCalculatorView{display:flex;flex-direction:column}
+    #hwResult{order:1}
+    #hwCharacters{order:2}
+    #hwManual{order:3}
+    /* KPI: 에너지 카드(sm) 2×2 + 키나 카드 전체 폭으로 줄바꿈 배치 */
+    .hw-kpi{flex-wrap:wrap;gap:8px}
+    .hw-k{flex:1 1 100%;min-width:0;padding:10px 12px}
+    .hw-k.sm,.hw-k.half{flex:1 1 calc(50% - 4px);padding:9px 11px}
+    .hw-k .v{font-size:18px}
+    .hw-k.sm .v{font-size:15px}
     .hw-dungeon-catalog-head{align-items:flex-start;flex-direction:column}.hw-dungeon-catalog-head p{text-align:left}
     .hw-dungeon-card table{font-size:11px}.hw-dungeon-card th,.hw-dungeon-card td{padding:8px 6px}
     .bookmark-root{padding:18px 14px}.bookmark-form{grid-template-columns:1fr}.bookmark-form .btn{min-height:38px}
@@ -2806,13 +2813,24 @@ function renderHomework(redrawCharacters=true){
     <div class="hw-k sm"><div class="t">이벤트 수급</div><div class="v">${fmt(Math.floor(weeklyEvent))}</div><div class="s">본캐에만 합산 · 일 ${fmt(dailyEvent)}${weeklyEventExtra?` · 주 ${fmt(weeklyEventExtra)}`:""}</div></div>
     <div class="hw-k sm"><div class="t">새싹 보너스</div><div class="v">${fmt(Math.floor(weeklySprout))}</div><div class="s">본캐에만 합산 · 주간 제한</div></div>
     <div class="hw-k sm"><div class="t">주간 총 에너지</div><div class="v">${fmt(Math.floor(totalEnergy))}</div><div class="s">${rows.length}캐릭터 합산</div></div>
-    <div class="hw-k"><div class="t">예상 주간 비각인 키나</div><div class="v">${fmtFull(totalProfit)}</div><div class="s">던전 ${fmtFull(totalDungeonProfit)}<br>레이드 ${fmtFull(totalSanctProfit)}${totalTransProfit?`<br>초월 ${fmtFull(totalTransProfit)}`:''}${totalManualProfit?`<br>수기 ${fmtFull(totalManualProfit)}`:''}<br>총 ${fmt(totalRuns)}판 · 하루 ${(totalRuns/7).toFixed(2)}판</div></div>
-    <div class="hw-k"><div class="t">예상 주간 각인 키나</div><div class="v">${fmtFull(totalEngraved)}</div><div class="s">던전 ${fmtFull(totalDungeonEngraved)}<br>레이드 ${fmtFull(totalSanctEngraved)}</div></div>
+    <div class="hw-k half"><div class="t">예상 주간 비각인 키나</div><div class="v">${fmtFull(totalProfit)}</div><div class="s">던전 ${fmtFull(totalDungeonProfit)}<br>레이드 ${fmtFull(totalSanctProfit)}${totalTransProfit?`<br>초월 ${fmtFull(totalTransProfit)}`:''}${totalManualProfit?`<br>수기 ${fmtFull(totalManualProfit)}`:''}<br>총 ${fmt(totalRuns)}판 · 하루 ${(totalRuns/7).toFixed(2)}판</div></div>
+    <div class="hw-k half"><div class="t">예상 주간 각인 키나</div><div class="v">${fmtFull(totalEngraved)}</div><div class="s">던전 ${fmtFull(totalDungeonEngraved)}<br>레이드 ${fmtFull(totalSanctEngraved)}</div></div>
     <div class="hw-k"><div class="t">예상 주간 총 키나</div><div class="v">${fmtFull(totalProfit+totalEngraved)}</div><div class="s">비각인 ${fmtFull(totalProfit)}<br>각인 ${fmtFull(totalEngraved)}</div></div>
   </div>
   <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 키나</th><th>1판 각인 키나</th><th>주간 판수</th><th>하루 판수</th><th>일간 부가수익(키나)</th><th>예상 수익(키나)</th><th>예상 각인 키나</th><th>잔여</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td>${esc(r.char.name||'')}</td><td>${r.role.label}</td><td>${r.dungeon}</td><td>${r.name}</td><td class="num">${fmt(Math.floor(r.weeklyEnergy))}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmtFull(r.reward)}</td><td class="num">${fmtFull(r.engraved)}</td>
       <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}</td><td class="num good">${fmtFull(r.engravedProfit)}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
+  <div class="hw-mrows">${rows.map(r=>`<div class="hw-mrow${r.char.role==='main'?' main':''}">
+    <div class="mr-h"><b>${esc(r.char.name||'')}</b><span class="hw-role ${r.char.role}">${r.role.label}</span><span class="mr-d">${esc(r.dungeon)} · ${esc(r.name)}</span></div>
+    <div class="mr-grid">
+      <div><span>주간 에너지</span><b>${fmt(Math.floor(r.weeklyEnergy))}</b></div>
+      <div><span>주간 판수</span><b>${fmt(r.runs)}판 · 일 ${r.daily.toFixed(2)}</b></div>
+      <div><span>잔여 오드</span><b>${fmt(Math.floor(r.left))}</b></div>
+      <div><span>비각인 수익</span><b class="gold">${fmtFull(r.profit)}</b></div>
+      <div><span>각인 수익</span><b class="gold">${fmtFull(r.engravedProfit)}</b></div>
+      ${r.manualDailyProfit?`<div><span>일간 부가수익</span><b>${fmtFull(r.manualDailyProfit)}</b></div>`:""}
+    </div>
+  </div>`).join("")}</div>
   <div class="hw-note">본캐는 일일·주간 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(${HW_SANCTUARIES.map(s=>s.label).join("·")})은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 보상도 키나/각인 키나로 구분됩니다 — ${HW_SANCTUARIES.map(s=>s.modes?`${s.label} ${Object.values(s.modes).map(m=>`${m.name} ${fmtFull(m.kina)}`).join(" / ")} 키나`:`${s.label} 각인 ${fmtFull(s.engraved)}`).join(" · ")}. 키나 보상은 예상 수익에, 각인 키나 보상은 예상 각인 키나에 합산됩니다. 초월은 체크 시 주간 최대 ${HW_TRANSCEND_RUNS}회를 모두 도는 것으로 고정 계산해, 오드 ${fmt(HW_TRANSCEND_STAGES.stage1.cost*2)}×${HW_TRANSCEND_RUNS}를 주간 에너지에서 차감하고 단계별 키나 보상(${Object.values(HW_TRANSCEND_STAGES).map(s=>`${s.name} ${fmtFull(s.reward*2)}`).join(" · ")})을 수익에 합산합니다. 던전 보상은 키나와 각인 키나로 구분해 표시하며, 각인 키나는 키나 수익과 합산하지 않고 별도 열로 집계합니다. 1판 소모·보상과 판수·수익 계산은 모두 <b>2배 소모 기준</b>입니다(1배 값은 던전 기준표 참고).</div>`;
   renderHwManual();
   if(hwActiveView==="dungeons")renderHwDungeonCatalog();
