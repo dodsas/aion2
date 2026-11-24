@@ -2635,6 +2635,16 @@ function sanctReward(s,c){return s.modes?s.modes[sanctMode(s,c)]:s;}
 function sanctuaryCost(c){return HW_SANCTUARIES.filter(s=>c.sanctuaries?.[s.key]).length*SANCTUARY_COST;}
 function sanctuaryProfit(c){return HW_SANCTUARIES.reduce((a,s)=>a+(c.sanctuaries?.[s.key]?(+sanctReward(s,c).kina||0):0),0);}
 function sanctuaryEngraved(c){return HW_SANCTUARIES.reduce((a,s)=>a+(c.sanctuaries?.[s.key]?(+sanctReward(s,c).engraved||0):0),0);}
+// 초월: 성역처럼 돌 수 있는 캐릭만 캐릭별로 체크한다. 체크하면 주간 최대 5회를 모두
+// 도는 것으로 고정 계산. cost/reward 는 1배 저장, 계산·표기는 2배 소모 기준(저장값×2).
+const HW_TRANSCEND_RUNS=5;
+const HW_TRANSCEND_STAGES={
+  stage1:{name:"1단계",cost:80,reward:4_800_000},
+  stage2:{name:"2단계",cost:80,reward:5_300_000},
+};
+function transStage(c){return HW_TRANSCEND_STAGES[c.transcendStage]?c.transcendStage:"stage1";}
+function transcendCost(c){return c.transcend?HW_TRANSCEND_RUNS*HW_TRANSCEND_STAGES[transStage(c)].cost*2:0;}
+function transcendProfit(c){return c.transcend?HW_TRANSCEND_RUNS*HW_TRANSCEND_STAGES[transStage(c)].reward*2:0;}
 function hwNum(id){return +(document.getElementById(id)?.value||0);}
 // 숙제 설정은 등록 캐릭 key 별 {mode, manual*, sanctuaries} 맵으로 DB(sbSave)에 저장한다.
 // 본캐 여부는 저장하지 않고 그룹 내 전투력 최고로 매번 자동 판정한다.
@@ -2654,7 +2664,7 @@ function hwGroupChars(){
     return {key:c.key,name:c.name,img:c.img,cp:c.cp,level:c.level,race:c.race,className:c.className,
       role:c.key===mainKey?"main":"sub",dungeon:s.dungeon||"fallen_deva",mode:s.mode||"hard",
       manualDaily:+s.manualDaily||0,manualWeekly:+s.manualWeekly||0,manualDailyProfit:+s.manualDailyProfit||0,
-      sanctuaries:s.sanctuaries||{},sanctModes:s.sanctModes||{}};
+      sanctuaries:s.sanctuaries||{},sanctModes:s.sanctModes||{},transcend:!!s.transcend,transcendStage:s.transcendStage||""};
   });
 }
 // 숙제 탭 첫 화면의 수기 계산 대상은 항상 현재 그룹의 본캐(전투력 최고)다.
@@ -2696,14 +2706,16 @@ function dungeonCalc(dungeonKey, modeKey, weeklyEnergy){
 function calcChar(c, weeklyAuto, weeklyMainBonus){
   const role=HW_ROLE[c.role]||HW_ROLE.sub;
   const sanctCost=sanctuaryCost(c);
+  const transCost=transcendCost(c);
   const gross=weeklyAuto+(role.event?weeklyMainBonus:0)+role.buy+(+c.manualDaily||0)*7+(+c.manualWeekly||0);
-  const weekly=Math.max(0,gross-sanctCost);
+  const weekly=Math.max(0,gross-sanctCost-transCost);
   const base=dungeonCalc(c.dungeon||"fallen_deva",c.mode||"hard",weekly);
   const manualDailyProfit=+c.manualDailyProfit||0;
   const sanctProfit=sanctuaryProfit(c);
   const sanctEngraved=sanctuaryEngraved(c);
-  return {...base,char:c,role,weeklyEnergy:weekly,sanctCost,sanctProfit,sanctEngraved,dungeonProfit:base.profit,dungeonEngraved:base.engravedProfit,manualDailyProfit,
-    profit:base.profit+manualDailyProfit*7+sanctProfit,engravedProfit:base.engravedProfit+sanctEngraved};
+  const transProfit=transcendProfit(c);
+  return {...base,char:c,role,weeklyEnergy:weekly,sanctCost,sanctProfit,sanctEngraved,transCost,transProfit,dungeonProfit:base.profit,dungeonEngraved:base.engravedProfit,manualDailyProfit,
+    profit:base.profit+manualDailyProfit*7+sanctProfit+transProfit,engravedProfit:base.engravedProfit+sanctEngraved};
 }
 function dungeonOptions(selected){
   return Object.entries(HOMEWORK_DUNGEONS).map(([k,d])=>`<option value="${k}" ${k===selected?'selected':''}>${d.name}</option>`).join("");
@@ -2745,6 +2757,9 @@ function renderHwCharacters(chars){
           const sel=s.modes&&on?`<select data-sanct-mode="${s.key}" title="${s.label} 난이도">${Object.entries(s.modes).map(([k,m])=>`<option value="${k}" ${sanctMode(s,c)===k?'selected':''}>${m.name}</option>`).join("")}</select>`:"";
           return `<label><input type="checkbox" data-sanct="${s.key}" ${on?'checked':''}>${s.label}</label>${sel}`;
         }).join("")}
+        <span class="cap">초월</span>
+        <label title="체크 시 주간 최대 5회를 모두 도는 것으로 계산"><input type="checkbox" data-transcend="toggle" ${c.transcend?'checked':''}>주${HW_TRANSCEND_RUNS}회</label>
+        ${c.transcend?`<select data-transcend-stage="stage" title="초월 단계">${Object.entries(HW_TRANSCEND_STAGES).map(([k,s])=>`<option value="${k}" ${transStage(c)===k?'selected':''}>${s.name}</option>`).join("")}</select>`:""}
       </div>
     </div>`;
   }).join("");
@@ -2785,19 +2800,20 @@ function renderHomework(redrawCharacters=true){
   const totalEngraved=rows.reduce((a,r)=>a+r.engravedProfit,0);
   const totalDungeonEngraved=rows.reduce((a,r)=>a+r.dungeonEngraved,0);
   const totalSanctEngraved=rows.reduce((a,r)=>a+r.sanctEngraved,0);
+  const totalTransProfit=rows.reduce((a,r)=>a+r.transProfit,0);
   document.getElementById("hwResult").innerHTML=`<div class="hw-kpi">
     <div class="hw-k sm"><div class="t">하루 자동 충전</div><div class="v">${fmt(Math.floor(dailyAuto))}</div><div class="s">${cycle}시간마다 ${fmt(charge)}</div></div>
     <div class="hw-k sm"><div class="t">이벤트 수급</div><div class="v">${fmt(Math.floor(weeklyEvent))}</div><div class="s">본캐에만 합산 · 일 ${fmt(dailyEvent)}${weeklyEventExtra?` · 주 ${fmt(weeklyEventExtra)}`:""}</div></div>
     <div class="hw-k sm"><div class="t">새싹 보너스</div><div class="v">${fmt(Math.floor(weeklySprout))}</div><div class="s">본캐에만 합산 · 주간 제한</div></div>
     <div class="hw-k sm"><div class="t">주간 총 에너지</div><div class="v">${fmt(Math.floor(totalEnergy))}</div><div class="s">${rows.length}캐릭터 합산</div></div>
-    <div class="hw-k"><div class="t">예상 주간 비각인 키나</div><div class="v">${fmtFull(totalProfit)}</div><div class="s">던전 ${fmtFull(totalDungeonProfit)}<br>레이드 ${fmtFull(totalSanctProfit)}${totalManualProfit?`<br>수기 ${fmtFull(totalManualProfit)}`:''}<br>총 ${fmt(totalRuns)}판 · 하루 ${(totalRuns/7).toFixed(2)}판</div></div>
+    <div class="hw-k"><div class="t">예상 주간 비각인 키나</div><div class="v">${fmtFull(totalProfit)}</div><div class="s">던전 ${fmtFull(totalDungeonProfit)}<br>레이드 ${fmtFull(totalSanctProfit)}${totalTransProfit?`<br>초월 ${fmtFull(totalTransProfit)}`:''}${totalManualProfit?`<br>수기 ${fmtFull(totalManualProfit)}`:''}<br>총 ${fmt(totalRuns)}판 · 하루 ${(totalRuns/7).toFixed(2)}판</div></div>
     <div class="hw-k"><div class="t">예상 주간 각인 키나</div><div class="v">${fmtFull(totalEngraved)}</div><div class="s">던전 ${fmtFull(totalDungeonEngraved)}<br>레이드 ${fmtFull(totalSanctEngraved)}</div></div>
     <div class="hw-k"><div class="t">예상 주간 총 키나</div><div class="v">${fmtFull(totalProfit+totalEngraved)}</div><div class="s">비각인 ${fmtFull(totalProfit)}<br>각인 ${fmtFull(totalEngraved)}</div></div>
   </div>
   <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 키나</th><th>1판 각인 키나</th><th>주간 판수</th><th>하루 판수</th><th>일간 부가수익(키나)</th><th>예상 수익(키나)</th><th>예상 각인 키나</th><th>잔여</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td>${esc(r.char.name||'')}</td><td>${r.role.label}</td><td>${r.dungeon}</td><td>${r.name}</td><td class="num">${fmt(Math.floor(r.weeklyEnergy))}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmtFull(r.reward)}</td><td class="num">${fmtFull(r.engraved)}</td>
       <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}</td><td class="num good">${fmtFull(r.engravedProfit)}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
-  <div class="hw-note">본캐는 일일·주간 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(${HW_SANCTUARIES.map(s=>s.label).join("·")})은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 보상도 키나/각인 키나로 구분됩니다 — ${HW_SANCTUARIES.map(s=>s.modes?`${s.label} ${Object.values(s.modes).map(m=>`${m.name} ${fmtFull(m.kina)}`).join(" / ")} 키나`:`${s.label} 각인 ${fmtFull(s.engraved)}`).join(" · ")}. 키나 보상은 예상 수익에, 각인 키나 보상은 예상 각인 키나에 합산됩니다. 던전 보상은 키나와 각인 키나로 구분해 표시하며, 각인 키나는 키나 수익과 합산하지 않고 별도 열로 집계합니다. 1판 소모·보상과 판수·수익 계산은 모두 <b>2배 소모 기준</b>입니다(1배 값은 던전 기준표 참고).</div>`;
+  <div class="hw-note">본캐는 일일·주간 이벤트 수급, 새싹 보너스, 주간 구매 40×40을 포함하고, 부캐는 주간 구매 8×40만 포함합니다. 새싹 보너스는 주간 획득 개수 기준으로 계산합니다. 성역(${HW_SANCTUARIES.map(s=>s.label).join("·")})은 오드를 별도로 사용하므로, 선택한 성역 1개당 주간 에너지에서 ${SANCTUARY_COST}씩 차감한 뒤 판수를 계산합니다. 성역 보상도 키나/각인 키나로 구분됩니다 — ${HW_SANCTUARIES.map(s=>s.modes?`${s.label} ${Object.values(s.modes).map(m=>`${m.name} ${fmtFull(m.kina)}`).join(" / ")} 키나`:`${s.label} 각인 ${fmtFull(s.engraved)}`).join(" · ")}. 키나 보상은 예상 수익에, 각인 키나 보상은 예상 각인 키나에 합산됩니다. 초월은 체크 시 주간 최대 ${HW_TRANSCEND_RUNS}회를 모두 도는 것으로 고정 계산해, 오드 ${fmt(HW_TRANSCEND_STAGES.stage1.cost*2)}×${HW_TRANSCEND_RUNS}를 주간 에너지에서 차감하고 단계별 키나 보상(${Object.values(HW_TRANSCEND_STAGES).map(s=>`${s.name} ${fmtFull(s.reward*2)}`).join(" · ")})을 수익에 합산합니다. 던전 보상은 키나와 각인 키나로 구분해 표시하며, 각인 키나는 키나 수익과 합산하지 않고 별도 열로 집계합니다. 1판 소모·보상과 판수·수익 계산은 모두 <b>2배 소모 기준</b>입니다(1배 값은 던전 기준표 참고).</div>`;
   renderHwManual();
   if(hwActiveView==="dungeons")renderHwDungeonCatalog();
 }
@@ -2816,7 +2832,10 @@ function renderHwDungeonCatalog(){
     return ms.map((m,i)=>`<tr>${i===0?`<td rowspan="${ms.length}">${esc(s.label)}</td>`:""}<td class="rd-mode">${esc(m.name)}</td><td>${fmt(SANCTUARY_COST)}</td><td class="kina">${fmtFull(m.kina||0)}</td><td class="kina">${fmtFull(m.engraved||0)}</td></tr>`).join("");
   }).join("");
   const raidCards=`<article class="hw-dungeon-card"><table><thead><tr><th>레이드</th><th class="rd-mode">난이도</th><th>오드</th><th>키나</th><th>각인 키나</th></tr></thead><tbody>${raidRows}</tbody></table></article>`;
-  root.innerHTML=`<div class="hw-dungeon-catalog"><div class="hw-dungeon-catalog-head"><div><h3>던전 기준표</h3><p>현재 입장 가능한 원정 던전 기준을 정리했습니다.</p></div><p>기준일 ${esc(hwDungeonCatalogMeta.updated_at||"–")} · <a href="https://www.inven.co.kr/board/aion2/6444/2064" target="_blank" rel="noreferrer">출처 보기</a><br>오드·보상은 2배 소모(1배) 병기 · 키나/각인 키나 구분</p></div>${cards}<div class="hw-dungeon-catalog-head"><div><h3>성역 레이드</h3><p>선택 시 1회당 오드 ${fmt(SANCTUARY_COST)}를 별도 소모합니다.</p></div><p>보상은 획득량 그대로 표기</p></div>${raidCards}</div>`;
+  const transEntries=Object.values(HW_TRANSCEND_STAGES);
+  const transRows=transEntries.map((s,i)=>`<tr>${i===0?`<td rowspan="${transEntries.length}">초월</td>`:""}<td class="rd-mode">${esc(s.name)}</td><td>${fmtX2(s.cost)}</td><td class="kina">${fmtFullX2(s.reward)}</td><td class="kina">0</td></tr>`).join("");
+  const transCard=`<article class="hw-dungeon-card"><table><thead><tr><th>구분</th><th class="rd-mode">단계</th><th>오드</th><th>키나</th><th>각인 키나</th></tr></thead><tbody>${transRows}</tbody></table></article>`;
+  root.innerHTML=`<div class="hw-dungeon-catalog"><div class="hw-dungeon-catalog-head"><div><h3>던전 기준표</h3><p>현재 입장 가능한 원정 던전 기준을 정리했습니다.</p></div><p>기준일 ${esc(hwDungeonCatalogMeta.updated_at||"–")} · <a href="https://www.inven.co.kr/board/aion2/6444/2064" target="_blank" rel="noreferrer">출처 보기</a><br>오드·보상은 2배 소모(1배) 병기 · 키나/각인 키나 구분</p></div>${cards}<div class="hw-dungeon-catalog-head"><div><h3>성역 레이드</h3><p>선택 시 1회당 오드 ${fmt(SANCTUARY_COST)}를 별도 소모합니다.</p></div><p>보상은 획득량 그대로 표기</p></div>${raidCards}<div class="hw-dungeon-catalog-head"><div><h3>초월</h3><p>돌 수 있는 캐릭터만 선택하며, 체크 시 주간 최대 ${HW_TRANSCEND_RUNS}회를 모두 도는 것으로 계산합니다.</p></div><p>오드·보상은 2배 소모(1배) 병기</p></div>${transCard}</div>`;
 }
 function setHomeworkView(view){
   hwActiveView=view==="dungeons"?"dungeons":"calculator";
@@ -2913,6 +2932,8 @@ function initHomework(){
       const c=hwGroupChars().find(x=>x.key===key); if(!c)return;
       updateHwSetting(key,{sanctModes:{...(c.sanctModes||{}),[e.target.dataset.sanctMode]:e.target.value}});
     }
+    else if(e.target.dataset.transcend) updateHwSetting(key,{transcend:e.target.checked});
+    else if(e.target.dataset.transcendStage) updateHwSetting(key,{transcendStage:e.target.value});
     else if(e.target.dataset.hw==="dungeon") updateHwSetting(key,{dungeon:e.target.value,mode:defaultDungeonMode(e.target.value)});
     else if(e.target.dataset.hw==="mode") updateHwSetting(key,{mode:e.target.value});   // 난이도 변경 → DB 저장
   });
