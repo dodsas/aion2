@@ -574,55 +574,51 @@ ALLOWED_KV = {
 
 # 숙제 던전 기준표. app_kv[dungeon_catalog]에 저장해 배포 환경에서도 하나의 DB 데이터로
 # 관리한다. variants는 단일 난이도({"key":"single"})와 보통/어려움 복수 난이도를 모두
-# 표현할 수 있다. 수치는 인벤 기준표(2026-07-01)의 멤버십 2배 큐브 개봉 기준이다.
+# 표현할 수 있다. 보상은 키나(kina)와 각인 키나(engraved_kina)로 구분한다.
+# ode/kina/engraved_kina 모두 1배 소모 기준으로 저장하고, 화면에서는 2배 소모
+# 값(저장값×2)을 "2배(1배)" 형식으로 함께 표기한다.
 DUNGEON_CATALOG_DEFAULT = {
-    "version": 2,
+    "version": 6,
     "source": "https://www.inven.co.kr/board/aion2/6444/2064",
-    "updated_at": "2026-07-01",
+    "updated_at": "2026-11-23",
     "dungeons": [
         {"key": "fallen_deva", "name": "타락한 데바의 성", "variants": [
-            {"key": "hard", "name": "어려움", "level": 50, "item_level": 4500, "recommended_cp": 600_000, "ode": 120, "kina": 3_600_000},
-            {"key": "normal", "name": "보통", "level": 50, "item_level": 3800, "recommended_cp": 450_000, "ode": 80, "kina": 2_010_000},
+            {"key": "hard", "name": "어려움", "level": 50, "item_level": 4500, "recommended_cp": 600_000, "ode": 60, "kina": 900_000, "engraved_kina": 900_000},
+            {"key": "normal", "name": "보통", "level": 50, "item_level": 3800, "recommended_cp": 450_000, "ode": 60, "kina": 750_000, "engraved_kina": 750_000},
         ]},
-        {"key": "blue_breath", "name": "푸른 숨의 섬", "variants": [
-            {"key": "hard", "name": "어려움", "level": 45, "item_level": 3500, "recommended_cp": 450_000, "ode": 80, "kina": 2_010_000},
-            {"key": "normal", "name": "보통", "level": 45, "item_level": 3000, "recommended_cp": 300_000, "ode": 80, "kina": 1_620_000},
-        ]},
-        {"key": "illusion_corridor", "name": "환영의 회랑", "variants": [
-            {"key": "hard", "name": "어려움", "level": 45, "item_level": 3500, "recommended_cp": 450_000, "ode": 80, "kina": 2_010_000},
-            {"key": "normal", "name": "보통", "level": 45, "item_level": 3000, "recommended_cp": 300_000, "ode": 80, "kina": 1_620_000},
-        ]},
-        {"key": "cradle_of_nothing", "name": "무의 요람", "variants": [
-            {"key": "hard", "name": "어려움", "level": 45, "item_level": 3000, "recommended_cp": 300_000, "ode": 80, "kina": 1_620_000},
-            {"key": "normal", "name": "보통", "level": 45, "item_level": 2800, "recommended_cp": 200_000, "ode": 80, "kina": 1_200_000},
-        ]},
-        {"key": "dramata", "name": "드라마타", "variants": [
-            {"key": "hard", "name": "어려움", "level": 45, "item_level": 3000, "recommended_cp": 300_000, "ode": 80, "kina": 1_620_000},
-            {"key": "normal", "name": "보통", "level": 45, "item_level": 2800, "recommended_cp": 200_000, "ode": 80, "kina": 1_200_000},
-        ]},
-        {"key": "abyssal_horn_cavern", "name": "초월 심연의 뿔 암굴", "variants": [
-            {"key": "stage4", "name": "4단", "level": 50, "item_level": 4800, "recommended_cp": 700_000, "ode": 120, "kina": 4_200_000},
-            {"key": "stage3", "name": "3단", "level": 50, "item_level": 4500, "recommended_cp": 600_000, "ode": 80, "kina": 2_400_000},
-            {"key": "stage2", "name": "2단", "level": 50, "item_level": 4100, "recommended_cp": 550_000, "ode": 80, "kina": 2_010_000},
-            {"key": "stage1", "name": "1단", "level": 50, "item_level": 3800, "recommended_cp": 400_000, "ode": 80, "kina": 1_710_000},
-        ]},
-        {"key": "red_heart_mirror", "name": "초월 붉은 연심의 거울", "variants": [
-            {"key": "stage4", "name": "4단", "level": 45, "item_level": 4000, "recommended_cp": 500_000, "ode": 80, "kina": 2_400_000},
-            {"key": "stage3", "name": "3단", "level": 45, "item_level": 3800, "recommended_cp": 450_000, "ode": 80, "kina": 2_010_000},
-            {"key": "stage2", "name": "2단", "level": 45, "item_level": 3500, "recommended_cp": 400_000, "ode": 80, "kina": 1_710_000},
-            {"key": "stage1", "name": "1단", "level": 45, "item_level": 3200, "recommended_cp": 300_000, "ode": 80, "kina": 1_500_000},
+        # 입장 레벨·템 레벨·권장 전투력은 미확인(0) → 화면에서 "–" 처리
+        {"key": "urugugu_gorge", "name": "광신의 우루구구 협곡", "variants": [
+            {"key": "hard", "name": "어려움", "level": 0, "item_level": 0, "recommended_cp": 0, "ode": 60, "kina": 2_400_000, "engraved_kina": 0},
+            {"key": "normal", "name": "보통", "level": 0, "item_level": 0, "recommended_cp": 0, "ode": 60, "kina": 2_100_000, "engraved_kina": 0},
         ]},
     ],
 }
 
 
+def prune_removed_dungeon_settings():
+    """기준표에서 삭제된 던전을 참조하는 숙제 설정을 지워 기본 던전으로 되돌린다."""
+    valid = {d["key"] for d in DUNGEON_CATALOG_DEFAULT["dungeons"]}
+    chars = STORE.kv_get("homework_chars")
+    if not isinstance(chars, dict):
+        return
+    changed = False
+    for cfg in chars.values():
+        if isinstance(cfg, dict) and cfg.get("dungeon") and cfg["dungeon"] not in valid:
+            cfg.pop("dungeon", None)
+            cfg.pop("mode", None)
+            changed = True
+    if changed:
+        STORE.kv_set("homework_chars", chars)
+
+
 def dungeon_catalog():
-    """DB에 저장된 던전 기준표를 반환하고, 최초 실행 시 기본 기준표를 적재한다."""
+    """DB에 저장된 던전 기준표를 반환하고, 최초 실행·버전 변경 시 기본 기준표를 적재한다."""
     saved = STORE.kv_get("dungeon_catalog")
     if (isinstance(saved, dict) and saved.get("version") == DUNGEON_CATALOG_DEFAULT["version"]
             and isinstance(saved.get("dungeons"), list)):
         return saved
     STORE.kv_set("dungeon_catalog", DUNGEON_CATALOG_DEFAULT)
+    prune_removed_dungeon_settings()
     return DUNGEON_CATALOG_DEFAULT
 
 
