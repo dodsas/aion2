@@ -21,6 +21,7 @@ import hmac
 import hashlib
 import json
 import os
+import random
 import secrets
 import sqlite3
 import ssl
@@ -561,6 +562,137 @@ def api_char_item(q):
     return fetch_official("/api/character/equipment/item", params)
 
 
+# ---------- 등록 캐릭터 경량 동기화(전투력·레벨·템레벨) ----------
+# 기존 '전체 갱신'은 캐릭터마다 info+equipment+장비 상세(~20건)를 몰아서 호출해
+# 공식 사이트가 공격으로 오인할 수 있었다. 경량 동기화는:
+#   1) 캐릭터당 /api/character/info "1회"만 호출한다(전투력·레벨·템레벨이 모두 들어 있음)
+#   2) 호출 사이 3~6초 랜덤 대기로 사람 수준의 속도를 유지한다
+#   3) 연속 3회 실패하면 차단 의심으로 즉시 중단한다
+#   4) 매일 CHAR_SYNC_HHMM(KST, 기본 08:00) 자동 실행 + 수동 실행(쿨다운 10분)
+CHAR_SYNC_HHMM = os.environ.get("CHAR_SYNC_HHMM", "08:00")
+CHAR_SYNC_COOLDOWN = 10 * 60   # 수동 재실행 최소 간격(초)
+_CHAR_SYNC_LOCK = threading.Lock()         # 실제 실행 중복 방지
+_CHAR_SYNC_TRIGGER_LOCK = threading.Lock() # 시작 요청 경합 방지
+_CHAR_SYNC_STATE = {"running": False, "last_started": None, "last_finished": None,
+                    "last_ok": None, "last_error": None, "total": 0, "done": 0,
+                    "success": 0, "trigger": None, "last_epoch": 0.0}
+
+
+def _next_char_sync_dt():
+    try:
+        hh, mm = map(int, CHAR_SYNC_HHMM.split(":"))
+    except Exception:
+        return None
+    now = datetime.now(KST)
+    nxt = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    if nxt <= now:
+        nxt += timedelta(days=1)
+    return nxt
+
+
+def _char_info_light(sid, cid):
+    """공식 info 1회 호출로 전투력·캐릭터 레벨·템레벨만 추출한다."""
+    info = fetch_official("/api/character/info",
+                          {"lang": "ko", "characterId": cid, "serverId": sid})
+    p = info.get("profile") or {}
+    il = next((s.get("value") for s in ((info.get("stat") or {}).get("statList") or [])
+               if s.get("type") == "ItemLevel"), None)
+    try:
+        il = int(float(il)) if il is not None else None
+    except (TypeError, ValueError):
+        il = None
+    return {"cp": p.get("combatPower"), "level": p.get("characterLevel"), "itemLv": il}
+
+
+def run_char_sync(trigger="cron"):
+    """등록 캐릭터 전원의 전투력·레벨·템레벨을 천천히 순회하며 최신화한다."""
+    if not _CHAR_SYNC_LOCK.acquire(blocking=False):
+        return {"ok": False, "error": "이미 동기화가 진행 중입니다."}
+    try:
+        chars = STORE.kv_get("mychars") or []
+        # 같은 캐릭터가 여러 그룹에 등록돼 있어도 외부 조회는 1회만 한다
+        uniq = []
+        seen = set()
+        for c in chars:
+            sid, cid = str(c.get("serverId") or ""), str(c.get("characterId") or "")
+            if sid and cid and (sid, cid) not in seen:
+                seen.add((sid, cid))
+                uniq.append((sid, cid))
+        _CHAR_SYNC_STATE.update(running=True, last_started=_now_kst(), last_epoch=time.time(),
+                                last_error=None, total=len(uniq), done=0, success=0, trigger=trigger)
+        results = {}
+        consecutive_fails = 0
+        for i, (sid, cid) in enumerate(uniq):
+            if i:
+                time.sleep(random.uniform(3, 6))   # 사람 속도의 간격으로 조회
+            try:
+                results[(sid, cid)] = _char_info_light(sid, cid)
+                consecutive_fails = 0
+            except Exception as e:
+                consecutive_fails += 1
+                _CHAR_SYNC_STATE["last_error"] = str(e)
+                if consecutive_fails >= 3:
+                    raise RuntimeError(f"연속 {consecutive_fails}회 실패로 중단(차단 의심): {e}")
+            _CHAR_SYNC_STATE["done"] = i + 1
+            _CHAR_SYNC_STATE["success"] = len(results)
+        # 조회 동안 다른 기기가 목록을 바꿨을 수 있으므로 저장 직전에 다시 읽어 병합한다
+        chars = STORE.kv_get("mychars") or []
+        changed = False
+        for c in chars:
+            r = results.get((str(c.get("serverId") or ""), str(c.get("characterId") or "")))
+            if not r:
+                continue
+            for field, v in (("cp", r["cp"]), ("level", r["level"]), ("itemLv", r["itemLv"])):
+                if v is not None and c.get(field) != v:
+                    c[field] = v
+                    changed = True
+        if changed:
+            STORE.kv_set("mychars", chars)
+        _CHAR_SYNC_STATE.update(running=False, last_finished=_now_kst(), last_ok=True)
+        return {"ok": True, "total": len(uniq), "success": len(results)}
+    except Exception as e:
+        _CHAR_SYNC_STATE.update(running=False, last_finished=_now_kst(), last_ok=False,
+                                last_error=str(e))
+        return {"ok": False, "error": str(e)}
+    finally:
+        _CHAR_SYNC_LOCK.release()
+
+
+def api_char_sync_start(trigger="manual"):
+    """수동 동기화 시작(백그라운드). 진행 중이거나 쿨다운이면 거절한다."""
+    with _CHAR_SYNC_TRIGGER_LOCK:
+        if _CHAR_SYNC_STATE["running"]:
+            return {"ok": False, "running": True, "error": "이미 동기화가 진행 중입니다."}
+        waited = time.time() - (_CHAR_SYNC_STATE.get("last_epoch") or 0)
+        if trigger == "manual" and waited < CHAR_SYNC_COOLDOWN:
+            left = int(CHAR_SYNC_COOLDOWN - waited)
+            return {"ok": False, "error": f"최근 실행 직후입니다. {left // 60}분 {left % 60}초 뒤에 다시 시도하세요."}
+        _CHAR_SYNC_STATE.update(running=True, last_started=_now_kst(), last_epoch=time.time(),
+                                last_error=None, total=0, done=0, success=0, trigger=trigger)
+        threading.Thread(target=run_char_sync, args=(trigger,), daemon=True).start()
+    return {"ok": True, "started": True}
+
+
+def api_char_sync_status(q=None):
+    dt = _next_char_sync_dt()
+    return {**{k: v for k, v in _CHAR_SYNC_STATE.items() if k != "last_epoch"},
+            "cron": CHAR_SYNC_HHMM or None,
+            "next_run": dt.isoformat(timespec="minutes") if dt else None}
+
+
+def _char_sync_scheduler():
+    """매일 CHAR_SYNC_HHMM(KST)에 경량 동기화를 실행하는 데몬 루프."""
+    while True:
+        nxt = _next_char_sync_dt()
+        if not nxt:
+            return
+        wait = (nxt - datetime.now(KST)).total_seconds()
+        if wait > 0:
+            time.sleep(wait)
+        run_char_sync("cron")
+        time.sleep(60)   # 실행 직후 재트리거 방지
+
+
 # ---------- 범용 상태 저장(KV) — 내 캐릭터/그룹·파티 모집·숙제·설정·보유량 ----------
 # 클라이언트가 localStorage 대신 사용하는 서버 저장소. 값은 JSON 그대로 보관한다.
 # 인증이 없으므로 현재는 배포 인스턴스 전체가 공유하는 단일 데이터셋이다(소규모 길드용).
@@ -1013,6 +1145,7 @@ NET_ROUTES = {
     "/api/char/detail": api_char_detail,
     "/api/char/cached": api_char_cached,
     "/api/char/item": api_char_item,
+    "/api/char/sync/status": api_char_sync_status,
     "/api/store": api_store_get,
     "/api/dungeons": api_dungeons,
     "/api/jobstats": api_jobstats,
@@ -1197,6 +1330,12 @@ class Handler(BaseHTTPRequestHandler):
                 _admin_sessions_persist_locked()
             self._json({"ok": True}, headers={"Set-Cookie": self._admin_cookie("", 0)})
             return
+        if parsed.path == "/api/char/sync":
+            try:
+                self._json(api_char_sync_start("manual"))
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+            return
         if parsed.path == "/api/delete-requests":
             try:
                 self._json(api_delete_request(self._read_json()))
@@ -1291,6 +1430,10 @@ def main():
     if CRON_HHMM and not os.environ.get("DISABLE_JOBSTATS_CRON"):
         threading.Thread(target=_jobstats_scheduler, daemon=True).start()
         print(f"직업 통계 자동 크롤 예약: 매일 {CRON_HHMM} KST (다음: {_next_cron_dt()})")
+    # 등록 캐릭터 경량 동기화(전투력·레벨·템레벨) 자동 예약
+    if CHAR_SYNC_HHMM and not os.environ.get("DISABLE_CHAR_SYNC"):
+        threading.Thread(target=_char_sync_scheduler, daemon=True).start()
+        print(f"캐릭터 경량 동기화 예약: 매일 {CHAR_SYNC_HHMM} KST (다음: {_next_char_sync_dt()})")
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"아이온2 제작 뷰어: http://{args.host}:{args.port}  "
           f"(저장소: {STORE.kind}, Ctrl+C 종료)")

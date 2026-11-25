@@ -1634,7 +1634,7 @@
       </div>
       <div class="hw-box">
         <label>캐릭터 최신 정보</label>
-        <div class="hw-actions"><button class="hw-mini" id="mcRefreshAll" type="button">등록 캐릭터 전체 갱신</button><span id="mcRefreshStatus" class="hw-note" style="margin:0"></span></div>
+        <div class="hw-actions"><button class="hw-mini" id="mcRefreshAll" type="button" title="캐릭터당 1회씩 천천히 조회해 전투력·레벨·템레벨만 갱신합니다">전투력·템레벨 동기화</button><span id="mcRefreshStatus" class="hw-note" style="margin:0"></span></div>
       </div>
       <div class="hw-note">이벤트 수급과 새싹 보너스는 본캐에만 합산됩니다. 이벤트 수급은 일일·주간 개수를, 새싹 보너스는 주간 획득 개수를 기준으로 계산합니다.</div>
       <div id="adminRequestsPanel" hidden>
@@ -1657,6 +1657,7 @@
           <div class="hw-box"><label>아르카나 통계</label><div class="desc">직업별 아르카나 스킬 채용률(전 직업)과 성배·종·거울 옵션 풀을 수집합니다. 전부 수집돼야 완료로 표시됩니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="arcana" id="adminCrawlArcana" type="button">아르카나 수집</button><span class="hw-note" data-crawl-status="arcana" aria-live="polite">대기 중</span></div></div>
           <div class="hw-box"><label>제작 레시피 · 시세</label><div class="desc">제작 공식과 시세를 갱신하고, 현재 스냅샷을 Turso 백업에도 동기화합니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="craft" id="adminCrawlCraft" type="button">제작 데이터 갱신</button><span class="hw-note" data-crawl-status="craft" aria-live="polite">대기 중</span></div></div>
           <div class="hw-box"><label>제작 스냅샷 복원</label><div class="desc">Turso에 보관된 제작 데이터 백업을 서버 캐시에 다시 내려받습니다.</div><div class="hw-actions"><button class="hw-mini" data-crawl="restore" id="adminCraftRestore" type="button">백업에서 복원</button><span class="hw-note" data-crawl-status="restore" aria-live="polite">대기 중</span></div></div>
+          <div class="hw-box"><label>캐릭터 전투력·템레벨 동기화</label><div class="desc">등록 캐릭터 전원을 캐릭터당 1회씩 천천히 조회해 전투력·레벨·템레벨만 최신화합니다. 매일 아침 자동 실행됩니다.</div><div class="hw-actions"><button class="hw-mini" id="adminCharSync" type="button">지금 동기화</button><span class="hw-note" id="adminCharSyncStatus" aria-live="polite">대기 중</span></div></div>
         </div>
         <div class="hw-note" id="adminCrawlStatus" style="margin:6px 0 0">…</div>
       </div>
@@ -1771,7 +1772,7 @@ async function refreshAdminState(){
   if(importPanel)importPanel.hidden=!isLocalMode;   // 운영 데이터 가져오기는 로컬에서만
   const crawlPanel=document.getElementById("adminCrawlPanel");
   if(crawlPanel)crawlPanel.hidden=!isAdmin;
-  if(isAdmin){ await renderAdminRequests(); await renderAdminAccessLog(); await refreshCrawlStatus(); }
+  if(isAdmin){ await renderAdminRequests(); await renderAdminAccessLog(); await refreshCrawlStatus(); await refreshCharSyncAdmin(); }
   else adminDeleteGroups=new Set();
   if(!isAdmin&&["view-settings","view-craft"].includes(document.querySelector(".view.active")?.id))showView("mychar");
   if(typeof renderTabs==="function")renderTabs();
@@ -2818,9 +2819,9 @@ function renderHomework(redrawCharacters=true){
     <div class="hw-k half"><div class="t">예상 주간 각인 키나</div><div class="v">${fmtFull(totalEngraved)}</div><div class="s">던전 ${fmtFull(totalDungeonEngraved)}<br>레이드 ${fmtFull(totalSanctEngraved)}</div></div>
     <div class="hw-k"><div class="t">예상 주간 총 키나</div><div class="v">${fmtFull(totalProfit+totalEngraved)}</div><div class="s">비각인 ${fmtFull(totalProfit)}<br>각인 ${fmtFull(totalEngraved)}</div></div>
   </div>
-  <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 키나</th><th>1판 각인 키나</th><th>주간 판수</th><th>하루 판수</th><th>일간 부가수익(키나)</th><th>예상 수익(키나)</th><th>예상 각인 키나</th><th>잔여</th></tr></thead>
+  <table class="hw-table"><thead><tr><th>캐릭터</th><th>구분</th><th>던전</th><th>난이도</th><th>주간 에너지</th><th>1판 소모</th><th>1판 키나</th><th>1판 각인 키나</th><th>주간 판수</th><th>하루 판수</th><th>예상 수익(키나)</th><th>예상 각인 키나</th><th>예상 총 키나</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td>${esc(r.char.name||'')}</td><td>${r.role.label}</td><td>${r.dungeon}</td><td>${r.name}</td><td class="num">${fmt(Math.floor(r.weeklyEnergy))}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmtFull(r.reward)}</td><td class="num">${fmtFull(r.engraved)}</td>
-      <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num">${fmtFull(r.manualDailyProfit)}</td><td class="num good">${fmtFull(r.profit)}</td><td class="num good">${fmtFull(r.engravedProfit)}</td><td class="num">${fmt(Math.floor(r.left))}</td></tr>`).join("")}</tbody></table>
+      <td class="num good">${fmt(r.runs)}</td><td class="num">${r.daily.toFixed(2)}</td><td class="num good">${fmtFull(r.profit)}</td><td class="num good">${fmtFull(r.engravedProfit)}</td><td class="num good">${fmtFull(r.profit+r.engravedProfit)}</td></tr>`).join("")}</tbody></table>
   <div class="hw-mrows">${rows.map(r=>`<div class="hw-mrow${r.char.role==='main'?' main':''}">
     <div class="mr-h"><b>${esc(r.char.name||'')}</b><span class="hw-role ${r.char.role}">${r.role.label}</span><span class="mr-d">${esc(r.dungeon)} · ${esc(r.name)}</span></div>
     <div class="mr-grid">
@@ -2888,12 +2889,14 @@ function hwManualResult(){
   const now=new Date(), reset=hwNextReset(now);
   const days=Math.round((reset-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5);  // 오늘~화요일 일수
   const hours=(reset-now)/36e5;
-  const auto=Math.floor(hours/3)*15;                     // 검색시각부터 리셋까지 자동충전(3h당 15)
+  // 순수 오드 계산(st.pure, 기기별 저장): 자동충전·이벤트를 빼고 입력한 오드로만 계산한다.
+  const pure=!!st.pure;
+  const auto=pure?0:Math.floor(hours/3)*15;              // 검색시각부터 리셋까지 자동충전(3h당 15)
   const c=opCfg(), dailyEvent=(+c.event40||0)*40+(+c.event10||0)*10;
   // 수기도 숙제 표와 같은 기준: 이벤트는 선택한 본캐에만 자동 적용한다.
   const selected=hwGroupChars().find(x=>x.key===st.sel);
   const isMain=selected?.role==="main";
-  const events=isMain?dailyEvent*days:0;
+  const events=(!pure&&isMain)?dailyEvent*days:0;
   const od=+((st.od||{})[st.sel||"_"])||0;
   const total=od+auto+events;                            // 새싹 제외
   const runs=Math.floor(total/cost);
@@ -2906,8 +2909,8 @@ function hwManualResult(){
       <div class="sub">${mm}수까지 <b>${days}일</b> · 총 <b>${fmt(runs)}판</b> 가능<br>모두 소모 시 예상 수익 <b>${fmtFull(expectedProfit)} 키나</b> · <b>${fmtFull(expectedEngraved)} 각인 키나</b></div></div>`,
     breakdown:`<div class="hw-mc-break">
       <div><span>현재 오드</span><b>${fmt(od)}</b></div>
-      <div><span>자동충전</span><b class="plus">+${fmt(auto)}</b></div>
-      ${isMain&&dailyEvent?`<div><span>이벤트 ×${days}일</span><b class="plus">+${fmt(dailyEvent*days)}</b></div>`:""}
+      ${pure?`<div><span>자동충전·이벤트</span><b>제외 (순수 오드)</b></div>`:`<div><span>자동충전</span><b class="plus">+${fmt(auto)}</b></div>`}
+      ${!pure&&isMain&&dailyEvent?`<div><span>이벤트 ×${days}일</span><b class="plus">+${fmt(dailyEvent*days)}</b></div>`:""}
       <div class="tot"><span>가용 총 오드</span><b>${fmt(total)}</b></div>
     </div>`
   };
@@ -2928,7 +2931,8 @@ function renderHwManual(){
       <img src="${c.img||''}" ${oe}><span class="nm">${esc(c.name)}</span></button>`; });
   html+=`</div>
     <div class="hw-mc-work">
-      <div class="hw-mc-inputs"><label>현재 남은 오드<input id="hwmOd" type="number" min="0" value="${od}"></label></div>
+      <div class="hw-mc-inputs"><label>현재 남은 오드<input id="hwmOd" type="number" min="0" value="${od}"></label>
+        <label class="hw-mc-chk" title="체크 시 자동충전·이벤트 없이 입력한 오드로만 계산"><input id="hwmPure" type="checkbox" ${st.pure?'checked':''}>순수 오드 계산</label></div>
       ${preset}
       <div id="hwmHero">${result.hero}</div>
       <div id="hwmBreak">${result.breakdown}</div>
@@ -2937,6 +2941,7 @@ function renderHwManual(){
   box.querySelectorAll("[data-sel]").forEach(b=>b.onclick=()=>{const s=hwmGet(); s.sel=(s.sel===b.dataset.sel?null:b.dataset.sel); hwmSet(s); renderHwManual();});
   const upd=()=>{const r=hwManualResult();document.getElementById("hwmBreak").innerHTML=r.breakdown;document.getElementById("hwmHero").innerHTML=r.hero;};
   document.getElementById("hwmOd").oninput=e=>{const s=hwmGet(); (s.od||(s.od={}))[s.sel||"_"]=+e.target.value||0; hwmSet(s); upd();};
+  document.getElementById("hwmPure").onchange=e=>{const s=hwmGet(); s.pure=e.target.checked; hwmSet(s); upd();};
 }
 function initHomework(){
   document.querySelectorAll("[data-hw-view]").forEach(b=>b.addEventListener("click",()=>setHomeworkView(b.dataset.hwView)));
@@ -3676,37 +3681,35 @@ function mcWithProfile(c,p){
     serverName:p.serverName||c.serverName,race:p.raceId??c.race,
     img:p.profileImage||c.img,cp:p.combatPower??c.cp,className:p.className||c.className};
 }
+// 등록 캐릭터 경량 동기화: 서버가 캐릭터당 info 1회씩(3~6초 간격) 천천히 조회해
+// 전투력·레벨·템레벨만 최신화한다(과거의 캐릭터별 20여건 몰아치기 제거 — 공격 오인 방지).
+// 매일 새벽(서버 CHAR_SYNC_HHMM)에도 같은 로직이 자동 실행된다.
 async function refreshAllMyCharacters(){
   const btn=document.getElementById("mcRefreshAll");
   const status=document.getElementById("mcRefreshStatus");
-  const chars=mcChars();
-  if(!chars.length){if(status)status.textContent="갱신할 등록 캐릭터가 없습니다.";return;}
+  try{ await postJSON("/api/char/sync",{}); }
+  catch(e){ if(status)status.textContent=e.message||"동기화 시작 실패"; return; }
   if(btn)btn.disabled=true;
-  let done=0, success=0, cursor=0;
-  const updated=[...chars];
-  const worker=async()=>{
-    while(cursor<chars.length){
-      const i=cursor++, c=chars[i];
-      if(status)status.textContent=`최신 정보 수집 중… ${done}/${chars.length}`;
-      try{
-        const detail=await j(`/api/char/detail?${charQS(c.serverId,c.characterId)}`);
-        const p=detail?.data?.info?.profile;
-        if(p){
-          updated[i]=mcWithProfile(c,p);
-          const il=statItemLevel(detail.data.info);
-          if(il!=null)updated[i].itemLv=il;
-          success++;
-        }
-      }catch(e){}
-      done++;
-    }
+  const finish=async(s)=>{
+    // 서버가 mychars 를 직접 갱신했으므로 저장소에서 다시 읽어 화면에 반영한다
+    try{ const r=await j("/api/store?k=mychars");
+      if(r&&r.v){ SB.mychars=r.v; try{localStorage.setItem(SB_LEGACY.mychars,JSON.stringify(r.v));}catch(e){} } }catch(e){}
+    refreshIdentityViews();
+    if(typeof renderParty==="function")renderParty();
+    if(status)status.textContent=s?.last_ok
+      ?`동기화 완료 · ${s.success}/${s.total}캐릭터 (매일 ${s.cron||"--:--"} 자동 실행)`
+      :`동기화 실패: ${s?.last_error||"상태 확인 실패"}`;
+    if(btn)btn.disabled=false;
   };
-  await Promise.all(Array.from({length:Math.min(3,chars.length)},worker));
-  setMcChars(updated);
-  refreshIdentityViews();
-  if(typeof renderParty==="function")renderParty();
-  if(status)status.textContent=`갱신 완료 · ${success}/${chars.length}캐릭터`;
-  if(btn)btn.disabled=false;
+  const poll=async()=>{
+    let s=null; try{ s=await j("/api/char/sync/status"); }catch(e){}
+    if(s&&s.running){
+      if(status)status.textContent=`전투력·템레벨 동기화 중… ${s.done}/${s.total} (천천히 조회합니다)`;
+      setTimeout(poll,3000); return;
+    }
+    finish(s);
+  };
+  setTimeout(poll,1000);
 }
 // 전투력 없는(검색으로 등록한) 캐릭터는 저장 캐시에서 조용히 보충 — 외부 재조회 없이 로컬 DB만 읽음
 let mcBackfilling=false;
@@ -3910,6 +3913,7 @@ function initAdmin(){
   on("adminCrawlArcana","click",()=>runAdminCrawl("arcana"));
   on("adminCrawlCraft","click",()=>runAdminCrawl("craft"));
   on("adminCraftRestore","click",()=>runAdminCrawl("restore"));
+  on("adminCharSync","click",runAdminCharSync);
 }
 
 // 데이터 크롤링 상태 표시. 실행 중이면 폴링한다.
@@ -3965,6 +3969,41 @@ async function refreshCrawlStatus(){
   document.querySelectorAll("#adminCrawlPanel [data-crawl]").forEach(btn=>btn.disabled=!!states[btn.dataset.crawl]?.running);
   clearTimeout(crawlPollTimer);
   if(running) crawlPollTimer=setTimeout(refreshCrawlStatus,3000);
+}
+// 관리 페이지의 캐릭터 경량 동기화 카드: 상태 표시 + 수동 실행(완료 시 mychars 재적재)
+let charSyncAdminTimer=null;
+async function refreshCharSyncAdmin(){
+  const box=document.getElementById("adminCharSyncStatus"); if(!box)return;
+  let s=null; try{ s=await j("/api/char/sync/status"); }catch(e){ box.textContent="상태를 불러오지 못했습니다."; return; }
+  const btn=document.getElementById("adminCharSync"); if(btn)btn.disabled=!!s.running;
+  const sched=` · 자동: 매일 ${s.cron||"--:--"} · 다음 ${fmtDateTime(s.next_run)}`;
+  if(s.running){
+    box.innerHTML=`⏳ <b>동기화 진행 중…</b> ${s.done}/${s.total}`;
+    clearTimeout(charSyncAdminTimer); charSyncAdminTimer=setTimeout(refreshCharSyncAdmin,3000);
+  }else if(s.last_ok===true){
+    box.innerHTML=`✅ 완료 · ${fmtDateTime(s.last_finished)} · ${s.success}/${s.total}캐릭터${s.trigger==="cron"?" (자동)":""}${sched}`;
+  }else if(s.last_ok===false){
+    box.innerHTML=`⚠️ 실패 · ${esc(s.last_error||"다시 시도하세요.")}${sched}`;
+  }else{
+    box.innerHTML=`대기 중${sched}`;
+  }
+}
+async function runAdminCharSync(){
+  const box=document.getElementById("adminCharSyncStatus");
+  try{ await postJSON("/api/char/sync",{}); }
+  catch(e){ if(box)box.innerHTML=`⚠️ ${esc(e.message||"동기화 시작 실패")}`; return; }
+  const btn=document.getElementById("adminCharSync"); if(btn)btn.disabled=true;
+  const watch=async()=>{
+    let s=null; try{ s=await j("/api/char/sync/status"); }catch(e){}
+    if(s&&s.running){ refreshCharSyncAdmin(); setTimeout(watch,3000); return; }
+    // 서버가 mychars 를 직접 갱신했으므로 저장소에서 다시 읽어 화면에 반영한다
+    try{ const r=await j("/api/store?k=mychars");
+      if(r&&r.v){ SB.mychars=r.v; try{localStorage.setItem(SB_LEGACY.mychars,JSON.stringify(r.v));}catch(e){} } }catch(e){}
+    refreshIdentityViews();
+    if(typeof renderParty==="function")renderParty();
+    refreshCharSyncAdmin();
+  };
+  setTimeout(watch,1000);
 }
 async function runAdminCrawl(kind){
   const endpoints={jobstats:"/api/admin/crawl-jobstats",arcana:"/api/admin/crawl-arcana",craft:"/api/admin/crawl-craft",restore:"/api/admin/restore-craft-snapshot"};
