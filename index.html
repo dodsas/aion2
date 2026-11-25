@@ -1565,9 +1565,9 @@
     <div id="rdTypeSel" class="pt-typesel"></div>
     <label style="margin-top:13px">공대 이름</label>
     <input id="rdTitle" maxlength="40" placeholder="예: 매주 가는 길드공대" autocomplete="off" spellcheck="false">
-    <label style="margin-top:13px">최소 템레벨 (예: 5800)</label>
-    <input id="rdMinIl" type="number" min="0" step="100" value="5800">
-    <div class="pt-capnote">구성 <b>1파티 · 2파티</b> 고정 · 파티당 <b>5명</b> · 최대 <b>10명</b> · 최소 템레벨 미만 캐릭터는 편성 목록에서 숨겨집니다</div>
+    <label style="margin-top:13px">최소 전투력 (천 단위 · 예: 700 = 70만)</label>
+    <input id="rdMinCp" type="number" min="0" step="10" value="700">
+    <div class="pt-capnote">구성 <b>1파티 · 2파티</b> 고정 · 파티당 <b>5명</b> · 최대 <b>10명</b> · 최소 전투력 미만 캐릭터는 편성 목록에서 숨겨집니다</div>
     <div class="hw-modal-actions">
       <button class="hw-mini" id="rdModalCancel" type="button">취소</button>
       <button class="btn" id="rdModalCreate" type="button">공대 생성</button>
@@ -5248,10 +5248,10 @@ function initParty(){
 // 파티 모집과 달리 신청을 받지 않는다. 공대장(공대를 만든 그룹)이 등록된 모든
 // 캐릭터 풀에서 직접 골라 파티를 편성한다 — 다른 사람 캐릭터도 임의로 추가 가능.
 // 콘텐츠별 하위 탭 구조이며 지금은 '비탄' 하나만 노출한다. 저장은 SB 'raids' 키.
-// minItemLv: 편성 풀 노출 기준 최소 템레벨(캐릭터 상세의 아이템레벨과 동일 값).
+// minCp: 편성 풀 노출 기준 최소 전투력. 공대장이 공대별로 조정할 수 있다.
 const RAID_TYPES=[
-  {key:"bitan", label:"비탄", color:"var(--g7)", icon:"🥀", minItemLv:5800},
-  {key:"muspel", label:"무스펠", color:"var(--g5)", icon:"🔥", minItemLv:5800},
+  {key:"bitan", label:"비탄", color:"var(--g7)", icon:"🥀", minCp:700000},
+  {key:"muspel", label:"무스펠", color:"var(--g5)", icon:"🔥", minCp:700000},
 ];
 const rdType=k=>RAID_TYPES.find(t=>t.key===k)||RAID_TYPES[0];
 const RD_TEAM_MAX=5;      // 파티당 최대 인원
@@ -5333,9 +5333,9 @@ function rdNormalize(r){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date||""))r.date=ptYmd(new Date());   // 구버전 호환용(화면 미사용)
   r.time=ptTime(r.time);
   r.teamCount=RD_TEAM_COUNT;   // 과거에 저장된 값이 있어도 고정 구성으로 강제
-  const defMinIl=rdType(r.type).minItemLv||0;
-  r.minItemLv=Number.isFinite(+r.minItemLv)&&+r.minItemLv>=0?Math.floor(+r.minItemLv):defMinIl;
-  delete r.minCp;   // 구(전투력 컷) 필드 폐기 — 템레벨 컷으로 대체
+  const defMinCp=rdType(r.type).minCp||0;
+  r.minCp=Number.isFinite(+r.minCp)&&+r.minCp>=0?Math.floor(+r.minCp):defMinCp;
+  delete r.minItemLv;   // 구(템레벨 컷) 필드 폐기 — 전투력 컷으로 대체
   r.pfTactic=pfTacticOf(r);   // 영구동토 택틱 (미지정·구버전은 기본 택틱)
   if(!Array.isArray(r.members))r.members=[];
   const seen=new Set();
@@ -5391,18 +5391,19 @@ function rdOpenCreate(){
   sel.innerHTML=RAID_TYPES.map(t=>`<button type="button" class="pt-typebtn${t.key===rdNewType?' on':''}" data-t="${t.key}" style="--c:${t.color}">${t.icon} ${t.label}</button>`).join("");
   sel.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{rdNewType=b.dataset.t;
     sel.querySelectorAll(".pt-typebtn").forEach(x=>x.classList.toggle("on",x.dataset.t===rdNewType));
-    document.getElementById("rdMinIl").value=rdType(rdNewType).minItemLv||0;});
+    document.getElementById("rdMinCp").value=cpShort(rdType(rdNewType).minCp)||0;});
   document.getElementById("rdTitle").value="";
-  document.getElementById("rdMinIl").value=rdType(rdNewType).minItemLv||0;
+  document.getElementById("rdMinCp").value=cpShort(rdType(rdNewType).minCp)||0;
   document.getElementById("rdModal").classList.add("on");
   document.getElementById("rdTitle").focus();
 }
 function rdCloseCreate(){document.getElementById("rdModal").classList.remove("on");}
 async function rdCreate(){
   const title=document.getElementById("rdTitle").value.trim();
-  const minItemLv=Math.max(0,Math.floor(+document.getElementById("rdMinIl").value||0));
+  // 입력은 천 단위(700 = 전투력 700,000) → 저장은 원 단위로 환산
+  const minCp=Math.max(0,Math.floor(+document.getElementById("rdMinCp").value||0))*1000;
   const id="r"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-  await RaidStore.upsert(rdNormalize({id,type:rdNewType,creatorGroup:effectiveGroup(),title,minItemLv,teamCount:RD_TEAM_COUNT,
+  await RaidStore.upsert(rdNormalize({id,type:rdNewType,creatorGroup:effectiveGroup(),title,minCp,teamCount:RD_TEAM_COUNT,
     createdAt:new Date().toISOString(),members:[]}));
   rdCloseCreate();
   rdState.type=rdNewType; rdState.openId=id; rdState.q="";
@@ -5452,7 +5453,7 @@ async function rdUpdate(id,patch){   // 헤더의 이름/템렙 인라인 편집
   const r=await RaidStore.get(id); if(!r)return;
   if(!rdCanEdit(r))return;
   if(patch.title!=null)r.title=String(patch.title).trim().slice(0,40);
-  if(patch.minItemLv!=null)r.minItemLv=Math.max(0,Math.floor(+patch.minItemLv||0));
+  if(patch.minCp!=null)r.minCp=Math.max(0,Math.floor(+patch.minCp||0));
   if(patch.pfTactic!=null&&PF_TACTICS[patch.pfTactic])r.pfTactic=patch.pfTactic;
   // 공략 템플릿 수정본: {문구key:{세그먼트idx:교체 텍스트}}. 문자열만 보관하고 빈 맵은 버린다.
   // 앞뒤 공백이 구분자 역할을 하므로 trim 하지 않는다.
@@ -5717,18 +5718,18 @@ function rdMissionHtml(r,canEdit){
 function rdPoolHtml(r,canEdit){
   const inRaid=new Set(r.members.map(m=>m.key));
   const q=(rdState.q||"").trim().toLowerCase();
-  const minIl=r.minItemLv||0;
-  // 최소 템레벨 미만 캐릭터는 풀에서 숨긴다. 템레벨 미확인(–) 캐릭터는 '미만'이 아니므로 남긴다.
-  const eligible=mcChars().filter(c=>c.itemLv==null||c.itemLv>=minIl);
+  const minCp=r.minCp||0;
+  // 최소 전투력 미만 캐릭터는 풀에서 숨긴다. 전투력 미확인(–) 캐릭터는 '미만'이 아니므로 남긴다.
+  const eligible=mcChars().filter(c=>c.cp==null||c.cp>=minCp);
   const hiddenCnt=mcChars().length-eligible.length;
   const all=eligible.filter(c=>!q||[c.name,c.group,c.className,c.serverName].some(v=>(v||"").toLowerCase().includes(q)));
   const me=effectiveGroup();
   const groups=[...new Set(all.map(c=>c.group||"기타"))].sort((a,b)=>(a===me?-1:b===me?1:a.localeCompare(b,"ko")));
   let h=`<div class="pt-sech">전체 캐릭터 <span class="hint">${canEdit?'클릭 → 빈 파티에 편성 · 다시 클릭 → 제외':'공대장만 편성할 수 있습니다'}</span></div>`;
-  if(minIl>0)h+=`<div class="rd-minnote">⚡ 템레벨 <b>${fmt(minIl)}</b> 이상만 표시${hiddenCnt?` · <span>${hiddenCnt}캐릭 숨김</span>`:''}</div>`;
+  if(minCp>0)h+=`<div class="rd-minnote">⚡ 전투력 <b>${fmt(cpShort(minCp))}</b> 이상만 표시${hiddenCnt?` · <span>${hiddenCnt}캐릭 숨김</span>`:''}</div>`;
   h+=`<input class="rd-q" id="rdQ" placeholder="이름·그룹·직업 검색" autocomplete="off" spellcheck="false" value="${esc(rdState.q||"")}">`;
   h+=`<div class="pt-poolbody">`;
-  if(!all.length)h+=`<div class="pt-empty">${q?'검색 결과가 없습니다.':(minIl>0&&hiddenCnt?`템레벨 ${fmt(minIl)} 이상인 캐릭터가 없습니다.`:'등록된 캐릭터가 없습니다.<br>🗂️ 캐릭 탭에서 등록하세요.')}</div>`;
+  if(!all.length)h+=`<div class="pt-empty">${q?'검색 결과가 없습니다.':(minCp>0&&hiddenCnt?`전투력 ${fmt(cpShort(minCp))} 이상인 캐릭터가 없습니다.`:'등록된 캐릭터가 없습니다.<br>🗂️ 캐릭 탭에서 등록하세요.')}</div>`;
   groups.forEach(g=>{
     const chars=all.filter(c=>(c.group||"기타")===g);
     h+=`<div class="pt-pg">${esc(g)} · ${chars.length}</div>`;
@@ -5757,7 +5758,7 @@ async function renderRaidList(root){
     html+=`<div class="pt-list">${raids.map(x=>`<div class="pt-rc" data-open="${x.id}" style="--c:${T.color}">
         ${rdCanEdit(x)?`<button class="pt-rcx" data-delc="${x.id}" title="삭제">✕</button>`:""}
         <div class="t">${T.icon} ${esc(rdTitleOf(x))}</div>
-        <div class="meta">공대장 ${esc(x.creatorGroup||"?")}${x.minItemLv?` · 템렙 ${fmt(x.minItemLv)}+`:''}</div>
+        <div class="meta">공대장 ${esc(x.creatorGroup||"?")}${x.minCp?` · 전투력 ${fmt(cpShort(x.minCp))}+`:''}</div>
         <div class="bars"><div class="bar">인원 <b>${x.members.length}</b>/${rdMax(x)}</div></div>
       </div>`).join("")}</div>`;
   }
@@ -5781,9 +5782,9 @@ async function renderRaidDetail(root){
     <button class="hw-mini" id="rdBack">← 목록</button>
     <h2><span class="pt-dot" style="color:${T.color}"></span>${T.icon} ${esc(rdTitleOf(r))}</h2>`;
   if(canEdit){
-    html+=`<span class="rd-edit"><input id="rdEditTitle" maxlength="40" value="${esc(r.title||"")}" placeholder="공대 이름 (예: 매주 가는 길드공대)" style="width:220px" autocomplete="off" spellcheck="false"><label title="최소 템레벨">템렙<input id="rdEditMinIl" type="number" min="0" step="100" value="${r.minItemLv||0}" style="width:80px">+</label></span>`;
-  }else if(r.minItemLv){
-    html+=`<span class="pt-cap">템레벨 <b>${fmt(r.minItemLv)}+</b></span>`;
+    html+=`<span class="rd-edit"><input id="rdEditTitle" maxlength="40" value="${esc(r.title||"")}" placeholder="공대 이름 (예: 매주 가는 길드공대)" style="width:220px" autocomplete="off" spellcheck="false"><label title="최소 전투력 (천 단위 · 700 = 70만)">전투력<input id="rdEditMinCp" type="number" min="0" step="10" value="${cpShort(r.minCp)||0}" style="width:72px">+</label></span>`;
+  }else if(r.minCp){
+    html+=`<span class="pt-cap">전투력 <b>${fmt(cpShort(r.minCp))}+</b></span>`;
   }
   html+=`<span class="pt-sub">공대장 <b style="color:var(--gold)">${esc(r.creatorGroup||"?")}</b></span>
     <span class="pt-cap${r.members.length>rdMax(r)?' over':''}">인원 <b>${r.members.length}</b>/${rdMax(r)}</span>
@@ -5834,8 +5835,8 @@ async function renderRaidDetail(root){
   if(delBtn)delBtn.onclick=async()=>{if(confirm("이 공대를 삭제할까요?")&&await rdDeleteRaid(r.id)){rdState.openId=null;renderRaid();}};
   const titleIn=document.getElementById("rdEditTitle");
   if(titleIn)titleIn.onchange=()=>rdUpdate(r.id,{title:titleIn.value});
-  const minIlIn=document.getElementById("rdEditMinIl");
-  if(minIlIn)minIlIn.onchange=()=>rdUpdate(r.id,{minItemLv:minIlIn.value});
+  const minCpIn=document.getElementById("rdEditMinCp");
+  if(minCpIn)minCpIn.onchange=()=>rdUpdate(r.id,{minCp:(Math.max(0,Math.floor(+minCpIn.value||0)))*1000});   // 천 단위 입력 → 원 단위 저장
   // 영구동토 택틱 변경: 새 택틱에 없는 자리의 기존 지정이 있으면 확인 후 해제.
   const pfSel=document.getElementById("rdPfTactic");
   if(pfSel)pfSel.onchange=()=>{
