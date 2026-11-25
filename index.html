@@ -1213,6 +1213,9 @@
   .pt-tm-chip .tc-b .nm .cls{color:var(--dim);font-weight:700;font-size:10.5px;letter-spacing:-.2px;flex-shrink:0}
   .pt-tm-chip .tc-b .nm .cp{flex-shrink:0;font-weight:900;font-size:10.5px;padding:1px 6px;border-radius:20px;color:var(--gold);background:rgba(143,240,208,.1);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent)}
   .pt-tm-chip .tc-b .sub{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* 캐릭 공유: 타 공대 기 편성 인원 — 점선 테두리로 '아직 이 공대 소속 아님'을 표시 */
+  .pt-tm-chip.shared{border:1px dashed color-mix(in srgb,var(--gold) 55%,var(--line));opacity:.85;cursor:pointer}
+  .pt-tm-chip.shared .sub{color:var(--gold)}
   .pt-tm-chip.role-tank{--r:#8ff0d0}
   .pt-tm-chip.role-heal{--r:#ffd28a}
   .pt-tm-chip.role-deal{--r:#ffadc0}
@@ -1334,6 +1337,8 @@
         color:var(--teal);font-size:12px;font-weight:600;white-space:pre-wrap;word-break:break-all;cursor:not-allowed;max-width:100%}
   .rd-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;align-items:start}
   .rd-cpsum{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--dim);white-space:nowrap}
+  /* 임시파티 안내문은 길 수 있어 줄바꿈 허용 — 머리글 라벨이 눌리지 않게 한다 */
+  .pt-tm-team.tmp .rd-cpsum{white-space:normal;min-width:0;text-align:right;line-height:1.35}
   .pt-tm-chip .pt-memx{margin-left:auto;flex-shrink:0}
   .pt-pc.rd-ro{cursor:default}
   .rd-ilpill{margin-left:4px;color:var(--teal);background:rgba(110,216,245,.08);border-color:color-mix(in srgb,var(--teal) 32%,transparent)}
@@ -5336,6 +5341,7 @@ function rdNormalize(r){
   const defMinCp=rdType(r.type).minCp||0;
   r.minCp=Number.isFinite(+r.minCp)&&+r.minCp>=0?Math.floor(+r.minCp):defMinCp;
   delete r.minItemLv;   // 구(템레벨 컷) 필드 폐기 — 전투력 컷으로 대체
+  r.shareChars=!!r.shareChars;   // 캐릭 공유: 같은 콘텐츠 타 공대 편성 인원을 임시파티에 표시
   r.pfTactic=pfTacticOf(r);   // 영구동토 택틱 (미지정·구버전은 기본 택틱)
   if(!Array.isArray(r.members))r.members=[];
   const seen=new Set();
@@ -5439,6 +5445,18 @@ async function rdRemoveChar(key){
   r.members=r.members.filter(m=>m.key!==key);
   await RaidStore.upsert(r); renderRaid();
 }
+// 캐릭 공유: 같은 콘텐츠의 다른 공대에 편성된 인원을 이 공대로 끌어온다.
+// 원 공대에서 자동으로 편성 해제(임무 지정은 normalize 가 함께 정리)된 뒤 이 공대에 추가된다.
+async function rdPullShared(key,teamIdx){
+  const r=await RaidStore.get(rdState.openId); if(!r||!r.shareChars)return;
+  if(!rdCanEdit(r)){alert("공대 편성은 공대장(공대를 만든 그룹)만 할 수 있습니다.");return;}
+  const src=(await RaidStore.all()).find(x=>x.id!==r.id&&x.type===r.type&&x.members.some(m=>m.key===key&&!m.guest));
+  if(src){
+    src.members=src.members.filter(m=>m.key!==key);
+    await RaidStore.upsert(rdNormalize(src));
+  }
+  await rdAddChar(key,teamIdx);
+}
 async function rdMoveChar(key,teamIdx){
   const r=await RaidStore.get(rdState.openId); if(!r)return;
   if(!rdCanEdit(r))return;
@@ -5454,6 +5472,7 @@ async function rdUpdate(id,patch){   // 헤더의 이름/템렙 인라인 편집
   if(!rdCanEdit(r))return;
   if(patch.title!=null)r.title=String(patch.title).trim().slice(0,40);
   if(patch.minCp!=null)r.minCp=Math.max(0,Math.floor(+patch.minCp||0));
+  if(patch.shareChars!=null)r.shareChars=!!patch.shareChars;
   if(patch.pfTactic!=null&&PF_TACTICS[patch.pfTactic])r.pfTactic=patch.pfTactic;
   // 공략 템플릿 수정본: {문구key:{세그먼트idx:교체 텍스트}}. 문자열만 보관하고 빈 맵은 버린다.
   // 앞뒤 공백이 구분자 역할을 하므로 trim 하지 않는다.
@@ -5642,6 +5661,14 @@ function rdChip(m,canEdit,tagMap){
     ${canEdit?`<button class="pt-memx" data-rd-rm="${esc(m.key)}" title="편성 제외">×</button>`:''}
   </div>`;
 }
+// 캐릭 공유 칩: 같은 콘텐츠 타 공대에 편성돼 있는 캐릭터(이 공대 미편성)를 임시파티에 표시.
+function rdSharedChip(s,canEdit){
+  const m=s.m, cp=cpShort(m.cp), cls=m.className||"";
+  return `<div class="pt-tm-chip shared"${canEdit?` draggable="true" data-rd-drag="share:${esc(m.key)}" data-rd-shared="${esc(m.key)}"`:''} title="현재 '${esc(rdTitleOf(s.from))}' 편성${canEdit?' — 클릭·드래그로 가져오면 그 공대에서 자동 해제됩니다':''}">
+    <img src="${esc(m.img||'')}" ${oe}>
+    <div class="tc-b"><div class="nm">${esc(m.name)}${cls?`<span class="cls">[${esc(cls)}]</span>`:''} <span class="cp">${cp??'–'}</span></div><div class="sub">타 공대: ${esc(rdTitleOf(s.from))}</div></div>
+  </div>`;
+}
 function rdRoleBlock(list,canEdit,tagMap){
   return ["deal","tank","heal"].map(role=>{
     const arr=list.filter(m=>rdRoleOfMember(m)===role).slice().sort((a,b)=>(b.cp??-1)-(a.cp??-1));
@@ -5715,18 +5742,22 @@ function rdMissionHtml(r,canEdit){
   return h+`</div>`;
 }
 // 왼쪽 풀: 그룹 구분 없이 '등록된 모든 캐릭터'를 그룹별로 묶어 노출(내 그룹 우선).
-function rdPoolHtml(r,canEdit){
+// sharedKeys: 캐릭 공유로 타 공대에 편성된 캐릭터 — 풀에서 빼고 임시파티 쪽에만 표시한다.
+function rdPoolHtml(r,canEdit,sharedKeys){
+  sharedKeys=sharedKeys||new Set();
   const inRaid=new Set(r.members.map(m=>m.key));
   const q=(rdState.q||"").trim().toLowerCase();
   const minCp=r.minCp||0;
+  const base=mcChars().filter(c=>!sharedKeys.has(c.key));
   // 최소 전투력 미만 캐릭터는 풀에서 숨긴다. 전투력 미확인(–) 캐릭터는 '미만'이 아니므로 남긴다.
-  const eligible=mcChars().filter(c=>c.cp==null||c.cp>=minCp);
-  const hiddenCnt=mcChars().length-eligible.length;
+  const eligible=base.filter(c=>c.cp==null||c.cp>=minCp);
+  const hiddenCnt=base.length-eligible.length;
   const all=eligible.filter(c=>!q||[c.name,c.group,c.className,c.serverName].some(v=>(v||"").toLowerCase().includes(q)));
   const me=effectiveGroup();
   const groups=[...new Set(all.map(c=>c.group||"기타"))].sort((a,b)=>(a===me?-1:b===me?1:a.localeCompare(b,"ko")));
   let h=`<div class="pt-sech">전체 캐릭터 <span class="hint">${canEdit?'클릭 → 빈 파티에 편성 · 다시 클릭 → 제외':'공대장만 편성할 수 있습니다'}</span></div>`;
   if(minCp>0)h+=`<div class="rd-minnote">⚡ 전투력 <b>${fmt(cpShort(minCp))}</b> 이상만 표시${hiddenCnt?` · <span>${hiddenCnt}캐릭 숨김</span>`:''}</div>`;
+  if(sharedKeys.size)h+=`<div class="rd-minnote">🔗 타 공대 편성 <b>${sharedKeys.size}명</b>은 임시파티 쪽에 표시됩니다</div>`;
   h+=`<input class="rd-q" id="rdQ" placeholder="이름·그룹·직업 검색" autocomplete="off" spellcheck="false" value="${esc(rdState.q||"")}">`;
   h+=`<div class="pt-poolbody">`;
   if(!all.length)h+=`<div class="pt-empty">${q?'검색 결과가 없습니다.':(minCp>0&&hiddenCnt?`전투력 ${fmt(cpShort(minCp))} 이상인 캐릭터가 없습니다.`:'등록된 캐릭터가 없습니다.<br>🗂️ 캐릭 탭에서 등록하세요.')}</div>`;
@@ -5777,14 +5808,26 @@ async function renderRaidDetail(root){
   const r=await RaidStore.get(rdState.openId);
   if(!r){ rdState.openId=null; return renderRaidList(root); }
   const T=rdType(r.type), canEdit=rdCanEdit(r), teams=rdTeams(r);
+  // 캐릭 공유: 같은 콘텐츠의 다른 공대에 편성된(이 공대 미편성) 인원 목록 — 임시파티에 표시
+  let rdShared=[];
+  if(r.shareChars){
+    const mine=new Set(r.members.map(m=>m.key));
+    (await RaidStore.all()).filter(x=>x.id!==r.id&&x.type===r.type).forEach(x=>{
+      x.members.forEach(m=>{
+        if(m.guest||!m.key||mine.has(m.key)||rdShared.some(s=>s.m.key===m.key))return;
+        rdShared.push({m,from:x});
+      });
+    });
+  }
   logAccess("raid_detail",`${T.label} ${rdTitleOf(r)}`);
   let html=`<div class="pt-head">
     <button class="hw-mini" id="rdBack">← 목록</button>
     <h2><span class="pt-dot" style="color:${T.color}"></span>${T.icon} ${esc(rdTitleOf(r))}</h2>`;
   if(canEdit){
-    html+=`<span class="rd-edit"><input id="rdEditTitle" maxlength="40" value="${esc(r.title||"")}" placeholder="공대 이름 (예: 매주 가는 길드공대)" style="width:220px" autocomplete="off" spellcheck="false"><label title="최소 전투력 (천 단위 · 700 = 70만)">전투력<input id="rdEditMinCp" type="number" min="0" step="10" value="${cpShort(r.minCp)||0}" style="width:72px">+</label></span>`;
-  }else if(r.minCp){
-    html+=`<span class="pt-cap">전투력 <b>${fmt(cpShort(r.minCp))}+</b></span>`;
+    html+=`<span class="rd-edit"><input id="rdEditTitle" maxlength="40" value="${esc(r.title||"")}" placeholder="공대 이름 (예: 매주 가는 길드공대)" style="width:220px" autocomplete="off" spellcheck="false"><label title="최소 전투력 (천 단위 · 700 = 70만)">전투력<input id="rdEditMinCp" type="number" min="0" step="10" value="${cpShort(r.minCp)||0}" style="width:72px">+</label><label title="같은 콘텐츠의 다른 공대에 편성된 인원을 임시파티에 보여주고, 끌어오면 그 공대에서 자동 해제합니다"><input id="rdShareChars" type="checkbox" ${r.shareChars?'checked':''}>캐릭 공유</label></span>`;
+  }else{
+    if(r.minCp)html+=`<span class="pt-cap">전투력 <b>${fmt(cpShort(r.minCp))}+</b></span>`;
+    if(r.shareChars)html+=`<span class="pt-cap">🔗 캐릭 공유</span>`;
   }
   html+=`<span class="pt-sub">공대장 <b style="color:var(--gold)">${esc(r.creatorGroup||"?")}</b></span>
     <span class="pt-cap${r.members.length>rdMax(r)?' over':''}">인원 <b>${r.members.length}</b>/${rdMax(r)}</span>
@@ -5792,7 +5835,7 @@ async function renderRaidDetail(root){
     ${canEdit?'<button class="hw-mini" id="rdDel">공대 삭제</button>':''}
   </div>`;
   html+=`<div class="pt-detail">`;
-  html+=`<div class="pt-pool" data-rd-pool>${rdPoolHtml(r,canEdit)}</div>`;
+  html+=`<div class="pt-pool" data-rd-pool>${rdPoolHtml(r,canEdit,new Set(rdShared.map(s=>s.m.key)))}</div>`;
   html+=`<div class="pt-main"><div class="pt-sech">파티 편성 <span class="hint">${canEdit?'왼쪽 캐릭터를 클릭하거나 파티로 드래그 · ×로 제외':''}</span></div>`;
   const tagMap=rdMissionTags(r);
   html+=`<div class="rd-teams">${teams.map((list,i)=>{
@@ -5809,11 +5852,14 @@ async function renderRaidDetail(root){
     </div>`;
   }).join("")}${(()=>{
     // 임시파티: 자리 교체용 대기 공간. 공팟 인원도 삭제 없이 잠시 빼두고 다시 배치할 수 있다.
+    // 캐릭 공유가 켜져 있으면 같은 콘텐츠 타 공대의 기 편성 인원도 여기에 함께 보여준다.
     const tmp=r.members.filter(m=>m.team===-1);
-    if(!canEdit&&!tmp.length)return "";
+    if(!canEdit&&!tmp.length&&!rdShared.length)return "";
+    const sharedBlock=rdShared.length?`<div class="pt-tm-role"><span class="pt-tm-roleh">🔗 타 공대 편성 · ${rdShared.length}</span><div class="pt-tm-body">${rdShared.map(s=>rdSharedChip(s,canEdit)).join("")}</div></div>`:"";
     return `<div class="pt-tm-team tmp"${canEdit?' data-rd-drop="-1"':''}>
-      <div class="pt-tm-teamh">🅿 임시파티 <b>${tmp.length}</b><span class="rd-cpsum">자리 바꿀 인원을 잠시 옮겨두는 곳</span></div>
-      ${tmp.length?rdRoleBlock(tmp,canEdit,tagMap):`<div class="pt-empty" style="padding:8px">파티 자리를 바꿀 때 인원을 여기로 끌어놓았다가 다시 배치하세요</div>`}
+      <div class="pt-tm-teamh">🅿 임시파티 <b>${tmp.length}</b><span class="rd-cpsum">${r.shareChars?'타 공대 인원은 끌어오면 자동 해제':'자리 바꿀 인원을 잠시 옮겨두는 곳'}</span></div>
+      ${tmp.length?rdRoleBlock(tmp,canEdit,tagMap):(rdShared.length?"":`<div class="pt-empty" style="padding:8px">파티 자리를 바꿀 때 인원을 여기로 끌어놓았다가 다시 배치하세요</div>`)}
+      ${sharedBlock}
     </div>`;
   })()}</div>`;
   html+=rdMissionHtml(r,canEdit);
@@ -5837,6 +5883,10 @@ async function renderRaidDetail(root){
   if(titleIn)titleIn.onchange=()=>rdUpdate(r.id,{title:titleIn.value});
   const minCpIn=document.getElementById("rdEditMinCp");
   if(minCpIn)minCpIn.onchange=()=>rdUpdate(r.id,{minCp:(Math.max(0,Math.floor(+minCpIn.value||0)))*1000});   // 천 단위 입력 → 원 단위 저장
+  const shareIn=document.getElementById("rdShareChars");
+  if(shareIn)shareIn.onchange=()=>rdUpdate(r.id,{shareChars:shareIn.checked});
+  // 캐릭 공유 칩: 클릭 → 타 공대에서 자동 해제 후 빈 파티에 편성
+  root.querySelectorAll("[data-rd-shared]").forEach(c=>c.onclick=()=>rdPullShared(c.dataset.rdShared,null));
   // 영구동토 택틱 변경: 새 택틱에 없는 자리의 기존 지정이 있으면 확인 후 해제.
   const pfSel=document.getElementById("rdPfTactic");
   if(pfSel)pfSel.onchange=()=>{
@@ -5964,6 +6014,7 @@ async function renderRaidDetail(root){
       e.preventDefault();zone.classList.remove("over");
       const key=e.dataTransfer.getData("text/plain");if(!key)return;
       const idx=parseInt(zone.dataset.rdDrop,10);
+      if(key.startsWith("share:")){rdPullShared(key.slice(6),idx);return;}   // 캐릭 공유 칩: 타 공대에서 해제 후 편성
       const cur=await RaidStore.get(rdState.openId);if(!cur)return;
       if(cur.members.some(m=>m.key===key))rdMoveChar(key,idx);
       else rdAddChar(key,idx);
